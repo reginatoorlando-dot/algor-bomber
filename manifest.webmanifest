@@ -1,0 +1,17 @@
+{
+  "name": "Algor Bomber",
+  "short_name": "Algor Bomber",
+  "description": "Organizza il calcetto con gli amici: presenze, lista d'attesa e squadre equilibrate.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f5f1",
+  "theme_color": "#087f5b",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
