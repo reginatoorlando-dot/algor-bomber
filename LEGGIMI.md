@@ -5,7 +5,7 @@ Il sito è la cartella `web` (questa). Il resto dello zip (`sorgenti`) serve sol
 
 ## 1. Il database (Supabase)
 1. Vai su supabase.com → **New project**. Scegli un nome (es. `algor-bomber`), una password per il database (salvala) e una regione europea.
-2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) e con `supabase/aggiornamento-amici.sql` (amicizie).
+2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) con `supabase/aggiornamento-amici.sql` (amicizie) e con `supabase/aggiornamento-traguardi.sql` (traguardi di tutti).
 3. **Authentication → Providers → Email**: lascia attivo l'accesso con email e **disattiva "Confirm email"** (così gli amici entrano subito senza aspettare la mail).
 4. **Project Settings → API**: copia **Project URL** e la chiave **anon public**.
 5. Apri il file `config.js` di questa cartella e incolla i due valori al posto delle scritte `INCOLLA_QUI_…`. (La chiave anon può stare nel sito: la sicurezza la fanno le regole del database.)
@@ -65,6 +65,9 @@ Non serve niente sul database. La Difesa ora ha tre voci: Contrasto, Scivolata e
 
 ## Card da condividere, locandina, effetti, podio, campo e numero di maglia
 Non serve niente sul database. Ognuno può condividere come immagine solo la propria card; dalla partita si condividono la locandina (giorno, campo, formazioni) e il risultato (marcatori e MVP), con i soprannomi e senza foto. Le immagini si preparano sul telefono, non passano da nessun server. Il numero di maglia (facoltativo, da 1 a 99) si sceglie in Modifica profilo. La card a tutto schermo entra girando e le stats compaiono con una luce che si diffonde; lo scudo è più elaborato salendo di livello (bronzo, argento, oro, MVP). Gli effetti (animazioni, raggi nei momenti speciali, coriandoli) si spengono da soli se sul telefono è attivo "Riduci movimento".
+
+## Traguardi di tutti (supabase/aggiornamento-traguardi.sql)
+Chiunque vede i traguardi di chiunque dal suo profilo. Nella vista "Nel gruppo" contano le partite del gruppo; nella vista "Generali", e per chi non è nel tuo gruppo, contano tutte le partite in tutti i gruppi. Per questi ultimi serve una funzione nuova del database: in Supabase apri **SQL Editor**, incolla tutto il contenuto di `supabase/aggiornamento-traguardi.sql` ed esegui (Run). Deve comparire "Aggiornamento traguardi completato". Non modifica né cancella dati: aggiunge solo una funzione di lettura, che restituisce i dati di quella persona senza dire chi sono i compagni né quali sono i gruppi. Finché non lo esegui, l'app mostra i traguardi del gruppo per i compagni e un avviso per gli altri.
 
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.

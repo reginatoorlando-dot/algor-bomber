@@ -1540,7 +1540,7 @@ const Engine = (() => {
     partOf, roleMalus, injMalus, valueIn, natural,
     modulesFor, moduleLabel, bestLineup, evalTeam, evaluate, suggestTeams, bestSwap, balanceLabel,
     mvpResult, hasResult, matchStats, accuracy,
-    affinityFrom, affBonusOf, AFF_BONUS,
+    affinityFrom, affBonusOf, affLevel, AFF_BONUS,
   };
 })();
 
@@ -1778,6 +1778,11 @@ const Demo = (() => {
           }
           gs.forEach(refresh);
           return 'ok';
+        }
+        case 'player_career': {
+          /* come la funzione del database: solo i dati di quella persona, in tutti i suoi gruppi */
+          const rows = [...docs.entries()].map(([path, d]) => { const s = path.split('/'); return { path, col: s[s.length - 2], id: s[s.length - 1], gid: s[0] === 'g' ? s[1] : null, data: d }; });
+          return clone(careerFromDocs(String(a.p_uid || ''), rows.filter((r) => r.col === 'matches' && r.gid), rows.filter((r) => (r.col === 'mvp' || r.col === 'mv') && r.gid)));
         }
         default: fail('Funzione non disponibile nella demo.');
       }
@@ -3640,12 +3645,15 @@ function WxCredit() {
   return html`<div class="tiny faint">Meteo previsto da <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>, fino a 16 giorni prima.</div>`;
 }
 
-
 /* ============================================================
-   APP: traguardi (stemmi) del giocatore, calcolati dalle partite del gruppo
+   APP: traguardi (stemmi) del giocatore. Chiunque vede i traguardi di chiunque dal suo profilo.
+   - Vista "Nel gruppo": dalle partite del gruppo aperto, calcolati qui.
+   - Vista "Generali" (e sempre per chi non è nel tuo gruppo): da tutte le sue partite, in tutti i suoi
+     gruppi. Li prepara il database (funzione player_career) con i soli dati di quella persona,
+     senza dire chi sono i compagni né quali sono i gruppi.
    ============================================================ */
 
-/* le partite giocate da un giocatore, dalla più vecchia: risultato, gol, assist, porta, MVP */
+/* le partite giocate da un giocatore nel gruppo aperto, dalla più vecchia: risultato, gol, assist, porta, MVP */
 function playerTimeline(uid, C) {
   return C.matches
     .filter((m) => m.status === 'played' && m.final && (m.final.ids || []).includes(uid))
@@ -3663,12 +3671,68 @@ function playerTimeline(uid, C) {
       }
       const mv = C.stats.mvps[m.id];
       return {
-        m, date: m.date, out, conceded,
+        date: m.date, out, conceded,
         g: numOr(e.g, 0), a: numOr(e.a, 0), og: numOr(e.og, 0),
         gk: !!(fin.roles && fin.roles[uid] === 'POR'),
         mvp: !!(mv && mv.closed && mv.winners.includes(uid)),
       };
     });
+}
+
+/* le stesse partite in tutta la carriera, come le prepara il database (vedi aggiornamento-traguardi.sql) */
+const nn = (v) => (typeof v === 'number' && isFinite(v) ? v : Number(v) || 0);
+function careerTimeline(d) {
+  const now = Date.now();
+  return ((d && d.matches) || []).map((x) => {
+    const closed = now >= nn(x.pa) + CFG.MVP_HOURS * 3600000 || (nn(x.ne) > 1 && nn(x.nv) >= nn(x.ne));
+    return {
+      date: x.d, time: x.t, out: x.out || null, conceded: x.conc == null ? null : nn(x.conc),
+      g: nn(x.g), a: nn(x.a), og: nn(x.og), gk: !!x.gk,
+      mvp: closed && nn(x.mx) > 0 && nn(x.my) === nn(x.mx),
+    };
+  }).sort((p, q) => Engine.matchTime({ date: p.date, time: p.time }) - Engine.matchTime({ date: q.date, time: q.time }));
+}
+/* la stessa cosa calcolata qui dai documenti (per la demo e per le prove): deve dare quello che dà il database */
+function careerFromDocs(uid, matches, mvDocs) {
+  const out = [], pairs = {}, org = [];
+  const has = (o, k) => !!o && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k);
+  for (const mm of matches || []) {
+    const m = mm.data || {};
+    if (m.status !== 'played') continue;
+    if (m.by === uid) org.push({ d: m.date || '', t: m.time || '21:00' });
+    const fin = m.final;
+    if (!fin || !Array.isArray(fin.ids) || !fin.ids.includes(uid)) continue;
+    const side = Array.isArray(fin.a) && fin.a.includes(uid) ? 'a' : Array.isArray(fin.b) && fin.b.includes(uid) ? 'b' : null;
+    const res = m.result || {};
+    const hasRes = typeof res.a === 'number' && typeof res.b === 'number';
+    let o = null, conc = null;
+    if (hasRes && side) { const my = side === 'a' ? res.a : res.b, ot = side === 'a' ? res.b : res.a; o = my > ot ? 'w' : my === ot ? 'd' : 'l'; conc = ot; }
+    const e = (res.ev && res.ev[uid]) || {};
+    const ids = new Set(fin.ids);
+    const counts = {};
+    let nv = 0;
+    for (const v of mvDocs || []) {
+      if (v.gid !== mm.gid || !ids.has(v.id)) continue;
+      const t = v.data && v.data.v && v.data.v[mm.id];
+      if (typeof t !== 'string' || !ids.has(t) || t === v.id) continue;
+      counts[t] = (counts[t] || 0) + 1; nv++;
+    }
+    out.push({
+      d: m.date, t: m.time, out: o, conc, g: numOr(e.g, 0), a: numOr(e.a, 0), og: numOr(e.og, 0),
+      gk: !!(fin.roles && fin.roles[uid] === 'POR'), my: counts[uid] || 0, mx: Math.max(0, ...Object.values(counts)), nv, ne: fin.ids.length,
+      pa: typeof m.playedAt === 'number' ? m.playedAt : 0,
+    });
+    if (hasRes && side) {
+      const w = side === 'a' ? (res.a > res.b ? 1 : res.a === res.b ? 0.5 : 0) : (res.b > res.a ? 1 : res.a === res.b ? 0.5 : 0);
+      for (const t of fin[side] || []) {
+        if (t === uid || has(fin.gn, t) || has(m.guests, t)) continue;
+        const k = mm.gid + '|' + t;
+        pairs[k] = (pairs[k] || 0) + w;
+      }
+    }
+  }
+  org.sort((x, y) => (x.d + x.t < y.d + y.t ? -1 : x.d + x.t > y.d + y.t ? 1 : 0));
+  return { matches: out, aff: Math.max(0, ...Object.values(pairs)), org: org.map((x) => x.d) };
 }
 
 /* un traguardo: { done, at (giorno), cur, max } */
@@ -3693,17 +3757,18 @@ const BADGE_GROUPS = [
   { k: 'gol', l: 'Gol' }, { k: 'ass', l: 'Assist' }, { k: 'mvp', l: 'MVP' }, { k: 'pres', l: 'Presenze' },
   { k: 'win', l: 'Vittorie' }, { k: 'gk', l: 'In porta' }, { k: 'team', l: 'Squadra e amici' },
 ];
+/* ex: { aff (affinità migliore con un compagno, 0–100), org (giorni delle partite organizzate e giocate), friends } */
 const BADGES = [
   { k: 'gol1', g: 'gol', e: '⚽', n: 'Primo gol', d: 'Segna il tuo primo gol.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.g >= 1) },
   { k: 'doppietta', g: 'gol', e: '✌️', n: 'Doppietta', d: '2 gol nella stessa partita.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.g >= 2) },
   { k: 'tripletta', g: 'gol', e: '🎩', n: 'Tripletta', d: '3 gol nella stessa partita.', t: 'silver', f: (tl) => firstWhere(tl, (x) => x.g >= 3) },
   { k: 'poker', g: 'gol', e: '🃏', n: 'Poker', d: '4 gol nella stessa partita.', t: 'gold', f: (tl) => firstWhere(tl, (x) => x.g >= 4) },
   { k: 'manita', g: 'gol', e: '🖐️', n: 'Manita', d: '5 gol o più nella stessa partita.', t: 'gold', f: (tl) => firstWhere(tl, (x) => x.g >= 5) },
-  { k: 'bomber', g: 'gol', e: '🎯', n: 'Bomber', d: '25 gol in questo gruppo.', t: 'silver', f: (tl) => reach(tl, (x) => x.g, 25) },
-  { k: 'leggenda', g: 'gol', e: '👑', n: 'Leggenda', d: '100 gol in questo gruppo.', t: 'gold', f: (tl) => reach(tl, (x) => x.g, 100) },
+  { k: 'bomber', g: 'gol', e: '🎯', n: 'Bomber', d: 'Segna 25 gol.', t: 'silver', f: (tl) => reach(tl, (x) => x.g, 25) },
+  { k: 'leggenda', g: 'gol', e: '👑', n: 'Leggenda', d: 'Segna 100 gol.', t: 'gold', f: (tl) => reach(tl, (x) => x.g, 100) },
   { k: 'assist1', g: 'ass', e: '🅰️', n: 'Primo assist', d: 'Fai il tuo primo assist.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.a >= 1) },
   { k: 'regista', g: 'ass', e: '🎼', n: 'Regista', d: '3 assist nella stessa partita.', t: 'silver', f: (tl) => firstWhere(tl, (x) => x.a >= 3) },
-  { k: 'uomoassist', g: 'ass', e: '🧠', n: 'Uomo assist', d: '25 assist in questo gruppo.', t: 'gold', f: (tl) => reach(tl, (x) => x.a, 25) },
+  { k: 'uomoassist', g: 'ass', e: '🧠', n: 'Uomo assist', d: 'Fai 25 assist.', t: 'gold', f: (tl) => reach(tl, (x) => x.a, 25) },
   { k: 'mvp1', g: 'mvp', e: '🏆', n: 'Primo MVP', d: 'Vinci il voto MVP di una partita.', t: 'silver', f: (tl) => firstWhere(tl, (x) => x.mvp) },
   { k: 'mvp5', g: 'mvp', e: '🌟', n: 'Pallone d\'oro', d: '5 volte MVP.', t: 'gold', f: (tl) => reach(tl, (x) => (x.mvp ? 1 : 0), 5) },
   { k: 'esordio', g: 'pres', e: '👟', n: 'Esordio', d: 'Gioca la tua prima partita.', t: 'bronze', f: (tl) => reach(tl, () => 1, 1) },
@@ -3716,29 +3781,74 @@ const BADGES = [
   { k: 'imbattibile', g: 'win', e: '🛡️', n: 'Imbattibile', d: '10 partite di fila senza perdere.', t: 'gold', f: (tl) => streak(tl, (x) => x.out !== 'l', 10) },
   { k: 'saracinesca', g: 'gk', e: '🧱', n: 'Saracinesca', d: 'In porta, al massimo 2 gol subiti in una partita.', t: 'silver', f: (tl) => firstWhere(tl, (x) => x.gk && x.conceded != null && x.conceded <= 2) },
   { k: 'inviolata', g: 'gk', e: '🔒', n: 'Porta inviolata', d: 'In porta, nessun gol subito.', t: 'gold', f: (tl) => firstWhere(tl, (x) => x.gk && x.conceded === 0) },
-  { k: 'coppia', g: 'team', e: '💞', n: 'Coppia d\'oro', d: 'Affinità 50 o più con un compagno.', t: 'silver', f: (tl, uid, C) => { const top = C.aff.top(uid, 1)[0]; const v = top ? Math.round(top.v) : 0; return { done: v >= 50, at: null, cur: Math.min(v, 50), max: 50 }; } },
-  { k: 'organizzatore', g: 'team', e: '📣', n: 'Organizzatore', d: 'Organizza 5 partite che poi si giocano.', t: 'bronze', f: (tl, uid, C) => { const ms = C.matches.filter((m) => m.by === uid && m.status === 'played').sort((x, y) => mStart(x) - mStart(y)); const n = ms.length; return { done: n >= 5, at: n >= 5 ? ms[4].date : null, cur: Math.min(n, 5), max: 5 }; } },
-  { k: 'compagnia', g: 'team', e: '🤝', n: 'Compagnia', d: '5 amici sull\'app.', t: 'bronze', own: true, f: (tl, uid, C) => { const n = uid === C.uid ? Object.values(C.friendOf).filter((x) => x === 'friend').length : 0; return { done: n >= 5, at: null, cur: Math.min(n, 5), max: 5 }; } },
+  { k: 'coppia', g: 'team', e: '💞', n: 'Coppia d\'oro', d: 'Affinità 50 o più con un compagno dello stesso gruppo.', t: 'silver', f: (tl, ex) => { const v = Math.round(ex.aff || 0); return { done: v >= 50, at: null, cur: Math.min(v, 50), max: 50 }; } },
+  { k: 'organizzatore', g: 'team', e: '📣', n: 'Organizzatore', d: 'Organizza 5 partite che poi si giocano.', t: 'bronze', f: (tl, ex) => { const o = ex.org || []; const n = o.length; return { done: n >= 5, at: n >= 5 ? o[4] : null, cur: Math.min(n, 5), max: 5 }; } },
+  { k: 'compagnia', g: 'team', e: '🤝', n: 'Compagnia', d: '5 amici sull\'app.', t: 'bronze', own: true, f: (tl, ex) => { const n = ex.friends || 0; return { done: n >= 5, at: null, cur: Math.min(n, 5), max: 5 }; } },
   { k: 'ops', g: 'gol', e: '🙈', n: 'Ops!', d: 'Il primo autogol: capita anche ai migliori.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.og >= 1) },
 ];
-
-/* tutti i traguardi di un giocatore, con lo stato */
+const friendsCount = (C) => Object.values(C.friendOf).filter((x) => x === 'friend').length;
+const badgesFrom = (tl, ex, own) => BADGES.filter((b) => !b.own || own).map((b) => Object.assign({}, b, b.f(tl, ex)));
+/* nel gruppo aperto */
 function badgesOf(uid, C) {
-  const tl = playerTimeline(uid, C);
-  return BADGES
-    .filter((b) => !b.own || uid === C.uid)
-    .map((b) => Object.assign({}, b, b.f(tl, uid, C)));
+  const top = C.aff.top(uid, 1)[0];
+  const org = C.matches.filter((m) => m.by === uid && m.status === 'played').sort((x, y) => mStart(x) - mStart(y)).map((m) => m.date);
+  return badgesFrom(playerTimeline(uid, C), { aff: top ? top.v : 0, org, friends: uid === C.uid ? friendsCount(C) : 0 }, uid === C.uid);
+}
+/* in tutta la carriera */
+function careerBadges(uid, d, C) {
+  return badgesFrom(careerTimeline(d), { aff: Engine.affLevel(nn(d && d.aff)), org: (d && d.org) || [], friends: uid === C.uid ? friendsCount(C) : 0 }, uid === C.uid);
 }
 const isNewBadge = (b) => { if (!b.done || !b.at) return false; const d = new Date(b.at + 'T12:00:00'); return Date.now() - d.getTime() < 8 * 86400000; };
+
+/* la carriera dal database, tenuta un minuto per non richiederla a ogni pagina */
+const careerCache = new Map();
+function loadCareer(C, pid) {
+  const hit = careerCache.get(pid);
+  if (hit && hit.p) return hit.p;
+  if (hit && hit.r && Date.now() - hit.t < 60000) return Promise.resolve(hit.r);
+  const p = C.act.rpc('player_career', { p_uid: pid }, { quiet: true }).then((r) => {
+    const v = r.ok ? { ok: true, d: r.data || { matches: [] } } : { ok: false, missing: !!(r.err && (r.err.code === 'unavailable' || r.err.code === 'PGRST202')) };
+    careerCache.set(pid, { t: Date.now(), r: v });
+    return v;
+  });
+  careerCache.set(pid, { t: Date.now(), p });
+  return p;
+}
+function useCareer(pid) {
+  const C = useContext(Ctx);
+  const [st, setSt] = useState(() => { const hit = pid && careerCache.get(pid); return hit && hit.r ? hit.r : null; });
+  useEffect(() => {
+    if (!pid) return undefined;
+    let dead = false;
+    loadCareer(C, pid).then((v) => { if (!dead) setSt(v); });
+    return () => { dead = true; };
+  }, [pid, C.matches]);
+  return pid ? st : null;
+}
+/* i traguardi da mostrare: del gruppo o di tutte le partite (se il database non è aggiornato, quelli del gruppo per i compagni) */
+function useBadges(pid, scope) {
+  const C = useContext(Ctx);
+  const all = scope === 'all' || !C.gid;
+  const st = useCareer(all ? pid : null);
+  const mine = pid === C.uid;
+  const groupView = (note) => ({ list: badgesOf(pid, C), ready: true, scope: 'group', where: C.group ? 'Nelle partite di ' + C.group.name : '', note });
+  if (!all) return groupView();
+  if (!st) return { list: null, ready: false, scope: 'all' };
+  if (!st.ok) {
+    if (st.missing && C.gid && C.isInGroup(pid)) return groupView('Per ora solo quelli di questo gruppo: quelli di tutte le partite arrivano con il prossimo aggiornamento del database.');
+    return { list: null, ready: true, scope: 'all', err: st.missing ? 'missing' : 'err' };
+  }
+  return { list: careerBadges(pid, st.d, C), ready: true, scope: 'all', where: mine ? 'In tutte le tue partite, in tutti i tuoi gruppi' : 'In tutte le sue partite, in tutti i suoi gruppi' };
+}
 
 function Emblem({ b, s }) {
   return html`<span class=${'emblem ' + b.t + (b.done ? '' : ' off')} style=${s ? '--es:' + s + 'px' : ''} aria-hidden="true"><span class="em-in"><span class="em-e">${b.e}</span></span></span>`;
 }
 
 /* uno stemma toccabile: si apre la scheda con la descrizione */
-function BadgeTile({ b, pid }) {
+function BadgeTile({ b, pid, scope }) {
   const C = useContext(Ctx);
-  return html`<button type="button" class=${'badge' + (b.done ? ' done' : '')} onClick=${() => C.openSheet({ k: 'badge', pid, bk: b.k })} aria-label=${b.n + (b.done ? ': raggiunto' : ': da raggiungere')}>
+  return html`<button type="button" class=${'badge' + (b.done ? ' done' : '')} onClick=${() => C.openSheet({ k: 'badge', pid, bk: b.k, scope })} aria-label=${b.n + (b.done ? ': raggiunto' : ': da raggiungere')}>
     <${Emblem} b=${b} />
     <span class="bd-n">${b.n}</span>
     ${b.done ? isNewBadge(b) && html`<span class="bd-new">Nuovo</span>` : b.max > 1 && html`<span class="bd-p"><i style=${'width:' + Math.round((b.cur / b.max) * 100) + '%'}></i></span>`}
@@ -3755,24 +3865,23 @@ function BadgeBar({ done, total }) {
     <span class="bd-p wide" aria-hidden="true"><i style=${'width:' + Math.round((done / Math.max(1, total)) * 100) + '%'}></i></span>
   </div>`;
 }
-
-/* per chi non è nel gruppo: i traguardi si contano dalle partite del gruppo, che vede solo chi ne fa parte */
-function BadgeOutside({ p }) {
+function BadgeProblem({ err }) {
   const C = useContext(Ctx);
-  return html`<section class="sec"><h2 class="h3">Traguardi</h2>
-    <div class="card small muted">I traguardi si contano dalle partite di ogni gruppo, quindi si vedono tra compagni di gruppo. ${C.group ? dispName(p) + ' non è in ' + C.group.name + '.' : ''}</div>
-  </section>`;
+  return html`<div class="card small muted">${err === 'missing'
+    ? (C.isAdmin ? 'Per vedere i traguardi di tutti va eseguito su Supabase lo script supabase/aggiornamento-traguardi.sql.' : 'I traguardi di chi non è nel tuo gruppo arrivano con il prossimo aggiornamento del database.')
+    : 'Non riesco a caricare i traguardi adesso. Riprova tra poco.'}</div>`;
 }
 
-/* nel profilo: solo la vetrina, il resto con "Vedi tutti" (anche nella vista "Generali": sono quelli del gruppo) */
-function BadgeSection({ pid, where }) {
+/* nel profilo: solo la vetrina, il resto con "Vedi tutti" */
+function BadgeSection({ pid, scope }) {
   const C = useContext(Ctx);
-  const list = badgesOf(pid, C);
+  const B = useBadges(pid, scope);
+  const list = B.list || [];
   const done = list.filter((b) => b.done).length;
   const top = showcaseOf(list).slice(0, SHOWCASE_N);
-  /* i propri traguardi nuovi: coriandoli e un avviso, una volta sola su questo telefono */
+  /* i propri traguardi nuovi del gruppo: coriandoli e un avviso, una volta sola su questo telefono */
   useEffect(() => {
-    if (pid !== C.uid || !C.gid) return undefined;
+    if (B.scope !== 'group' || !B.list || pid !== C.uid || !C.gid) return undefined;
     const fresh = celebrateOnce('sc-cf-badges-' + C.gid, list.filter((b) => b.done && isNewBadge(b)).map((b) => b.k));
     if (!fresh.length) return undefined;
     const names = fresh.map((k) => (BADGES.find((b) => b.k === k) || {}).n).filter(Boolean);
@@ -3781,33 +3890,41 @@ function BadgeSection({ pid, where }) {
       C.flash(names.length === 1 ? 'Nuovo traguardo: ' + names[0] + '!' : plural(names.length, 'nuovo traguardo', 'nuovi traguardi') + ': ' + names.join(', '));
     }, 400);
     return () => clearTimeout(t);
-  }, [done]);
+  }, [done, B.scope]);
   return html`<section class="sec">
-    <div class="sec-h"><h2 class="h3">Traguardi</h2><button class="link" onClick=${() => C.go({ t: 'badges', id: pid })}>Vedi tutti</button></div>
-    <div class="card stack-12">
-      <${BadgeBar} done=${done} total=${list.length} />
-      ${where && C.group && html`<div class="tiny faint" style="margin-top:-6px">Nelle partite di ${C.group.name}</div>`}
-      ${top.length
-        ? html`<div class="badges">${top.map((b) => html`<${BadgeTile} key=${b.k} b=${b} pid=${pid} />`)}</div>`
-        : html`<div class="small muted">Ancora nessun traguardo: arrivano giocando. Tocca "Vedi tutti" per vedere quali sono.</div>`}
-    </div>
+    <div class="sec-h"><h2 class="h3">Traguardi</h2>${B.list && html`<button class="link" onClick=${() => C.go({ t: 'badges', id: pid, scope: B.scope })}>Vedi tutti</button>`}</div>
+    ${!B.ready ? html`<div class="card"><div class="sk" style="height:92px"></div></div>`
+      : !B.list ? html`<${BadgeProblem} err=${B.err} />`
+      : html`<div class="card stack-12">
+        <${BadgeBar} done=${done} total=${list.length} />
+        ${B.where && html`<div class="tiny faint" style="margin-top:-6px">${B.where}</div>`}
+        ${top.length
+          ? html`<div class="badges">${top.map((b) => html`<${BadgeTile} key=${b.k} b=${b} pid=${pid} scope=${B.scope} />`)}</div>`
+          : html`<div class="small muted">Ancora nessun traguardo: arrivano giocando. Tocca "Vedi tutti" per vedere quali sono.</div>`}
+        ${B.note && html`<div class="tiny faint">${B.note}</div>`}
+      </div>`}
   </section>`;
 }
 
 /* tutti i traguardi, divisi per tipo */
-function BadgesScreen({ id }) {
+function BadgesScreen({ id, scope }) {
   const C = useContext(Ctx);
   const p = C.playersById[id];
+  const B = useBadges(id, scope);
   if (!p) return html`<${Page} title="Traguardi" onBack=${C.back}><div class="card empty">Giocatore non trovato.</div><//>`;
-  const list = badgesOf(id, C);
-  const done = list.filter((b) => b.done).length;
   const mine = id === C.uid;
-  const sub = (mine ? 'I tuoi' : dispName(p)) + (C.group ? ' · ' + C.group.name : '');
+  const sub = (mine ? 'I tuoi' : dispName(p)) + (B.scope === 'group' && C.group ? ' · ' + C.group.name : ' · tutte le partite');
+  if (!B.ready || !B.list) {
+    return html`<${Page} title="Traguardi" sub=${sub} onBack=${C.back}>${!B.ready ? html`<div class="sk" style="height:160px"></div>` : html`<${BadgeProblem} err=${B.err} />`}<//>`;
+  }
+  const list = B.list;
+  const done = list.filter((b) => b.done).length;
   return html`<${Page} title="Traguardi" sub=${sub} onBack=${C.back}>
     <div class="card stack-8">
       <${BadgeBar} done=${done} total=${list.length} />
       <div class="bd-tiers">${['gold', 'silver', 'bronze'].map((t) => html`<span key=${t} class="bd-tier"><span class=${'emblem ' + t} style="--es:16px" aria-hidden="true"><span class="em-in"></span></span><span class="num">${list.filter((b) => b.done && b.t === t).length}</span><span class="tiny muted">${{ gold: 'oro', silver: 'argento', bronze: 'bronzo' }[t]}</span></span>`)}</div>
-      <div class="tiny faint">Contano le partite giocate in questo gruppo. Tocca uno stemma per sapere cosa serve.</div>
+      <div class="tiny faint">${B.scope === 'group' ? 'Contano le partite giocate in questo gruppo.' : 'Contano tutte le partite, in tutti i gruppi.'} Tocca uno stemma per sapere cosa serve.</div>
+      ${B.note && html`<div class="tiny faint">${B.note}</div>`}
     </div>
     ${BADGE_GROUPS.map((g) => {
       const xs = list.filter((b) => b.g === g.k);
@@ -3815,15 +3932,16 @@ function BadgesScreen({ id }) {
       const n = xs.filter((b) => b.done).length;
       return html`<section key=${g.k} class="sec">
         <div class="sec-h"><h2 class="h3">${g.l}</h2><span class=${'chip num' + (n === xs.length ? ' ok' : '')}>${n}/${xs.length}</span></div>
-        <div class="badges">${xs.map((b) => html`<${BadgeTile} key=${b.k} b=${b} pid=${id} />`)}</div>
+        <div class="badges">${xs.map((b) => html`<${BadgeTile} key=${b.k} b=${b} pid=${id} scope=${B.scope} />`)}</div>
       </section>`;
     })}
   <//>`;
 }
 
-function BadgeSheet({ pid, bk, onClose }) {
+function BadgeSheet({ pid, bk, scope, onClose }) {
   const C = useContext(Ctx);
-  const b = badgesOf(pid, C).find((x) => x.k === bk);
+  const B = useBadges(pid, scope);
+  const b = (B.list || []).find((x) => x.k === bk);
   const p = C.playersById[pid];
   if (!b || !p) return null;
   const TIER = { bronze: 'Bronzo', silver: 'Argento', gold: 'Oro' };
@@ -3831,7 +3949,7 @@ function BadgeSheet({ pid, bk, onClose }) {
     <div class="bd-big"><${Emblem} b=${b} s=${96} /></div>
     <div class="stack-8" style="text-align:center">
       <div class="h3">${b.d}</div>
-      <div class="small muted">Stemma ${TIER[b.t].toLowerCase()} · ${(BADGE_GROUPS.find((g) => g.k === b.g) || {}).l || ''}</div>
+      <div class="small muted">Stemma ${TIER[b.t].toLowerCase()} · ${(BADGE_GROUPS.find((g) => g.k === b.g) || {}).l || ''} · ${B.scope === 'group' ? (C.group ? 'in ' + C.group.name : 'nel gruppo') : 'in tutte le partite'}</div>
       ${b.done
         ? html`<div class="note ok" style="justify-content:center"><${Icon} n="check" s="16" /><span>${pid === C.uid ? 'Raggiunto' : dispName(p) + ' l\'ha raggiunto'}${b.at ? ' il ' + fmtYmd(b.at) : ''}.</span></div>`
         : html`<div class="note" style="justify-content:center"><span>${b.max > 1 ? 'A che punto: ' + b.cur + ' su ' + b.max + '.' : 'Ancora da raggiungere.'}</span></div>`}
@@ -4844,7 +4962,7 @@ function PlayerScreen({ id, scope }) {
     ${C.isAdmin && !isMe && html`<button class="btn danger block" onClick=${delAccount}><${Icon} n="x" s="16" /> Elimina l'account di ${dispName(p)}</button>`}
     ${all
       ? html`<section class="sec"><h2 class="h3">Stats generali</h2><${AreaDetail} p=${p} r=${r} /></section>
-        ${member ? html`<${BadgeSection} pid=${p.id} where />` : html`<${BadgeOutside} p=${p} />`}`
+        <${BadgeSection} pid=${p.id} scope="all" />`
       : html`<${PlayerSections} p=${p} r=${r} s=${s} />`}
   <//>`;
 }
@@ -4882,7 +5000,7 @@ function MeScreen() {
         ${C.isAdmin && html`<div class="note ok"><${Icon} n="shield" s="16" /><span>Sei l'amministratore: puoi correggere anche le partite vecchie e sbloccare un'autovalutazione dalla scheda di ogni giocatore.</span></div>`}
         ${all
           ? html`<section class="sec"><h2 class="h3">Stats generali</h2><${AreaDetail} p=${me} r=${r} /></section>
-            ${member && html`<${BadgeSection} pid=${me.id} where />`}`
+            <${BadgeSection} pid=${me.id} scope="all" />`
           : html`<${PlayerSections} p=${me} r=${r} s=${s} />`}
       `}
     ` : html`<div class="card empty"><div class="h3">Nessun profilo</div><div>${C.canWrite ? 'Crea il tuo profilo per rispondere alle partite.' : 'Hai accesso in sola lettura.'}</div></div>`}
@@ -6683,7 +6801,7 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. Poi l'app ti propone di aggiornare le valutazioni dei compagni, anche più tardi.</p></div>
       <div><h3 class="h3">Gruppi e stats generali</h3><p class="muted">Partite, storico, messaggi e valutazioni sono di ogni gruppo. Puoi stare in più gruppi: cambi gruppo toccando il suo nome in alto. Nella scheda Giocatori vedi i membri del gruppo oppure tutti gli iscritti all'app. Le stats nel gruppo sono la media delle valutazioni date in quel gruppo; le stats generali sono la media di tutte le valutazioni ricevute in tutti i gruppi, autovalutazione compresa.</p></div>
       <div><h3 class="h3">Affinità</h3><p class="muted">Più partite due giocatori vincono (o pareggiano) nella stessa squadra, più cresce la loro affinità, piano piano: una vittoria vale 1, un pareggio mezzo, le sconfitte non tolgono niente. Si arriva a circa 28 dopo 10 partite positive insieme, 57 dopo 25, 81 dopo 50 (massimo 100). Una squadra di compagni affiatati prende fino a +${Engine.AFF_BONUS} punti sul valore medio, e l'app ne tiene conto quando fa le squadre.</p></div>
-      <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo. Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le ${VOCI.length} voci. La tua la puoi condividere come immagine.</p></div>
+      <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo. Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Nella vista "Nel gruppo" contano le partite del gruppo; in "Generali", e per chi non è nel tuo gruppo, tutte le partite in tutti i gruppi. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le ${VOCI.length} voci. La tua la puoi condividere come immagine.</p></div>
       <div><h3 class="h3">Locandina e risultato</h3><p class="muted">Nella scheda Campo di una partita c'è la locandina da mandare nel gruppo: giorno, campo e formazioni con i colori delle maglie. Dopo la partita, dai Dettagli si condivide il risultato con marcatori e MVP. Ci sono solo i soprannomi, senza foto.</p></div>
       <div><h3 class="h3">Numero di maglia</h3><p class="muted">Lo scegli in Modifica profilo, da 1 a 99: si vede sulla card, sul campo e nelle squadre.</p></div>
       <div><h3 class="h3">Amici</h3><p class="muted">Chiedi l'amicizia dalla scheda di un giocatore: diventate amici quando l'altro accetta. Gli amici compaiono per primi nelle ricerche e puoi invitarli alle partite del tuo gruppo.</p></div>
@@ -6711,7 +6829,7 @@ function SheetHost({ sheet, onClose }) {
     case 'colors': return html`<${ColorSheet} mid=${sheet.mid} onClose=${onClose} />`;
     case 'invite': return html`<${InviteSheet} mid=${sheet.mid} onClose=${onClose} />`;
     case 'fifa': return html`<${FifaOverlay} pid=${sheet.pid} all=${sheet.all} onClose=${onClose} />`;
-    case 'badge': return html`<${BadgeSheet} pid=${sheet.pid} bk=${sheet.bk} onClose=${onClose} />`;
+    case 'badge': return html`<${BadgeSheet} pid=${sheet.pid} bk=${sheet.bk} scope=${sheet.scope} onClose=${onClose} />`;
     case 'pollClose': return html`<${PollCloseSheet} mid=${sheet.mid} onClose=${onClose} />`;
     case 'shareImg': return html`<${ShareImageSheet} key=${sheet.name} title=${sheet.title} make=${sheet.make} name=${sheet.name} onClose=${onClose} />`;
     default: return null;
@@ -6982,10 +7100,10 @@ function App() {
   else if (top && top.t === 'admin') view = html`<${AdminScreen} key="admin" />`;
   else if (top && top.t === 'player') view = html`<${PlayerScreen} key=${'p' + top.id + (top.scope || '')} id=${top.id} scope=${top.scope} />`;
   else if (top && top.t === 'self') view = html`<${SelfRateScreen} key="self" />`;
+  else if (top && top.t === 'badges') view = html`<${BadgesScreen} key=${'b' + top.id + (top.scope || '')} id=${top.id} scope=${top.scope} />`;
   /* le schermate dei gruppi si aprono solo dentro un gruppo */
   else if (!noGroup && top && top.t === 'group') view = html`<${GroupScreen} key="group" />`;
   else if (!noGroup && top && top.t === 'addMembers') view = html`<${AddMembersScreen} key="addm" />`;
-  else if (!noGroup && top && top.t === 'badges') view = html`<${BadgesScreen} key=${'b' + top.id} id=${top.id} />`;
   else if (!noGroup && top && top.t === 'match') view = html`<${MatchScreen} key=${'m' + top.id} id=${top.id} />`;
   else if (!noGroup && top && top.t === 'mvp') view = html`<${MvpScreen} key=${'v' + top.id} id=${top.id} />`;
   else if (!noGroup && top && top.t === 'result') view = html`<${ResultScreen} key=${'r' + top.id} id=${top.id} />`;
@@ -7049,7 +7167,7 @@ function parsePath(path) {
 }
 
 /* funzioni che leggono soltanto: dopo non serve ricaricare niente */
-const READ_ONLY_FN = new Set(['is_app_admin', 'global_votes']);
+const READ_ONLY_FN = new Set(['is_app_admin', 'global_votes', 'player_career']);
 
 function makeSupaDb(sb) {
   const cols = new Map();
