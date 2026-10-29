@@ -58,6 +58,8 @@ Aggiunge le amicizie (richiesta da accettare; le vedono solo le due persone) e t
 ## Card, traguardi e meteo
 Non serve niente sul database. Il meteo dei giorni delle partite arriva da Open-Meteo (gratuito per uso non commerciale, previsioni fino a 16 giorni), usando la posizione del campo o il comune del gruppo; la posizione delle persone non viene mai chiesta.
 
+Nel profilo i traguardi sono in vetrina: si vedono i nuovi e i più importanti (oro, poi argento, poi bronzo), al massimo 4; con **Vedi tutti** si apre la pagina con tutti gli stemmi, divisi per tipo.
+
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
 - I progetti gratuiti di Supabase vengono messi in pausa dopo qualche giorno senza uso: se succede, dal sito di Supabase si riattiva con un clic. Verifica le condizioni attuali del piano gratuito.
