@@ -63,6 +63,9 @@ Nel profilo i traguardi sono in vetrina: si vedono i nuovi e i più importanti (
 ## Scivolata in Difesa
 Non serve niente sul database. La Difesa ora ha tre voci: Contrasto, Scivolata e Posizionamento (in tutto 17 voci). Nelle valutazioni date prima la Scivolata non c'è: nei conti vale la media di Contrasto e Posizionamento di quella valutazione, quindi nessun punteggio cambia finché qualcuno non la vota davvero. Chi era già iscritto, aprendo l'app, dà una volta sola la propria Scivolata (il resto dell'autovalutazione resta com'era e resta bloccato).
 
+## Card da condividere, locandina, effetti, podio, campo e numero di maglia
+Non serve niente sul database. Ognuno può condividere come immagine solo la propria card; dalla partita si condividono la locandina (giorno, campo, formazioni) e il risultato (marcatori e MVP), con i soprannomi e senza foto. Le immagini si preparano sul telefono, non passano da nessun server. Il numero di maglia (facoltativo, da 1 a 99) si sceglie in Modifica profilo. Gli effetti (card che entra con i raggi di luce, coriandoli) si spengono da soli se sul telefono è attivo "Riduci movimento".
+
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
 - I progetti gratuiti di Supabase vengono messi in pausa dopo qualche giorno senza uso: se succede, dal sito di Supabase si riattiva con un clic. Verifica le condizioni attuali del piano gratuito.

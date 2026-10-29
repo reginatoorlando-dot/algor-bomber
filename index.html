@@ -473,6 +473,11 @@ a.btn { text-decoration: none; }
 .pc-ovr span { font: 700 12px/1 var(--f-body); letter-spacing: 0.08em; opacity: 0.85; }
 .pc-badge { display: inline-flex; align-items: center; gap: 5px; font: 700 11.5px/1 var(--f-body); letter-spacing: 0.08em; padding: 6px 8px; border-radius: 8px; border: 1px solid currentColor; align-self: flex-start; }
 .pcard .av { box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+.pc-avw { position: relative; flex: none; display: inline-flex; }
+.pc-num { position: absolute; right: -7px; bottom: -5px; min-width: 26px; height: 22px; padding: 0 5px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); color: inherit; border: 1.5px solid color-mix(in srgb, currentColor 35%, transparent); font: 800 12.5px/1 var(--f-display); letter-spacing: -0.01em; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
+.vs-num { position: absolute; left: -5px; bottom: -3px; min-width: 19px; height: 17px; padding: 0 4px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: var(--ink); color: var(--surface); font: 800 10.5px/1 var(--f-display); box-shadow: 0 0 0 2px var(--surface); }
+.fifa-no { font-style: normal; font: 800 clamp(12px, 3.8vw, 15px)/1 var(--f-display); margin-top: 9px; padding: 4px 7px 3px; border-radius: 8px; border: 1.5px solid var(--line); letter-spacing: 0.02em; }
+.fifa-no::before { content: 'N°'; font-size: 0.7em; opacity: 0.7; margin-right: 2px; }
 .pc-name { display: flex; align-items: center; gap: 8px; font: 700 22px/1.1 var(--f-display); letter-spacing: -0.02em; margin-top: 8px; min-width: 0; }
 .pc-sub { font-size: 13px; opacity: 0.8; }
 .pc-areas { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 10px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent); }
@@ -591,6 +596,23 @@ a.btn { text-decoration: none; }
 .lead-pos.p2 { color: var(--ag-ink); }
 .lead-pos.p3 { color: var(--br-ink); }
 .lead-v { font: 800 24px/1 var(--f-display); letter-spacing: -0.02em; }
+/* podio delle classifiche */
+.podium { display: grid; grid-template-columns: 1fr 1.18fr 1fr; align-items: end; gap: 8px; padding: 28px 12px 0; border-bottom: 1px solid var(--line); }
+.podium.n1 { grid-template-columns: minmax(0, 200px); justify-content: center; }
+.podium.n2 { grid-template-columns: 1fr 1.18fr; padding-right: 25%; }
+.pod { appearance: none; border: 0; background: none; color: inherit; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; min-width: 0; padding: 0; position: relative; --m1: var(--or-line); --mb: var(--or-bg); --mi: var(--or-ink); }
+.pod.silver { --m1: var(--ag-line); --mb: var(--ag-bg); --mi: var(--ag-ink); }
+.pod.bronze { --m1: var(--br-line); --mb: var(--br-bg); --mi: var(--br-ink); }
+.pod-av .av { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--m1); }
+.pod-crown { position: absolute; top: -16px; font-size: 22px; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2)); }
+.pod-n { display: flex; align-items: center; gap: 5px; justify-content: center; max-width: 100%; font: 700 14px/1.15 var(--f-display); margin-top: 4px; }
+.pod-n .chip { flex: none; }
+.pod-v { display: inline-flex; align-items: baseline; gap: 4px; font: 800 24px/1 var(--f-display); letter-spacing: -0.02em; }
+.pod-v small { font: 600 11px/1 var(--f-body); color: var(--ink-3); letter-spacing: 0; }
+.pod-b { width: 100%; border-radius: 12px 12px 0 0; border: 1px solid var(--m1); border-bottom: 0; background: var(--mb); color: var(--mi); display: flex; justify-content: center; padding-top: 9px; font: 800 22px/1 var(--f-display); margin-top: 4px; }
+.pod.s0 .pod-b { height: 66px; font-size: 26px; }
+.pod.s1 .pod-b { height: 46px; }
+.pod.s2 .pod-b { height: 32px; padding-top: 6px; font-size: 19px; }
 .seg-scroll { overflow-x: auto; margin: 0 -2px; padding: 0 2px; }
 .seg-scroll .seg { min-width: 360px; }
 .acc { display: flex; align-items: center; gap: 14px; }
@@ -705,13 +727,20 @@ select.input { appearance: auto; }
 .vs-v { grid-area: v; font: 800 14px/1 var(--f-display); color: var(--accent); }
 .pitch-wrap { border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); max-width: 460px; width: 100%; margin: 0 auto; }
 .pitch { display: block; width: 100%; height: auto; }
-.pt-bg { fill: #2e8b4e; }
-.pt-stripe { fill: #33955a; }
-.pt-l { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 0.5; }
-.pt-dot { fill: rgba(255, 255, 255, 0.85); }
+.pt-bg { fill: #2c8a4b; }
+.pt-stripe { fill: #349a57; }
+.pt-goal { stroke: rgba(255, 255, 255, 0.9); stroke-width: 0.35; }
+.pt-l { fill: none; stroke: rgba(255, 255, 255, 0.88); stroke-width: 0.55; stroke-linejoin: round; }
+.pt-dot { fill: rgba(255, 255, 255, 0.9); }
 .pd { cursor: pointer; }
-.pd-i { font: 700 4.2px/1 var(--f-body); }
-.pd-n { font: 700 3.5px/1 var(--f-body); fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 0.8px; stroke-linejoin: round; }
+.pd-shirt { stroke: rgba(0, 0, 0, 0.42); stroke-width: 0.9; stroke-linejoin: round; filter: drop-shadow(0 0.6px 0.6px rgba(0, 0, 0, 0.35)); }
+.pd-i { font: 700 3.7px/1 var(--f-body); }
+.pd-big { font: 800 5.6px/1 var(--f-display); letter-spacing: -0.02em; }
+.pd-e { font-size: 4.6px; }
+.pd-nb { stroke: rgba(0, 0, 0, 0.25); stroke-width: 0.25; }
+.pd-no { font: 800 2.7px/1 var(--f-display); }
+.pd-n { font: 700 3.5px/1 var(--f-body); fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, 0.6); stroke-width: 0.85px; stroke-linejoin: round; }
+.pd.me .pd-n { fill: #ffe27a; }
 .pitch-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; max-width: 460px; width: 100%; margin: 0 auto; }
 .pick-side { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; color: var(--ink); cursor: pointer; width: 100%; }
 .pick-side.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
@@ -804,6 +833,43 @@ button.pc-ovr { appearance: none; border: 0; background: none; padding: 0; margi
 .fv-r { display: flex; justify-content: space-between; gap: 6px; line-height: 1.45; }
 .fv-r span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fv.dim { opacity: 0.55; }
+
+/* ---- card: entrata lunga, raggi di luce, versione MVP, condivisione ---- */
+.fifa-ov { overflow: hidden; }
+.fifa-ov.long { perspective: 1100px; }
+.fifa.mvpc { --c1: #3f7253; --c2: #1d3527; --c3: #0d1912; --ink: #f3dfa2; --line: rgba(243, 223, 162, 0.32); }
+.fifa-mvp { position: absolute; top: 3%; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; font: 800 11px/1 var(--f-body); letter-spacing: 0.12em; padding: 5px 9px; border-radius: 999px; background: rgba(243, 223, 162, 0.16); border: 1px solid var(--line); z-index: 1; }
+.fifa-rays { position: absolute; left: 50%; top: 45%; width: 180vmax; height: 180vmax; margin: -90vmax 0 0 -90vmax; pointer-events: none; animation: rays-in 1.1s ease-out both; --ray: 255, 214, 90; }
+.fifa-rays.silver { --ray: 220, 232, 244; }
+.fifa-rays.bronze { --ray: 236, 168, 110; }
+.fifa-rays.mvpc { --ray: 241, 194, 47; }
+.fifa-rays i { position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg, rgba(var(--ray), 0) 0deg 8deg, rgba(var(--ray), 0.3) 8deg 15deg); -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.6) 22%, transparent 48%); mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.6) 22%, transparent 48%); animation: rays-spin 26s linear infinite; }
+@keyframes rays-in { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: none; } }
+@keyframes rays-spin { to { transform: rotate(360deg); } }
+.fifa-rays.skip { animation: none; }
+.fifa-flash { position: absolute; left: 50%; top: 45%; width: 70vmin; height: 70vmin; margin: -35vmin 0 0 -35vmin; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 65%); pointer-events: none; animation: fifa-flash 1.5s ease-out both; }
+@keyframes fifa-flash { 0%, 38% { opacity: 0; transform: scale(0.2); } 52% { opacity: 1; } 100% { opacity: 0; transform: scale(2.4); } }
+.fifa-flip.walk { transform-style: preserve-3d; animation: fifa-walk 1.9s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.fifa-flip.walk.skip { animation: none; }
+@keyframes fifa-walk {
+  0% { opacity: 0; transform: translateY(34vh) scale(0.35) rotateY(-540deg); }
+  14% { opacity: 1; }
+  56% { transform: translateY(-2.5vh) scale(1.07) rotateY(0deg); }
+  70% { transform: translateY(0) scale(0.98); }
+  84% { transform: scale(1.012); }
+  100% { opacity: 1; transform: none; }
+}
+.fifa-flip.walk .fifa-shine { animation-delay: 1.35s; }
+.fifa-tag { position: relative; color: #fff; font: 800 14.5px/1 var(--f-display); letter-spacing: 0.03em; padding: 9px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.26); animation: tag-in 0.45s ease-out both; }
+.fifa-tag.late { animation-delay: 1.3s; }
+@keyframes tag-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.fifa-share { position: relative; appearance: none; border: 0; display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 999px; background: #fff; color: #0f1812; font: 700 14.5px/1 var(--f-body); cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
+.fifa-hint { position: relative; }
+.share-prev { display: block; width: auto; max-width: 100%; max-height: 52vh; margin: 0 auto; border-radius: 14px; box-shadow: var(--shadow); }
+.confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 200; }
+@media (prefers-reduced-motion: reduce) {
+  .fifa-ov, .fifa-flip, .fifa-flip.walk, .fifa-shine, .fifa-rays, .fifa-rays i, .fifa-flash, .fifa-tag { animation: none !important; }
+}
 
 /* ---- traguardi ---- */
 .badges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px; }
@@ -1779,6 +1845,7 @@ const Demo = (() => {
     };
     const HOME = [P.spezia, P.spezia, P.lerici, P.arcola, P.sarzana, P.spezia, P.vezzano, P.spezia, P.ssm, P.spezia, P.porto, P.arcola, P.spezia, P.follo, null, P.lerici];
     const BORN = [1994, 1991, 1996, 1989, 1998, 1993, 1995, 1990, 1997, 1987, 1985, 1999, 1992, 2000, null, 1996];
+    const NUMS = [10, 8, 4, 1, 9, 5, 6, 21, 7, 3, 12, 14, 2, 11, null, 23];
 
     // giocatori, con un'autovalutazione un po' generosa
     const players = PEOPLE.map((p, i) => {
@@ -1787,7 +1854,7 @@ const Demo = (() => {
       return {
         id: ids[i], first: p[0], last: p[1], nick: p[2], icon: p[3], photo: '', role: p[4], role2: p[5],
         self, selfAt: now - 45 * DAY, selfUnlock: false, injury: null, created: now - 45 * DAY, updated: now - 45 * DAY,
-        loc: HOME[i], birthYear: BORN[i],
+        loc: HOME[i], birthYear: BORN[i], num: NUMS[i],
       };
     });
     players[5].injury = { level: 'lieve', zone: 'coscia', note: 'polpaccio indurito', back: ymd(addDays(6)), since: now - 3 * DAY };
@@ -2121,6 +2188,8 @@ const injOverdue = (inj) => !!(inj && inj.level && inj.back && inj.back < toYmd(
 const dispName = (p) => (p && (p.nick || p.first)) || 'Giocatore';
 const fullName = (p) => (p ? `${p.first || ''} ${p.last || ''}`.trim() : '');
 const initialsOf = (p) => ((p && ((p.first || '?')[0] + (p.last || '')[0])) || '?').toUpperCase();
+/* numero di maglia: facoltativo, da 1 a 99 */
+const jerseyOf = (p) => (p && Number.isInteger(p.num) && p.num >= 1 && p.num <= 99 ? p.num : null);
 function hueOf(id) {
   let x = 0;
   for (const c of String(id || 'x')) x = (x * 31 + c.charCodeAt(0)) % 360;
@@ -2155,6 +2224,9 @@ const ICONS = {
   minus: '<path d="M5 12h14"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  share: '<path d="M12 3.5v11.5"/><path d="m7.5 8 4.5-4.5L16.5 8"/><path d="M5 12.5V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5"/>',
+  download: '<path d="M12 3.5V15"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 20.5h14"/>',
+  image: '<rect x="3.5" y="4" width="17" height="16" rx="3"/><circle cx="9" cy="9.5" r="1.8"/><path d="m20.5 16-4.8-4.8L6 20"/>',
   calendar: '<rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/>',
   users: '<circle cx="9" cy="7.5" r="3.5"/><path d="M2.5 20v-1.5A4.5 4.5 0 0 1 7 14h4a4.5 4.5 0 0 1 4.5 4.5V20"/><path d="M16 4.2a3.5 3.5 0 0 1 0 6.6M21.5 20v-1.5a4.5 4.5 0 0 0-3-4.2"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 21v-1.5A5.5 5.5 0 0 1 10 14h4a5.5 5.5 0 0 1 5.5 5.5V21"/>',
@@ -2261,12 +2333,16 @@ function PlayerCard({ p, r, mvp, sub, noZoom, fifa }) {
   const tier = mvp ? 'mvp' : Engine.tierOf(r.ovr);
   const gk = p.role === 'POR';
   const ovr = html`<b class="num">${r0(r.ovr)}</b><span>${p.role}${p.role2 ? ' · ' + p.role2 : ''}</span>`;
+  const no = jerseyOf(p);
   return html`<div class=${'pcard ' + tier}>
     <div class="pc-top">
       ${fifa ? html`<button type="button" class="pc-ovr tap" aria-label=${'Apri la card di ' + dispName(p) + ' a tutto schermo'} onClick=${() => C.openSheet({ k: 'fifa', pid: p.id, all: fifa === 'all' })}>${ovr}<span class="pc-exp"><${Icon} n="expand" s="14" /></span></button>`
         : html`<div class="pc-ovr">${ovr}</div>`}
       ${mvp && html`<span class="pc-badge"><${Icon} n="trophy" s="14" /> MVP</span>`}
-      ${noZoom ? html`<${Avatar} p=${p} size=${64} />` : html`<button type="button" class="av-btn" aria-label=${'Ingrandisci la foto di ' + dispName(p)} onClick=${() => C.openSheet({ k: 'photo', pid: p.id })}><${Avatar} p=${p} size=${64} /></button>`}
+      <span class="pc-avw">
+        ${noZoom ? html`<${Avatar} p=${p} size=${64} />` : html`<button type="button" class="av-btn" aria-label=${'Ingrandisci la foto di ' + dispName(p)} onClick=${() => C.openSheet({ k: 'photo', pid: p.id })}><${Avatar} p=${p} size=${64} /></button>`}
+        ${no != null && html`<span class="pc-num num" title=${'Numero di maglia ' + no}>${no}</span>`}
+      </span>
     </div>
     <div class="pc-name"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} s="18" /></div>
     <div class="pc-sub ell">${sub || fullName(p)}</div>
@@ -2871,7 +2947,7 @@ function TeamsVersus({ m, D }) {
     const v = r ? Engine.valueIn(x.part, r) : natOf(x.part);
     const mal = r && r !== 'POR' ? Engine.roleMalus(x.part, r) : 0;
     return html`<button key=${id} type="button" class="vs-p" onClick=${() => x.p && C.go({ t: 'player', id })}>
-      <span class="vs-av"><${Avatar} p=${x.guest ? { name: x.name } : x.p} guest=${x.guest} size=${46} />${x.inj && x.inj.level && html`<span class="vs-inj"><${InjuryMark} inj=${x.inj} s="14" /></span>`}</span>
+      <span class="vs-av"><${Avatar} p=${x.guest ? { name: x.name } : x.p} guest=${x.guest} size=${46} />${x.inj && x.inj.level && html`<span class="vs-inj"><${InjuryMark} inj=${x.inj} s="14" /></span>`}${jerseyOf(x.p) != null && html`<span class="vs-num num">${jerseyOf(x.p)}</span>`}</span>
       <span class="vs-n ell">${x.name}</span>
       <span class="vs-r">${r ? ROLE_NAME[r] : '–'}${mal ? html` <em>−${mal}</em>` : ''}</span>
       <span class="vs-bar"><i style=${'width:' + Math.max(2, Math.min(100, v)) + '%'}></i></span>
@@ -2918,64 +2994,90 @@ const natOf = (part) => Engine.valueIn(part, part.pref);
 
 /* ---------- scheda "Campo": lo schieramento disegnato ---------- */
 const PITCH_ROWS = { POR: 0, DIF: 1, CEN: 2, ATT: 3 };
-function PitchView({ m, D }) {
+/* righe dal portiere all'attacco (campo 100×160): la prima squadra in basso, la seconda in alto */
+const PITCH_Y = { a: [146, 127, 108, 90], b: [13, 32, 51, 69] };
+function pitchPlaces(ids, roles, side) {
+  const ys = PITCH_Y[side];
+  const byRow = [[], [], [], []];
+  ids.forEach((id) => { const r = PITCH_ROWS[roles[id]]; byRow[r == null ? 2 : r].push(id); });
+  const out = [];
+  byRow.forEach((row, ri) => {
+    const n = row.length, gap = Math.min(23, 86 / Math.max(1, n));
+    row.forEach((id, k) => out.push({ id, x: 50 + (k - (n - 1) / 2) * gap, y: ys[ri] }));
+  });
+  return out;
+}
+/* la maglietta (24×24) e le linee del campo, uguali sullo schermo e nelle immagini da condividere */
+const SHIRT_D = 'M8.2 3 3.6 5.6 1.8 10.2l3.2 1.6V21h14v-9.2l3.2-1.6-1.8-4.6L15.8 3c-.7 1.7-2.1 2.7-3.8 2.7S8.9 4.7 8.2 3Z';
+const SHIRT_K = 0.62;
+const PITCH_LINES = [
+  'M3 3h94v154H3Z', 'M3 80h94', 'M24 3v19h52V3', 'M37 3v7h26V3', 'M24 157v-19h52v19', 'M37 157v-7h26v7',
+  'M43.3 22A9 9 0 0 0 56.7 22', 'M43.3 138A9 9 0 0 1 56.7 138',
+  'M5 3A2 2 0 0 1 3 5', 'M95 3A2 2 0 0 0 97 5', 'M3 155A2 2 0 0 1 5 157', 'M97 155A2 2 0 0 0 95 157',
+];
+const pitchShort = (s) => (s.length > 11 ? s.slice(0, 10) + '…' : s);
+const photoOf = (p) => (p && typeof p.photo === 'string' && p.photo.startsWith('data:image/') ? p.photo : null);
+
+function PitchView({ m, D, wx }) {
   const C = useContext(Ctx);
   const { A, B, roles, info } = D;
   if (!A.length && !B.length) return null;
-  const ca = teamColor(m, 'a') || { hex: 'var(--ta)', ink: '#fff' };
-  const cb = teamColor(m, 'b') || { hex: 'var(--tb)', ink: '#fff' };
-  /* righe dal portiere all'attacco: la prima squadra in basso, la seconda in alto */
-  const yA = [151, 131, 111, 93], yB = [9, 29, 49, 67];
-  const place = (ids, ys) => {
-    const byRow = [[], [], [], []];
-    ids.forEach((id) => { const r = PITCH_ROWS[roles[id]]; byRow[r == null ? 2 : r].push(id); });
-    const out = [];
-    byRow.forEach((row, ri) => {
-      const n = row.length, gap = Math.min(23, 86 / Math.max(1, n));
-      row.forEach((id, k) => out.push({ id, x: 50 + (k - (n - 1) / 2) * gap, y: ys[ri] }));
-    });
-    return out;
-  };
+  const ca = teamColor(m, 'a') || { hex: '#2f6fdb', ink: '#fff' };
+  const cb = teamColor(m, 'b') || { hex: '#d9483b', ink: '#fff' };
   const dot = (pt, c, side) => {
     const x = info(pt.id);
-    const photo = x.p && typeof x.p.photo === 'string' && x.p.photo.startsWith('data:image/') ? x.p.photo : null;
+    const photo = photoOf(x.p);
+    const icon = !photo && x.p && x.p.icon;
+    const no = jerseyOf(x.p);
     const cid = 'pc-' + side + '-' + String(pt.id).replace(/[^a-zA-Z0-9]/g, '');
-    const label = x.name.length > 11 ? x.name.slice(0, 10) + '…' : x.name;
-    const ini = x.guest ? (x.name || '?').slice(0, 1).toUpperCase() : (x.p && x.p.icon) || initialsOf(x.p);
-    return html`<g key=${pt.id} class="pd" onClick=${() => x.p && C.go({ t: 'player', id: pt.id })}>
-      ${photo ? html`<defs><clipPath id=${cid}><circle cx=${pt.x} cy=${pt.y} r="5.4" /></clipPath></defs>
-        <circle cx=${pt.x} cy=${pt.y} r="6.3" fill=${c.hex} stroke="rgba(0,0,0,.35)" stroke-width="0.4" />
-        <image href=${photo} x=${pt.x - 5.4} y=${pt.y - 5.4} width="10.8" height="10.8" clip-path=${'url(#' + cid + ')'} preserveAspectRatio="xMidYMid slice" />`
-      : html`<circle cx=${pt.x} cy=${pt.y} r="6" fill=${c.hex} stroke="rgba(0,0,0,.35)" stroke-width="0.4" />
-        <text x=${pt.x} y=${pt.y + 1.5} text-anchor="middle" class="pd-i" fill=${c.ink}>${ini}</text>`}
-      <text x=${pt.x} y=${pt.y + 10.4} text-anchor="middle" class="pd-n">${label}</text>
+    const ini = x.guest ? (x.name || '?').slice(0, 1).toUpperCase() : initialsOf(x.p);
+    const k = SHIRT_K;
+    /* al centro della maglia la foto o l'icona; senza nessuna delle due il numero, o le iniziali */
+    const big = !photo && !icon && no != null;
+    return html`<g key=${pt.id} class=${'pd' + (pt.id === C.uid ? ' me' : '')} onClick=${() => x.p && C.go({ t: 'player', id: pt.id })}>
+      <path d=${SHIRT_D} transform=${'translate(' + (pt.x - 12 * k) + ' ' + (pt.y - 12 * k) + ') scale(' + k + ')'} fill=${c.hex} class="pd-shirt" />
+      ${photo ? html`<defs><clipPath id=${cid}><circle cx=${pt.x} cy=${pt.y + 0.6} r="3.5" /></clipPath></defs>
+        <circle cx=${pt.x} cy=${pt.y + 0.6} r="3.95" fill="#fff" />
+        <image href=${photo} x=${pt.x - 3.5} y=${pt.y - 2.9} width="7" height="7" clip-path=${'url(#' + cid + ')'} preserveAspectRatio="xMidYMid slice" />`
+      : icon ? html`<text x=${pt.x} y=${pt.y + 2.2} text-anchor="middle" class="pd-e">${icon}</text>`
+      : html`<text x=${pt.x} y=${pt.y + (big ? 2.4 : 1.9)} text-anchor="middle" class=${big ? 'pd-big' : 'pd-i'} fill=${c.ink}>${big ? no : ini}</text>`}
+      ${no != null && !big && html`<circle cx=${pt.x + 4.7} cy=${pt.y + 4.3} r="2.45" fill=${c.ink} class="pd-nb" />
+        <text x=${pt.x + 4.7} y=${pt.y + 5.25} text-anchor="middle" class="pd-no" fill=${c.hex}>${no}</text>`}
+      <text x=${pt.x} y=${pt.y + 10.6} text-anchor="middle" class="pd-n">${pitchShort(x.name)}</text>
     </g>`;
   };
-  const ptsA = place(A, yA), ptsB = place(B, yB);
+  const ptsA = pitchPlaces(A, roles, 'a'), ptsB = pitchPlaces(B, roles, 'b');
   const pa = A.map((i) => info(i).part), pb = B.map((i) => info(i).part);
   const ev = Engine.evaluate(pa, pb, roles, C.aff);
   return html`<div class="stack">
     <div class="pitch-h"><${TeamTag} m=${m} side="b" /><span class="small muted">${ev.b.label || ''} · ${r0(ev.b.mean)}</span></div>
     <div class="pitch-wrap">
       <svg class="pitch" viewBox="0 0 100 160" role="img" aria-label=${'Schieramento: ' + teamName(m, 'a') + ' contro ' + teamName(m, 'b')}>
+        <defs>
+          <radialGradient id="pt-vig" cx="50%" cy="50%" r="75%"><stop offset="55%" stop-color="#000" stop-opacity="0" /><stop offset="100%" stop-color="#000" stop-opacity="0.28" /></radialGradient>
+          <pattern id="pt-net" width="1.2" height="1.2" patternUnits="userSpaceOnUse"><path d="M0 0H1.2M0 0V1.2" stroke="rgba(255,255,255,.55)" stroke-width="0.18" fill="none" /></pattern>
+        </defs>
         <rect x="0" y="0" width="100" height="160" class="pt-bg" />
-        ${[0, 1, 2, 3, 4, 5, 6, 7].map((k) => html`<rect key=${k} x="0" y=${k * 20} width="100" height="10" class="pt-stripe" />`)}
+        ${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => k % 2 === 0 && html`<rect key=${k} x="0" y=${k * 16} width="100" height="16" class="pt-stripe" />`)}
+        <rect x="42" y="0.4" width="16" height="2.6" fill="url(#pt-net)" class="pt-goal" />
+        <rect x="42" y="157" width="16" height="2.6" fill="url(#pt-net)" class="pt-goal" />
         <g class="pt-l">
-          <rect x="3" y="3" width="94" height="154" rx="1" />
-          <line x1="3" y1="80" x2="97" y2="80" />
+          ${PITCH_LINES.map((d) => html`<path key=${d} d=${d} />`)}
           <circle cx="50" cy="80" r="11" />
-          <circle cx="50" cy="80" r="0.8" class="pt-dot" />
-          <rect x="24" y="3" width="52" height="19" />
-          <rect x="37" y="3" width="26" height="7" />
-          <rect x="24" y="138" width="52" height="19" />
-          <rect x="37" y="150" width="26" height="7" />
         </g>
+        <circle cx="50" cy="80" r="0.8" class="pt-dot" />
+        <circle cx="50" cy="16" r="0.6" class="pt-dot" />
+        <circle cx="50" cy="144" r="0.6" class="pt-dot" />
+        <rect x="0" y="0" width="100" height="160" fill="url(#pt-vig)" pointer-events="none" />
         ${ptsB.map((pt) => dot(pt, cb, 'b'))}
         ${ptsA.map((pt) => dot(pt, ca, 'a'))}
       </svg>
     </div>
     <div class="pitch-h"><${TeamTag} m=${m} side="a" /><span class="small muted">${ev.a.label || ''} · ${r0(ev.a.mean)}</span></div>
     <div class="tiny faint">Portiere vicino alla porta, poi difesa, centrocampo e attacco, con il modulo scelto dall'app${m.status === 'played' ? ' per la partita' : ''}. Tocca un giocatore per vedere la sua scheda.</div>
+    ${m.status === 'played'
+      ? Engine.hasResult(m) && html`<button class="btn block" onClick=${() => openResultShare(C, m, C.stats.mvps[m.id] || Engine.mvpResult(m, C.mvp, Date.now()))}><${Icon} n="share" s="16" /> Condividi il risultato</button>`
+      : html`<button class="btn block" onClick=${() => openPosterShare(C, m, D, wx)}><${Icon} n="image" s="16" /> Condividi la locandina</button>`}
   </div>`;
 }
 
@@ -3275,34 +3377,56 @@ const fmtAffRec = (w, d) => [w ? plural(w, 'vittoria', 'vittorie') : '', d ? plu
 
 /* ============================================================
    APP: la card in stile FIFA a tutto schermo (si gira toccandola: davanti le aree, dietro tutte le voci)
+   Entrata breve ogni volta; lunga, con i raggi di luce, per le card d'oro, l'MVP dell'ultima partita
+   e quando il punteggio è salito dall'ultima volta che la si è aperta su questo telefono.
    ============================================================ */
 function FifaOverlay({ pid, all, onClose }) {
   const C = useContext(Ctx);
   const [flip, setFlip] = useState(false);
   const p = C.playersById[pid];
   const r = p && (all ? C.ratedAll : C.rated)[pid];
+  const [fx] = useState(() => {
+    if (!p || !r) return { long: false };
+    const cur = r0(r.ovr);
+    const key = 'sc-ovr-' + (all ? 'all' : C.gid || 'x') + '-' + pid;
+    const prev = Number(readLS(key, '0')) || 0;
+    writeLS(key, String(cur));
+    const up = prev > 0 && cur > prev ? { from: prev, to: cur } : null;
+    const mvp = isLastMvp(C, pid);
+    const gold = Engine.tierOf(r.ovr) === 'gold';
+    return { long: !reducedMotion() && !!(up || mvp || gold), up, mvp, gold };
+  });
+  /* 'intro' mentre entra, 'done' a fine animazione, 'skip' se la si tocca prima */
+  const [phase, setPhase] = useState(fx.long ? 'intro' : 'done');
   useEffect(() => {
     const k = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', k);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.removeEventListener('keydown', k); document.body.style.overflow = prev; };
+    const t = fx.long ? setTimeout(() => setPhase((ph) => (ph === 'intro' ? 'done' : ph)), 2100) : 0;
+    return () => { document.removeEventListener('keydown', k); document.body.style.overflow = prev; clearTimeout(t); };
   }, []);
   if (!p || !r) return null;
-  const tier = Engine.tierOf(r.ovr);
+  const tier = fx.mvp ? 'mvpc' : Engine.tierOf(r.ovr);
   const gk = p.role === 'POR';
-  const photo = typeof p.photo === 'string' && p.photo.startsWith('data:image/') ? p.photo : null;
+  const photo = photoOf(p);
   const age = ageOf(p);
   const sub = [C.gid && !all && C.group ? C.group.name : 'Stats generali', p.loc && p.loc.name, age && age + ' anni'].filter(Boolean).join(' · ');
   const nick = (dispName(p) || '').toUpperCase();
-  return html`<div class="fifa-ov" role="dialog" aria-modal="true" aria-label=${'Card di ' + dispName(p)} onClick=${onClose}>
+  const tag = fx.up ? 'Punteggio salito: ' + fx.up.from + ' → ' + fx.up.to : fx.mvp ? 'MVP dell\'ultima partita' : fx.long && fx.gold ? 'Card d\'oro' : '';
+  const tap = (e) => { e.stopPropagation(); if (phase === 'intro') { setPhase('skip'); return; } setFlip(!flip); };
+  const mine = pid === C.uid;
+  return html`<div class=${'fifa-ov' + (fx.long ? ' long' : '')} role="dialog" aria-modal="true" aria-label=${'Card di ' + dispName(p)} onClick=${onClose}>
+    ${fx.long && html`<div class=${'fifa-rays ' + tier + (phase === 'skip' ? ' skip' : '')} aria-hidden="true"><i></i></div>`}
+    ${fx.long && phase === 'intro' && html`<div class="fifa-flash" aria-hidden="true"></div>`}
     <button class="fifa-x" aria-label="Chiudi" onClick=${onClose}><${Icon} n="x" /></button>
-    <div class=${'fifa-flip' + (flip ? ' on' : '')} onClick=${(e) => { e.stopPropagation(); setFlip(!flip); }} role="button" tabindex="0" aria-label="Gira la card"
-      onKeyDown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFlip(!flip); } }}>
+    <div class=${'fifa-flip' + (flip ? ' on' : '') + (fx.long ? ' walk' : '') + (phase === 'skip' ? ' skip' : '')} onClick=${tap} role="button" tabindex="0" aria-label="Gira la card"
+      onKeyDown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(e); } }}>
       <div class=${'fifa ' + tier + ' front'}>
         <div class="fifa-shine"></div>
+        ${fx.mvp && html`<span class="fifa-mvp"><${Icon} n="trophy" s="13" /> MVP</span>`}
         <div class="fifa-top">
-          <div class="fifa-ovr"><b class="num">${r0(r.ovr)}</b><span>${p.role}${p.role2 ? html`<em>${p.role2}</em>` : ''}</span></div>
+          <div class="fifa-ovr"><b class="num">${r0(r.ovr)}</b><span>${p.role}${p.role2 ? html`<em>${p.role2}</em>` : ''}</span>${jerseyOf(p) != null && html`<i class="fifa-no num" title="Numero di maglia">${jerseyOf(p)}</i>`}</div>
           <div class="fifa-ph">${photo ? html`<img src=${photo} alt="" />` : html`<span class="fifa-ic">${p.icon || initialsOf(p)}</span>`}</div>
         </div>
         <div class="fifa-name">${nick}</div>
@@ -3324,7 +3448,9 @@ function FifaOverlay({ pid, all, onClose }) {
         <div class="fifa-foot">${r.nPeers ? 'Media di ' + plural(r.nPeers, 'valutazione', 'valutazioni') + ' e dell\'autovalutazione' : 'Per ora solo l\'autovalutazione'}</div>
       </div>
     </div>
-    <div class="fifa-hint">Tocca la card per girarla · tocca fuori per chiudere</div>
+    ${tag && html`<div class=${'fifa-tag' + (fx.long ? ' late' : '')}>${tag}</div>`}
+    ${mine && html`<button class="fifa-share" onClick=${(e) => { e.stopPropagation(); openCardShare(C, p, r, all, tier === 'mvpc' ? 'mvp' : tier); }}><${Icon} n="share" s="16" /> Condividi la tua card</button>`}
+    <div class="fifa-hint">${phase === 'intro' ? 'Tocca la card per saltare l\'animazione' : 'Tocca la card per girarla · tocca fuori per chiudere'}</div>
   </div>`;
 }
 
@@ -3549,6 +3675,18 @@ function BadgeSection({ pid }) {
   const list = badgesOf(pid, C);
   const done = list.filter((b) => b.done).length;
   const top = showcaseOf(list).slice(0, SHOWCASE_N);
+  /* i propri traguardi nuovi: coriandoli e un avviso, una volta sola su questo telefono */
+  useEffect(() => {
+    if (pid !== C.uid || !C.gid) return undefined;
+    const fresh = celebrateOnce('sc-cf-badges-' + C.gid, list.filter((b) => b.done && isNewBadge(b)).map((b) => b.k));
+    if (!fresh.length) return undefined;
+    const names = fresh.map((k) => (BADGES.find((b) => b.k === k) || {}).n).filter(Boolean);
+    const t = setTimeout(() => {
+      fireConfetti();
+      C.flash(names.length === 1 ? 'Nuovo traguardo: ' + names[0] + '!' : plural(names.length, 'nuovo traguardo', 'nuovi traguardi') + ': ' + names.join(', '));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [done]);
   return html`<section class="sec">
     <div class="sec-h"><h2 class="h3">Traguardi</h2><button class="link" onClick=${() => C.go({ t: 'badges', id: pid })}>Vedi tutti</button></div>
     <div class="card stack-12">
@@ -3607,6 +3745,495 @@ function BadgeSheet({ pid, bk, onClose }) {
 
 
 /* ============================================================
+   APP: effetti (coriandoli per MVP e traguardi, entrata lunga della card)
+   Con "Riduci movimento" attivo sul telefono non parte niente.
+   ============================================================ */
+const reducedMotion = () => { try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } };
+
+/* coriandoli su tutto lo schermo, poi spariscono da soli */
+function fireConfetti(opts) {
+  if (reducedMotion() || typeof document === 'undefined') return;
+  const o = opts || {};
+  const cv = document.createElement('canvas');
+  cv.className = 'confetti';
+  cv.setAttribute('aria-hidden', 'true');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = window.innerWidth, H = window.innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  document.body.appendChild(cv);
+  const ctx = cv.getContext('2d');
+  if (!ctx) { cv.remove(); return; }
+  ctx.scale(dpr, dpr);
+  const colors = o.colors || ['#f1c22f', '#3ddc97', '#ff6b6b', '#4dabf7', '#ffffff', '#b197fc', '#ffa94d'];
+  const N = o.n || 150;
+  const parts = [];
+  for (let i = 0; i < N; i++) {
+    /* due getti dagli angoli in basso, verso il centro */
+    const left = i % 2 === 0;
+    const a = 0.25 + Math.random() * 0.55; /* inclinazione rispetto alla verticale */
+    const sp = (11 + Math.random() * 9) * Math.sqrt(Math.max(0.6, H / 800));
+    parts.push({
+      x: left ? -10 : W + 10, y: H * 0.88,
+      vx: Math.sin(a) * sp * (left ? 1 : -1), vy: -Math.cos(a) * sp,
+      s: 6 + Math.random() * 6, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.35,
+      c: colors[i % colors.length], round: Math.random() < 0.25, wob: Math.random() * 6.28,
+    });
+  }
+  const DUR = o.ms || 2600;
+  let t0 = 0, last = 0;
+  const step = (t) => {
+    if (!t0) { t0 = t; last = t; }
+    const dt = Math.min(2.5, (t - last) / 16.67); last = t;
+    const k = (t - t0) / DUR;
+    ctx.clearRect(0, 0, W, H);
+    const fade = k > 0.72 ? Math.max(0, 1 - (k - 0.72) / 0.28) : 1;
+    for (const p of parts) {
+      p.vy += 0.34 * dt; p.vx *= Math.pow(0.985, dt); p.vy *= Math.pow(0.992, dt);
+      p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; p.wob += 0.12 * dt;
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.c;
+      if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.s * 0.42, 0, Math.PI * 2); ctx.fill(); }
+      else ctx.fillRect(-p.s / 2, -p.s * 0.22 * Math.abs(Math.cos(p.wob)) - 1, p.s, p.s * 0.44 * Math.abs(Math.cos(p.wob)) + 2);
+      ctx.restore();
+    }
+    if (k < 1) requestAnimationFrame(step); else cv.remove();
+  };
+  requestAnimationFrame(step);
+}
+
+/* una festa sola per dispositivo: ricorda le chiavi già festeggiate */
+function celebrateOnce(store, keys) {
+  let seen = [];
+  try { seen = JSON.parse(readLS(store, '[]')) || []; } catch (e) { seen = []; }
+  const fresh = keys.filter((k) => !seen.includes(k));
+  if (fresh.length) writeLS(store, JSON.stringify(seen.concat(fresh).slice(-300)));
+  return fresh;
+}
+
+/* l'MVP dell'ultima partita del gruppo con il voto chiuso */
+function lastMvpMatch(C) {
+  let best = null;
+  for (const m of C.matches) {
+    const mv = m.status === 'played' && C.stats.mvps[m.id];
+    if (!mv || !mv.closed || !mv.winners.length) continue;
+    if (!best || mStart(m) > mStart(best)) best = m;
+  }
+  return best;
+}
+const isLastMvp = (C, pid) => { const m = C.gid && lastMvpMatch(C); return !!(m && C.stats.mvps[m.id].winners.includes(pid)); };
+
+
+/* ============================================================
+   APP: immagini da condividere (la propria card, la locandina della partita, il risultato)
+   Disegnate qui sul telefono, in verticale 1080×1920: vanno bene su WhatsApp e nelle storie.
+   ============================================================ */
+const IMG_W = 1080, IMG_H = 1920;
+const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+function canvasFonts() {
+  const cs = getComputedStyle(document.documentElement);
+  const pick = (v, d) => ((cs.getPropertyValue(v) || '').trim() || d);
+  return { disp: pick('--f-display', 'system-ui, sans-serif'), body: pick('--f-body', 'system-ui, sans-serif') };
+}
+/* aspetta i caratteri dell'app, ma non per sempre (senza rete si usano quelli del telefono) */
+async function ensureFonts() {
+  if (!document.fonts || !document.fonts.load) return;
+  const t = new Promise((res) => setTimeout(res, 1500));
+  try { await Promise.race([Promise.all([document.fonts.load('800 80px "Bricolage Grotesque"'), document.fonts.load('600 40px "Geist"')]), t]); } catch (e) { /* pazienza */ }
+}
+function newCanvas() {
+  const cv = document.createElement('canvas');
+  cv.width = IMG_W; cv.height = IMG_H;
+  return cv;
+}
+function loadImg(src) {
+  return new Promise((res) => { if (!src) { res(null); return; } const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+}
+const F = (w, px, fam) => w + ' ' + Math.round(px) + 'px ' + fam;
+/* testo che si restringe finché non entra */
+function fitFont(ctx, text, w, px, fam, maxW, minPx) {
+  let s = px;
+  ctx.font = F(w, s, fam);
+  while (s > (minPx || 18) && ctx.measureText(text).width > maxW) { s -= 2; ctx.font = F(w, s, fam); }
+  return s;
+}
+/* testo spaziato (non tutti i telefoni hanno letterSpacing sul canvas) */
+function spaced(ctx, text, x, y, gap, align) {
+  const chars = Array.from(text);
+  const ws = chars.map((c) => ctx.measureText(c).width);
+  const tot = ws.reduce((a, b) => a + b, 0) + gap * Math.max(0, chars.length - 1);
+  let cx = align === 'left' ? x : align === 'right' ? x - tot : x - tot / 2;
+  const prev = ctx.textAlign;
+  ctx.textAlign = 'left';
+  chars.forEach((c, i) => { ctx.fillText(c, cx, y); cx += ws[i] + gap; });
+  ctx.textAlign = prev;
+  return tot;
+}
+function wrapLines(ctx, text, maxW) {
+  const words = String(text || '').split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+function rrect(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y); ctx.lineTo(x + w - rr, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+  ctx.lineTo(x + w, y + h - rr); ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+  ctx.lineTo(x + rr, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+  ctx.lineTo(x, y + rr); ctx.quadraticCurveTo(x, y, x + rr, y);
+  ctx.closePath();
+}
+/* immagine "a copertura" dentro un riquadro */
+function drawCover(ctx, im, x, y, w, h) {
+  const k = Math.max(w / im.width, h / im.height);
+  const iw = im.width * k, ih = im.height * k;
+  ctx.drawImage(im, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih);
+}
+let shirtPath = null;
+function drawShirt(ctx, cx, cy, size, fill, stroke) {
+  if (!shirtPath && typeof Path2D !== 'undefined') shirtPath = new Path2D(SHIRT_D);
+  ctx.save();
+  ctx.translate(cx - size / 2, cy - size / 2);
+  ctx.scale(size / 24, size / 24);
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke || 'rgba(0,0,0,0.42)';
+  ctx.lineWidth = 0.9;
+  ctx.lineJoin = 'round';
+  if (shirtPath) { ctx.fill(shirtPath); ctx.stroke(shirtPath); }
+  ctx.restore();
+}
+function darkBackground(ctx, glow) {
+  const g = ctx.createLinearGradient(0, 0, 0, IMG_H);
+  g.addColorStop(0, '#0b1610'); g.addColorStop(1, '#10261a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, IMG_W, IMG_H);
+  ctx.save();
+  ctx.globalAlpha = 0.035; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+  for (let x = -IMG_H; x < IMG_W; x += 44) { ctx.beginPath(); ctx.moveTo(x, IMG_H); ctx.lineTo(x + IMG_H * 0.75, 0); ctx.stroke(); }
+  ctx.restore();
+  if (glow) {
+    const rg = ctx.createRadialGradient(IMG_W / 2, glow.y, 40, IMG_W / 2, glow.y, glow.r);
+    rg.addColorStop(0, glow.c); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, IMG_W, IMG_H);
+  }
+}
+function brandLine(ctx, fonts, y, text) {
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.textAlign = 'center';
+  fitFont(ctx, text, 700, 32, fonts.body, 920, 20);
+  spaced(ctx, text, IMG_W / 2, y, 5, 'center');
+}
+const upperIt = (s) => String(s || '').toLocaleUpperCase('it-IT');
+/* il gruppo che si chiama come l'app non si ripete due volte */
+const groupTag = (C) => (C.group && normTxt(C.group.name) !== 'algor bomber' ? ' · ' + upperIt(C.group.name) : '');
+const canvasToBlob = (cv) => new Promise((res) => cv.toBlob((b) => res(b), 'image/png'));
+
+/* ---------- la card FIFA ---------- */
+const CARD_PAL = {
+  gold: { c1: '#f7e7a1', c2: '#d8ad45', c3: '#8f6a1f', ink: '#34260a', line: 'rgba(52,38,10,0.28)', glow: 'rgba(255,205,80,0.38)' },
+  silver: { c1: '#fbfcfd', c2: '#c7cdd3', c3: '#7f888f', ink: '#1f2428', line: 'rgba(31,36,40,0.25)', glow: 'rgba(210,225,240,0.3)' },
+  bronze: { c1: '#f6d6b4', c2: '#c98b55', c3: '#7c4a26', ink: '#33200f', line: 'rgba(51,32,15,0.28)', glow: 'rgba(230,150,90,0.3)' },
+  mvp: { c1: '#3f7253', c2: '#1d3527', c3: '#0d1912', ink: '#f3dfa2', line: 'rgba(243,223,162,0.32)', glow: 'rgba(241,194,47,0.36)' },
+};
+async function drawCardImage({ p, r, pal, sub, label }) {
+  await ensureFonts();
+  const fonts = canvasFonts();
+  const P = CARD_PAL[pal] || CARD_PAL.bronze;
+  const cv = newCanvas(), ctx = cv.getContext('2d');
+  const cw = 780, ch = 1170, x0 = (IMG_W - cw) / 2, y0 = 330;
+  darkBackground(ctx, { y: y0 + ch * 0.45, r: 760, c: P.glow });
+  /* raggi di luce dietro la card */
+  ctx.save();
+  ctx.translate(IMG_W / 2, y0 + ch * 0.45);
+  ctx.fillStyle = P.glow;
+  ctx.globalAlpha = 0.45;
+  for (let i = 0; i < 18; i++) { ctx.rotate((Math.PI * 2) / 18); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-60, -1300); ctx.lineTo(60, -1300); ctx.closePath(); ctx.fill(); }
+  ctx.restore();
+  brandLine(ctx, fonts, 170, 'ALGOR BOMBER');
+  if (sub && normTxt(sub) !== 'algor bomber') {
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    fitFont(ctx, sub, 600, 34, fonts.body, 900, 20);
+    ctx.textAlign = 'center'; ctx.fillText(sub, IMG_W / 2, 228);
+  }
+  /* la sagoma della card */
+  const poly = [[0.14, 0], [0.86, 0], [1, 0.07], [1, 0.88], [0.5, 1], [0, 0.88], [0, 0.07]];
+  const shape = () => { ctx.beginPath(); poly.forEach(([a, b], i) => { const X = x0 + a * cw, Y = y0 + b * ch; if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y); }); ctx.closePath(); };
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 70; ctx.shadowOffsetY = 30;
+  shape(); ctx.fillStyle = P.c2; ctx.fill();
+  ctx.restore();
+  ctx.save();
+  shape(); ctx.clip();
+  const rg = ctx.createRadialGradient(x0 + cw * 0.3, y0 + ch * 0.1, 10, x0 + cw * 0.3, y0 + ch * 0.1, cw * 1.25);
+  rg.addColorStop(0, P.c1); rg.addColorStop(0.55, P.c2); rg.addColorStop(1, P.c3);
+  ctx.fillStyle = rg; ctx.fillRect(x0, y0, cw, ch);
+  ctx.globalAlpha = 0.09; ctx.strokeStyle = '#fff'; ctx.lineWidth = 5;
+  for (let x = x0 - ch; x < x0 + cw + ch; x += 44) { ctx.beginPath(); ctx.moveTo(x, y0 + ch); ctx.lineTo(x + ch * 0.47, y0); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  const sh = ctx.createLinearGradient(x0, y0, x0 + cw, y0 + ch * 0.6);
+  sh.addColorStop(0.25, 'rgba(255,255,255,0)'); sh.addColorStop(0.42, 'rgba(255,255,255,0.32)'); sh.addColorStop(0.55, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sh; ctx.fillRect(x0, y0, cw, ch);
+  ctx.restore();
+  ctx.fillStyle = P.ink; ctx.strokeStyle = P.line;
+  /* punteggio, ruoli e numero */
+  const lx = x0 + 70 + 100;
+  ctx.textAlign = 'center';
+  ctx.font = F(800, 206, fonts.disp); ctx.fillText(String(r0(r.ovr)), lx, y0 + 268);
+  ctx.font = F(800, 56, fonts.body); spaced(ctx, p.role || '', lx, y0 + 342, 5, 'center');
+  let ly = y0 + 342;
+  if (p.role2) { ctx.globalAlpha = 0.7; ctx.font = F(800, 40, fonts.body); spaced(ctx, p.role2, lx, ly + 56, 4, 'center'); ctx.globalAlpha = 1; ly += 56; }
+  const no = jerseyOf(p);
+  if (no != null) {
+    ctx.font = F(800, 46, fonts.disp);
+    const t = 'N° ' + no, tw = ctx.measureText(t).width + 40;
+    ctx.lineWidth = 4; rrect(ctx, lx - tw / 2, ly + 40, tw, 66, 16); ctx.stroke();
+    ctx.fillText(t, lx, ly + 90);
+  }
+  /* foto, icona o iniziali */
+  const pw = 400, px = x0 + cw - 70 - pw, py = y0 + 92;
+  const photoShape = () => {
+    const R = pw / 2, rb = 48;
+    ctx.beginPath(); ctx.moveTo(px, py + R); ctx.arc(px + R, py + R, R, Math.PI, 0);
+    ctx.lineTo(px + pw, py + pw - rb); ctx.quadraticCurveTo(px + pw, py + pw, px + pw - rb, py + pw);
+    ctx.lineTo(px + rb, py + pw); ctx.quadraticCurveTo(px, py + pw, px, py + pw - rb); ctx.closePath();
+  };
+  ctx.save(); photoShape(); ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fill(); ctx.clip();
+  const im = await loadImg(photoOf(p));
+  if (im) drawCover(ctx, im, px, py, pw, pw);
+  else if (p.icon) { ctx.fillStyle = '#000'; ctx.font = Math.round(pw * 0.58) + 'px ' + EMOJI_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.icon, px + pw / 2, py + pw * 0.54); ctx.textBaseline = 'alphabetic'; }
+  else { ctx.fillStyle = P.ink; ctx.font = F(800, pw * 0.42, fonts.disp); ctx.textAlign = 'center'; ctx.fillText(initialsOf(p), px + pw / 2, py + pw * 0.66); }
+  ctx.restore();
+  ctx.save(); photoShape(); ctx.lineWidth = 5; ctx.strokeStyle = P.line; ctx.stroke(); ctx.restore();
+  /* nome */
+  ctx.fillStyle = P.ink; ctx.textAlign = 'center';
+  const nick = upperIt(dispName(p));
+  fitFont(ctx, nick, 800, 98, fonts.disp, cw - 150, 40);
+  ctx.fillText(nick, IMG_W / 2, y0 + 650);
+  ctx.globalAlpha = 0.75; fitFont(ctx, fullName(p), 500, 40, fonts.body, cw - 160, 22); ctx.fillText(fullName(p), IMG_W / 2, y0 + 708); ctx.globalAlpha = 1;
+  ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0 + 90, y0 + 755); ctx.lineTo(x0 + cw - 90, y0 + 755); ctx.stroke();
+  /* le 5 aree: 3 sopra e 2 sotto */
+  const gk = p.role === 'POR';
+  const cells = AREAS.map((a) => ({ v: String(r0(r.areas[a.k])), c: a.code, on: gk ? a.k === 'por' : a.k !== 'por' }));
+  const pos = [[IMG_W / 2 - 220, y0 + 860], [IMG_W / 2, y0 + 860], [IMG_W / 2 + 220, y0 + 860], [IMG_W / 2 - 110, y0 + 958], [IMG_W / 2 + 110, y0 + 958]];
+  cells.forEach((cl, i) => {
+    const [cx, cy] = pos[i];
+    ctx.globalAlpha = cl.on ? 1 : 0.5;
+    ctx.font = F(800, 78, fonts.disp); const wv = ctx.measureText(cl.v).width;
+    ctx.font = F(700, 36, fonts.body); const wc = ctx.measureText(cl.c).width;
+    const sx = cx - (wv + 14 + wc) / 2;
+    ctx.textAlign = 'left';
+    ctx.font = F(800, 78, fonts.disp); ctx.fillText(cl.v, sx, cy);
+    ctx.globalAlpha = (cl.on ? 1 : 0.5) * 0.8; ctx.font = F(700, 36, fonts.body); ctx.fillText(cl.c, sx + wv + 14, cy);
+  });
+  ctx.globalAlpha = 0.75; ctx.textAlign = 'center';
+  const foot = [label, p.loc && p.loc.name, ageOf(p) && ageOf(p) + ' anni'].filter(Boolean).join(' · ');
+  fitFont(ctx, foot, 600, 34, fonts.body, cw * 0.66, 20); ctx.fillText(foot, IMG_W / 2, y0 + ch * 0.865);
+  ctx.globalAlpha = 1;
+  /* sotto la card */
+  ctx.fillStyle = '#fff'; ctx.font = F(800, 42, fonts.disp); spaced(ctx, pal === 'mvp' ? 'MVP DELL\'ULTIMA PARTITA' : 'LA MIA CARD', IMG_W / 2, y0 + ch + 120, 6, 'center');
+  const d = new Date();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = F(500, 34, fonts.body); ctx.textAlign = 'center';
+  ctx.fillText(d.getDate() + ' ' + MON_FULL[d.getMonth()] + ' ' + d.getFullYear(), IMG_W / 2, y0 + ch + 172);
+  return cv;
+}
+
+/* ---------- il campo, per la locandina ---------- */
+function drawPitch(ctx, fonts, X, Y, s, m, D) {
+  const W = 100 * s, H = 160 * s;
+  ctx.save();
+  rrect(ctx, X, Y, W, H, 34); ctx.clip();
+  ctx.fillStyle = '#2c8a4b'; ctx.fillRect(X, Y, W, H);
+  ctx.fillStyle = '#349a57';
+  for (let k = 0; k < 10; k += 2) ctx.fillRect(X, Y + k * 16 * s, W, 16 * s);
+  ctx.save();
+  ctx.translate(X, Y); ctx.scale(s, s);
+  ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.lineWidth = 0.55; ctx.lineJoin = 'round';
+  if (typeof Path2D !== 'undefined') PITCH_LINES.forEach((d) => ctx.stroke(new Path2D(d)));
+  ctx.beginPath(); ctx.arc(50, 80, 11, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  [[50, 80, 0.8], [50, 16, 0.6], [50, 144, 0.6]].forEach(([x, y, rr]) => { ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill(); });
+  ctx.lineWidth = 0.35; ctx.strokeRect(42, 0.4, 16, 2.6); ctx.strokeRect(42, 157, 16, 2.6);
+  ctx.restore();
+  const vg = ctx.createRadialGradient(X + W / 2, Y + H / 2, W * 0.35, X + W / 2, Y + H / 2, H * 0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.3)');
+  ctx.fillStyle = vg; ctx.fillRect(X, Y, W, H);
+  const ca = teamColor(m, 'a') || { hex: '#2f6fdb', ink: '#fff' }, cb = teamColor(m, 'b') || { hex: '#d9483b', ink: '#fff' };
+  const put = (pts, c) => pts.forEach((pt) => {
+    const x = D.info(pt.id);
+    const cx = X + pt.x * s, cy = Y + pt.y * s;
+    drawShirt(ctx, cx, cy, 24 * SHIRT_K * s, c.hex);
+    const no = jerseyOf(x.p);
+    ctx.textAlign = 'center';
+    if (no != null) { ctx.fillStyle = c.ink; ctx.font = F(800, 5.6 * s, fonts.disp); ctx.fillText(String(no), cx, cy + 2.4 * s); }
+    else if (x.p && x.p.icon) { ctx.fillStyle = '#000'; ctx.font = Math.round(4.6 * s) + 'px ' + EMOJI_FONT; ctx.fillText(x.p.icon, cx, cy + 2.2 * s); }
+    else { ctx.fillStyle = c.ink; ctx.font = F(700, 3.7 * s, fonts.body); ctx.fillText(x.guest ? (x.name || '?').slice(0, 1).toUpperCase() : initialsOf(x.p), cx, cy + 1.9 * s); }
+    ctx.font = F(700, 3.5 * s, fonts.body);
+    ctx.lineWidth = 0.85 * s; ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineJoin = 'round';
+    const nm = pitchShort(x.name || '');
+    ctx.strokeText(nm, cx, cy + 10.6 * s); ctx.fillStyle = '#fff'; ctx.fillText(nm, cx, cy + 10.6 * s);
+  });
+  put(pitchPlaces(D.B, D.roles, 'b'), cb);
+  put(pitchPlaces(D.A, D.roles, 'a'), ca);
+  ctx.restore();
+}
+function teamLabel(ctx, fonts, m, side, x, y, right) {
+  const c = teamColor(m, side) || { hex: side === 'a' ? '#2f6fdb' : '#d9483b' };
+  drawShirt(ctx, x + 30, y - 16, 64, c.hex, 'rgba(255,255,255,0.5)');
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.font = F(800, 48, fonts.disp);
+  ctx.fillText(upperIt(teamName(m, side)), x + 76, y);
+  if (right) { ctx.fillStyle = 'rgba(255,255,255,0.62)'; ctx.textAlign = 'right'; ctx.font = F(600, 34, fonts.body); ctx.fillText(right, IMG_W - x, y); }
+}
+
+/* ---------- la locandina prima della partita ---------- */
+async function drawMatchPoster({ m, C, D, wx }) {
+  await ensureFonts();
+  const fonts = canvasFonts();
+  const cv = newCanvas(), ctx = cv.getContext('2d');
+  darkBackground(ctx, { y: 260, r: 700, c: 'rgba(61,220,151,0.16)' });
+  brandLine(ctx, fonts, 112, 'ALGOR BOMBER' + groupTag(C));
+  const d = mDate(m);
+  ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+  ctx.font = F(800, 104, fonts.disp); ctx.fillText(upperIt(DOW_FULL[d.getDay()]), IMG_W / 2, 222);
+  ctx.fillStyle = '#3ddc97'; ctx.font = F(800, 92, fonts.disp); ctx.fillText(upperIt(d.getDate() + ' ' + MON_FULL[d.getMonth()]), IMG_W / 2, 318);
+  const w = wx && wxInfo(wx.code);
+  const line = [m.time || 'Ora da definire', fmtOf(m).name, w ? w.i + ' ' + Math.round(wx.temp) + '°' : ''].filter(Boolean).join('  ·  ');
+  ctx.fillStyle = 'rgba(255,255,255,0.92)'; fitFont(ctx, line, 600, 44, fonts.body, 960, 24); ctx.fillText(line, IMG_W / 2, 392);
+  ctx.fillStyle = 'rgba(255,255,255,0.68)'; fitFont(ctx, m.field || 'Campo da definire', 500, 38, fonts.body, 940, 22); ctx.fillText(m.field || 'Campo da definire', IMG_W / 2, 448);
+  const pa = D.A.map((i) => D.info(i).part), pb = D.B.map((i) => D.info(i).part);
+  const ev = Engine.evaluate(pa, pb, D.roles, C.aff);
+  const s = 6.94, PW = 100 * s, X = (IMG_W - PW) / 2, Y = 560;
+  teamLabel(ctx, fonts, m, 'b', X, 528, ev.b.label || '');
+  drawPitch(ctx, fonts, X, Y, s, m, D);
+  teamLabel(ctx, fonts, m, 'a', X, Y + 160 * s + 74, ev.a.label || '');
+  if (D.A.length && D.B.length) {
+    const pA = Math.round(winProb(ev.a.mean, ev.b.mean) * 100);
+    const t = 'Equilibrio ' + ev.balance + '%  ·  pronostico ' + teamName(m, 'a') + ' ' + pA + '% – ' + teamName(m, 'b') + ' ' + (100 - pA) + '%';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.textAlign = 'center'; fitFont(ctx, t, 600, 32, fonts.body, 960, 20); ctx.fillText(t, IMG_W / 2, 1858);
+  }
+  return cv;
+}
+
+/* ---------- il risultato dopo la partita ---------- */
+function scorerLines(m, C, side) {
+  const res = m.result, fin = m.final || {};
+  if (!res || !res.ev) return [];
+  const team = new Set(side === 'a' ? fin.a || [] : fin.b || []), other = new Set(side === 'a' ? fin.b || [] : fin.a || []);
+  const out = [];
+  Object.keys(res.ev).forEach((id) => { const e = res.ev[id] || {}; if (team.has(id) && e.g > 0) out.push({ t: nameFor(id, m, C), n: e.g }); });
+  out.sort((x, y) => y.n - x.n);
+  Object.keys(res.ev).forEach((id) => { const e = res.ev[id] || {}; if (other.has(id) && e.og > 0) out.push({ t: 'aut. ' + nameFor(id, m, C), n: e.og }); });
+  return out.map((x) => x.t + (x.n > 1 ? '  ×' + x.n : ''));
+}
+async function drawResultPoster({ m, C, mv }) {
+  await ensureFonts();
+  const fonts = canvasFonts();
+  const cv = newCanvas(), ctx = cv.getContext('2d');
+  const ra = m.result.a, rb = m.result.b;
+  const winC = ra === rb ? null : teamColor(m, ra > rb ? 'a' : 'b');
+  darkBackground(ctx, { y: 660, r: 760, c: winC ? winC.hex + '55' : 'rgba(61,220,151,0.18)' });
+  brandLine(ctx, fonts, 112, 'ALGOR BOMBER' + groupTag(C));
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#3ddc97'; ctx.font = F(800, 42, fonts.disp); spaced(ctx, 'RISULTATO', IMG_W / 2, 214, 10, 'center');
+  ctx.fillStyle = '#fff'; ctx.font = F(800, 64, fonts.disp); ctx.fillText(dayLong(m), IMG_W / 2, 300);
+  const sub = [m.field || '', fmtOf(m).name].filter(Boolean).join('  ·  ');
+  ctx.fillStyle = 'rgba(255,255,255,0.68)'; fitFont(ctx, sub, 500, 36, fonts.body, 940, 20); ctx.fillText(sub, IMG_W / 2, 360);
+  /* maglie e punteggio */
+  const ca = teamColor(m, 'a') || { hex: '#2f6fdb' }, cb = teamColor(m, 'b') || { hex: '#d9483b' };
+  drawShirt(ctx, 168, 640, 210, ca.hex, 'rgba(255,255,255,0.55)');
+  drawShirt(ctx, IMG_W - 168, 640, 210, cb.hex, 'rgba(255,255,255,0.55)');
+  ctx.fillStyle = '#fff';
+  const score = ra + ' – ' + rb;
+  fitFont(ctx, score, 800, 200, fonts.disp, 430, 90); ctx.fillText(score, IMG_W / 2, 708);
+  ctx.font = F(800, 46, fonts.disp);
+  fitFont(ctx, upperIt(teamName(m, 'a')), 800, 46, fonts.disp, 290, 24); ctx.fillText(upperIt(teamName(m, 'a')), 168, 820);
+  fitFont(ctx, upperIt(teamName(m, 'b')), 800, 46, fonts.disp, 290, 24); ctx.fillText(upperIt(teamName(m, 'b')), IMG_W - 168, 820);
+  const verdict = ra === rb ? 'Pareggio' : 'Vincono i ' + teamName(m, ra > rb ? 'a' : 'b');
+  ctx.fillStyle = '#3ddc97'; ctx.font = F(700, 44, fonts.body); ctx.fillText(verdict, IMG_W / 2, 930);
+  /* marcatori */
+  const cols = [{ side: 'a', x: 290 }, { side: 'b', x: IMG_W - 290 }];
+  const anyGoals = cols.some((c) => scorerLines(m, C, c.side).length);
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(140, 1000); ctx.lineTo(IMG_W - 140, 1000); ctx.stroke();
+  if (anyGoals) {
+    cols.forEach((c) => {
+      const ls = scorerLines(m, C, c.side);
+      ctx.textAlign = 'center';
+      ls.slice(0, 7).forEach((t, i) => { ctx.fillStyle = '#fff'; fitFont(ctx, '⚽ ' + t, 600, 40, fonts.body, 440, 22); ctx.fillText('⚽ ' + t, c.x, 1080 + i * 62); });
+      if (ls.length > 7) { ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = F(600, 34, fonts.body); ctx.fillText('e altri ' + (ls.length - 7), c.x, 1080 + 7 * 62); }
+    });
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = F(500, 36, fonts.body); ctx.textAlign = 'center'; ctx.fillText('Marcatori non inseriti', IMG_W / 2, 1090);
+  }
+  /* MVP */
+  const yM = 1560;
+  ctx.textAlign = 'center';
+  if (mv && mv.closed && mv.winners.length) {
+    ctx.fillStyle = '#000'; ctx.font = '96px ' + EMOJI_FONT; ctx.fillText('🏆', IMG_W / 2, yM - 70);
+    ctx.fillStyle = '#f1c22f'; ctx.font = F(800, 40, fonts.disp); spaced(ctx, mv.winners.length > 1 ? 'MVP A PARI MERITO' : 'MVP', IMG_W / 2, yM, 8, 'center');
+    const names = joinNames(mv.winners.map((id) => nameFor(id, m, C)));
+    ctx.fillStyle = '#fff'; fitFont(ctx, names, 800, 88, fonts.disp, 940, 36); ctx.fillText(names, IMG_W / 2, yM + 100);
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = F(600, 40, fonts.body); ctx.fillText('MVP: votazione in corso', IMG_W / 2, yM);
+  }
+  const pred = m.final && m.final.pred;
+  if (pred) { ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = F(600, 32, fonts.body); ctx.fillText('Equilibrio previsto dall\'app: ' + pred.balance + '%', IMG_W / 2, 1858); }
+  return cv;
+}
+
+/* ---------- il foglio con l'anteprima: Condividi e Salva ---------- */
+function ShareImageSheet({ title, make, name, onClose }) {
+  const [st, setSt] = useState({ busy: true });
+  useEffect(() => {
+    let dead = false, url = null;
+    (async () => {
+      try {
+        const cv = await make();
+        const blob = await canvasToBlob(cv);
+        if (!blob) throw new Error('blob');
+        url = URL.createObjectURL(blob);
+        if (!dead) setSt({ busy: false, url, blob });
+      } catch (e) { if (!dead) setSt({ busy: false, err: true }); }
+    })();
+    return () => { dead = true; if (url) URL.revokeObjectURL(url); };
+  }, []);
+  const fileName = (name || 'algor-bomber') + '.png';
+  let file = null;
+  try { file = st.blob && typeof File !== 'undefined' ? new File([st.blob], fileName, { type: 'image/png' }) : null; } catch (e) { file = null; }
+  let canShare = false;
+  try { canShare = !!(file && navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) { canShare = false; }
+  const share = async () => { try { await navigator.share({ files: [file], title }); } catch (e) { /* annullato da chi condivide */ } };
+  const save = () => { const a = document.createElement('a'); a.href = st.url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove(); };
+  return html`<${Sheet} title=${title} onClose=${onClose}>
+    ${st.busy ? html`<div class="card empty small">Preparo l'immagine…</div>`
+      : st.err ? html`<div class="note bad"><${Icon} n="warn" s="16" /><span>Non sono riuscito a preparare l'immagine. Riprova tra poco.</span></div>`
+      : html`<img class="share-prev" src=${st.url} alt=${'Anteprima: ' + title} />
+        <div class="hs" style="gap:8px">
+          ${canShare && html`<button class="btn primary grow" onClick=${share}><${Icon} n="share" s="16" /> Condividi</button>`}
+          <button class=${'btn grow' + (canShare ? '' : ' primary')} onClick=${save}><${Icon} n="download" s="16" /> Salva immagine</button>
+        </div>
+        <div class="tiny faint">Puoi anche tenere premuta l'immagine per salvarla o mandarla.</div>`}
+  <//>`;
+}
+
+/* aperture dei fogli */
+function openCardShare(C, p, r, all, pal) {
+  const label = all || !C.group ? 'Stats generali' : C.group.name;
+  C.openSheet({ k: 'shareImg', title: 'La tua card', name: 'card-' + (dispName(p) || 'giocatore').toLowerCase().replace(/[^a-z0-9]+/g, '-'), make: () => drawCardImage({ p, r, pal, sub: label, label }) });
+}
+function openPosterShare(C, m, D, wx) {
+  C.openSheet({ k: 'shareImg', title: 'Locandina della partita', name: 'locandina-' + m.date, make: () => drawMatchPoster({ m, C, D, wx }) });
+}
+function openResultShare(C, m, mv) {
+  C.openSheet({ k: 'shareImg', title: 'Risultato da condividere', name: 'risultato-' + m.date, make: () => drawResultPoster({ m, C, mv }) });
+}
+
+
+/* ============================================================
    APP: profilo, autovalutazione, valutazioni, infortuni, giocatori
    ============================================================ */
 const EMOJIS = ['⚽', '🦊', '🦁', '🐯', '🐺', '🦅', '🐻', '🐼', '🦄', '🐲', '🔥', '⚡', '🚀', '🎯', '👑', '🧤', '🥅', '🛡️', '🏆', '🌟', '💪', '😎', '🤠', '🥷', '🧙', '👽', '🤖', '🐙', '🦈', '🐢', '🍀', '🎸'];
@@ -3623,6 +4250,7 @@ function ProfileForm({ initial, onSaved }) {
   const [first, setFirst] = useState((initial && initial.first) || '');
   const [last, setLast] = useState((initial && initial.last) || '');
   const [nick, setNick] = useState((initial && initial.nick) || '');
+  const [num, setNum] = useState(initial && jerseyOf(initial) != null ? String(initial.num) : '');
   const [icon, setIcon] = useState((initial && initial.icon) || '⚽');
   const [photo, setPhoto] = useState((initial && initial.photo) || '');
   const [role, setRole] = useState((initial && initial.role) || '');
@@ -3633,7 +4261,10 @@ function ProfileForm({ initial, onSaved }) {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
   const birthOk = !birth.trim() || okBirth(Number(birth));
-  const valid = first.trim() && last.trim() && role && birthOk;
+  const numOk = !num.trim() || (/^\d{1,2}$/.test(num.trim()) && Number(num) >= 1 && Number(num) <= 99);
+  /* lo stesso numero si può tenere anche se nel gruppo ce l'ha già qualcuno: l'app lo dice e basta */
+  const clash = num.trim() && numOk ? C.players.find((x) => x.id !== C.uid && jerseyOf(x) === Number(num)) : null;
+  const valid = first.trim() && last.trim() && role && birthOk && numOk;
   const ovr = Engine.ovrOf(Engine.areasOf(vals), role);
 
   const pick = async (e) => {
@@ -3647,6 +4278,7 @@ function ProfileForm({ initial, onSaved }) {
     icon, photo, role, role2: role2 && role2 !== role ? role2 : '',
     birthYear: birth.trim() && okBirth(Number(birth)) ? Number(birth) : null,
     loc: loc || null,
+    num: num.trim() && numOk ? Number(num) : null,
   });
   const doSave = async () => {
     setBusy(true);
@@ -3694,6 +4326,12 @@ function ProfileForm({ initial, onSaved }) {
       <input id="pf-nick" class="input" value=${nick} maxlength="16" placeholder="Come ti chiamano in campo" onInput=${(e) => setNick(e.target.value)} />
     </div>
     <div class="field">
+      <label class="label" for="pf-num">Numero di maglia <span class="faint">(facoltativo, da 1 a 99)</span></label>
+      <input id="pf-num" class="input" style="max-width:140px" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="Es. 10" value=${num} onInput=${(e) => setNum(e.target.value.replace(/\D/g, '').slice(0, 2))} />
+      ${!numOk && html`<span class="tiny bad-t">Scrivi un numero da 1 a 99.</span>`}
+      ${clash && html`<span class="tiny faint">Nel gruppo il numero ${Number(num)} ce l'ha già ${dispName(clash)}: puoi tenerlo lo stesso.</span>`}
+    </div>
+    <div class="field">
       <label class="label" for="pf-birth">Anno di nascita <span class="faint">(facoltativo: gli altri vedono la tua età)</span></label>
       <input id="pf-birth" class="input" type="number" inputmode="numeric" min=${BIRTH_MIN} max=${BIRTH_MAX} placeholder=${'Es. ' + (THIS_YEAR - 28)} value=${birth} onInput=${(e) => setBirth(e.target.value.slice(0, 4))} />
       ${!birthOk && html`<span class="tiny bad-t">Scrivi un anno tra ${BIRTH_MIN} e ${BIRTH_MAX}.</span>`}
@@ -3717,7 +4355,7 @@ function ProfileForm({ initial, onSaved }) {
       <${RatingEditor} idp="pf" vals=${vals} setVals=${setVals} role=${role} />
     </div>`}
     <button class="btn primary block" type="submit" disabled=${!valid || busy || !C.canWrite}>${busy ? 'Salvo…' : create ? 'Salva e continua' : 'Salva modifiche'}</button>
-    ${!valid && html`<div class="tiny faint" style="text-align:center">${birthOk ? 'Servono nome, cognome e ruolo preferito.' : 'Controlla l\'anno di nascita.'}</div>`}
+    ${!valid && html`<div class="tiny faint" style="text-align:center">${!birthOk ? 'Controlla l\'anno di nascita.' : !numOk ? 'Controlla il numero di maglia.' : 'Servono nome, cognome e ruolo preferito.'}</div>`}
   </form>`;
 }
 
@@ -4467,7 +5105,7 @@ function MatchScreen({ id }) {
   if (tab === 'teams' && phase !== 'cancelled') {
     body = html`<${TeamsTab} m=${m} R=${R} D=${D} />`;
   } else if (tab === 'pitch' && phase !== 'cancelled') {
-    body = hasLineup ? html`<${PitchView} m=${m} D=${D} />` : html`<div class="card empty"><div class="h3">Ancora nessuno schieramento</div><div>${D.T && D.T.source === 'waiting' ? `Lo schieramento compare appena l'app fa le squadre: mancano ${plural(D.T.missing, 'giocatore', 'giocatori')}.` : pick ? 'Compare appena i giocatori scelgono la loro squadra.' : 'Compare quando ci sono le squadre.'}</div></div>`;
+    body = hasLineup ? html`<${PitchView} m=${m} D=${D} wx=${wx} />` : html`<div class="card empty"><div class="h3">Ancora nessuno schieramento</div><div>${D.T && D.T.source === 'waiting' ? `Lo schieramento compare appena l'app fa le squadre: mancano ${plural(D.T.missing, 'giocatore', 'giocatori')}.` : pick ? 'Compare appena i giocatori scelgono la loro squadra.' : 'Compare quando ci sono le squadre.'}</div></div>`;
   } else if (phase === 'played') {
     body = html`<${PlayedSections} m=${m} />`;
   } else {
@@ -4605,6 +5243,13 @@ function PlayedSections({ m }) {
   const lastBy = hasRes && m.result.by && C.playersById[m.result.by];
   const pred = fin.pred;
   const [showVotes, setShowVotes] = useState(false);
+  /* coriandoli la prima volta che su questo telefono si vede l'MVP appena uscito */
+  useEffect(() => {
+    if (!mv.closed || !mv.winners.length || Date.now() - numOr(mv.closesAt, 0) > 7 * 86400000) return undefined;
+    if (!celebrateOnce('sc-cf-mvp', [(C.gid || '') + ':' + m.id]).length) return undefined;
+    const t = setTimeout(() => fireConfetti(), 350);
+    return () => clearTimeout(t);
+  }, [mv.closed]);
 
   return html`
     <div class="card stack">
@@ -4622,6 +5267,7 @@ function PlayedSections({ m }) {
       ` : html`
         <div class="hs-12"><${Icon} n="ball" /><div class="grow"><div class="h3">Manca il risultato</div><div class="small muted">${canEdit ? 'Scrivilo tu: marcatori e assist sono facoltativi.' : 'Ormai può inserirlo solo l\'amministratore.'}</div></div></div>
       `}
+      ${hasRes && html`<button class="btn" onClick=${() => openResultShare(C, m, mv)}><${Icon} n="share" s="16" /> Condividi il risultato</button>`}
       ${canEdit && html`<button class=${'btn ' + (hasRes ? '' : 'primary')} onClick=${() => C.go({ t: 'result', id: m.id })}><${Icon} n=${hasRes ? 'edit' : 'plus'} s="16" /> ${hasRes ? 'Correggi risultato e marcatori' : 'Inserisci il risultato'}</button>`}
       ${!canEdit && hasRes && !C.isAdmin && html`<div class="tiny faint"><${Icon} n="lock" s="14" /> Dopo l'inizio della partita successiva le correzioni le fa solo l'amministratore.</div>`}
     </div>
@@ -5595,21 +6241,37 @@ function Leaderboard() {
     .map((p) => ({ p, s: C.stats.byPlayer[p.id] }))
     .filter((x) => x.s && x.s[k] > 0)
     .sort((x, y) => y.s[k] - x.s[k] || x.s.pres - y.s.pres || dispName(x.p).localeCompare(dispName(y.p), 'it'));
+  /* a pari merito stessa posizione */
+  const posOf = [];
   let pos = 0, prev = null;
+  rows.forEach((x, i) => { if (x.s[k] !== prev) { pos = i + 1; prev = x.s[k]; } posOf.push(pos); });
+  const subOf = (x) => (k === 'pres'
+    ? `vinte ${x.s.w}, pari ${x.s.d}, perse ${x.s.l}`
+    : `in ${plural(x.s.pres, 'presenza', 'presenze')}${(k === 'g' || k === 'a') && x.s.pres ? ' · ' + f1(x.s[k] / x.s.pres) + ' a partita' : ''}`);
+  /* podio: secondo, primo, terzo; il colore segue la posizione, l'altezza il gradino */
+  const podium = rows.slice(0, 3).map((x, i) => ({ x, pos: posOf[i], slot: i }));
+  const podOrder = podium.length === 3 ? [podium[1], podium[0], podium[2]] : podium.length === 2 ? [podium[1], podium[0]] : podium;
+  const MEDAL = { 1: 'gold', 2: 'silver', 3: 'bronze' };
   return html`<div class="stack">
     <div class="seg-scroll"><${Seg} value=${k} onChange=${setK} options=${METRICS.map((x) => ({ v: x.k, l: x.l }))} /></div>
-    ${rows.length ? html`<div class="card pad0">${rows.map((x, i) => {
-      if (x.s[k] !== prev) { pos = i + 1; prev = x.s[k]; }
-      const sub = k === 'pres'
-        ? `vinte ${x.s.w}, pari ${x.s.d}, perse ${x.s.l}`
-        : `in ${plural(x.s.pres, 'presenza', 'presenze')}${(k === 'g' || k === 'a') && x.s.pres ? ' · ' + f1(x.s[k] / x.s.pres) + ' a partita' : ''}`;
-      return html`<button key=${x.p.id} class="lead" onClick=${() => C.go({ t: 'player', id: x.p.id })}>
-        <span class=${'lead-pos' + (pos <= 3 ? ' p' + pos : '')}>${pos}</span>
-        <${Avatar} p=${x.p} size=${36} />
-        <span class="row-main"><span class="row-t"><span class="ell">${dispName(x.p)}</span><${InjuryMark} inj=${x.p.injury} s="14" />${x.p.id === C.uid && html`<span class="chip ok">Tu</span>`}</span><span class="row-s">${sub}</span></span>
-        <span class="lead-v num">${x.s[k]}</span>
-      </button>`;
-    })}</div>` : html`<div class="card empty small">${k === 'og' ? 'Nessun autogol, per ora. Bravi.' : 'Ancora niente da mettere in classifica: servono partite chiuse con il risultato.'}</div>`}
+    ${rows.length ? html`<div class="card pad0">
+      <div class=${'podium n' + podOrder.length}>${podOrder.map(({ x, pos: ps, slot }) => html`<button key=${x.p.id} type="button" class=${'pod s' + slot + ' ' + (MEDAL[ps] || 'bronze')} onClick=${() => C.go({ t: 'player', id: x.p.id })} aria-label=${ps + '° ' + dispName(x.p) + ', ' + plural(x.s[k], met.one, met.many)}>
+        ${slot === 0 && html`<span class="pod-crown" aria-hidden="true">👑</span>`}
+        <span class="pod-av"><${Avatar} p=${x.p} size=${slot === 0 ? 66 : 54} /></span>
+        <span class="pod-n"><span class="ell">${dispName(x.p)}</span>${x.p.id === C.uid && html`<span class="chip ok">Tu</span>`}</span>
+        <span class="pod-v num">${x.s[k]}<small>${x.s[k] === 1 ? met.one : met.many}</small></span>
+        <span class="pod-b num">${ps}</span>
+      </button>`)}</div>
+      ${rows.slice(3).map((x, j) => {
+        const i = j + 3, ps = posOf[i];
+        return html`<button key=${x.p.id} class="lead" onClick=${() => C.go({ t: 'player', id: x.p.id })}>
+          <span class=${'lead-pos' + (ps <= 3 ? ' p' + ps : '')}>${ps}</span>
+          <${Avatar} p=${x.p} size=${36} />
+          <span class="row-main"><span class="row-t"><span class="ell">${dispName(x.p)}</span><${InjuryMark} inj=${x.p.injury} s="14" />${x.p.id === C.uid && html`<span class="chip ok">Tu</span>`}</span><span class="row-s">${subOf(x)}</span></span>
+          <span class="lead-v num">${x.s[k]}</span>
+        </button>`;
+      })}
+    </div>` : html`<div class="card empty small">${k === 'og' ? 'Nessun autogol, per ora. Bravi.' : 'Ancora niente da mettere in classifica: servono partite chiuse con il risultato.'}</div>`}
     <div class="tiny faint">Contano le partite chiuse. Gol, assist e autogol solo dove sono stati inseriti; l'MVP quando la votazione è chiusa.</div>
   </div>`;
 }
@@ -5901,7 +6563,9 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. Poi l'app ti propone di aggiornare le valutazioni dei compagni, anche più tardi.</p></div>
       <div><h3 class="h3">Gruppi e stats generali</h3><p class="muted">Partite, storico, messaggi e valutazioni sono di ogni gruppo. Puoi stare in più gruppi: cambi gruppo toccando il suo nome in alto. Nella scheda Giocatori vedi i membri del gruppo oppure tutti gli iscritti all'app. Le stats nel gruppo sono la media delle valutazioni date in quel gruppo; le stats generali sono la media di tutte le valutazioni ricevute in tutti i gruppi, autovalutazione compresa.</p></div>
       <div><h3 class="h3">Affinità</h3><p class="muted">Più partite due giocatori vincono (o pareggiano) nella stessa squadra, più cresce la loro affinità, piano piano: una vittoria vale 1, un pareggio mezzo, le sconfitte non tolgono niente. Si arriva a circa 28 dopo 10 partite positive insieme, 57 dopo 25, 81 dopo 50 (massimo 100). Una squadra di compagni affiatati prende fino a +${Engine.AFF_BONUS} punti sul valore medio, e l'app ne tiene conto quando fa le squadre.</p></div>
-      <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo. Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le ${VOCI.length} voci.</p></div>
+      <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo. Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le ${VOCI.length} voci. La tua la puoi condividere come immagine.</p></div>
+      <div><h3 class="h3">Locandina e risultato</h3><p class="muted">Nella scheda Campo di una partita c'è la locandina da mandare nel gruppo: giorno, campo e formazioni con i colori delle maglie. Dopo la partita, dai Dettagli si condivide il risultato con marcatori e MVP. Ci sono solo i soprannomi, senza foto.</p></div>
+      <div><h3 class="h3">Numero di maglia</h3><p class="muted">Lo scegli in Modifica profilo, da 1 a 99: si vede sulla card, sul campo e nelle squadre.</p></div>
       <div><h3 class="h3">Amici</h3><p class="muted">Chiedi l'amicizia dalla scheda di un giocatore: diventate amici quando l'altro accetta. Gli amici compaiono per primi nelle ricerche e puoi invitarli alle partite del tuo gruppo.</p></div>
       <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti.</p></div>
     </div>
@@ -5929,6 +6593,7 @@ function SheetHost({ sheet, onClose }) {
     case 'fifa': return html`<${FifaOverlay} pid=${sheet.pid} all=${sheet.all} onClose=${onClose} />`;
     case 'badge': return html`<${BadgeSheet} pid=${sheet.pid} bk=${sheet.bk} onClose=${onClose} />`;
     case 'pollClose': return html`<${PollCloseSheet} mid=${sheet.mid} onClose=${onClose} />`;
+    case 'shareImg': return html`<${ShareImageSheet} key=${sheet.name} title=${sheet.title} make=${sheet.make} name=${sheet.name} onClose=${onClose} />`;
     default: return null;
   }
 }
