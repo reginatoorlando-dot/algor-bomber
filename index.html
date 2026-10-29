@@ -602,6 +602,10 @@ a.btn { text-decoration: none; }
   .score-n { font-size: 40px; }
   .vb { grid-template-columns: minmax(0, 7.5em) 1fr 2.2em; }
 }
+.av-btn { appearance: none; border: 0; background: none; padding: 0; border-radius: 50%; cursor: zoom-in; flex: none; }
+.photo-big { display: flex; justify-content: center; }
+.photo-big img { width: min(78vw, 320px); aspect-ratio: 1; object-fit: cover; border-radius: 24px; box-shadow: var(--shadow); }
+.photo-big .av { width: min(60vw, 240px); height: min(60vw, 240px); font-size: min(30vw, 120px); }
 
 </style>
 </head>
@@ -1618,7 +1622,8 @@ function Ovr({ v, size }) {
   return html`<span class=${'ovr ' + t + (size ? ' ' + size : '')} title=${'Punteggio ' + r0(v) + ' · ' + Engine.TIER_NAME[t]}>${r0(v)}</span>`;
 }
 
-function PlayerCard({ p, r, mvp, sub }) {
+function PlayerCard({ p, r, mvp, sub, noZoom }) {
+  const C = useContext(Ctx);
   const tier = mvp ? 'mvp' : Engine.tierOf(r.ovr);
   const gk = p.role === 'POR';
   return html`<div class=${'pcard ' + tier}>
@@ -1628,7 +1633,7 @@ function PlayerCard({ p, r, mvp, sub }) {
         <span>${p.role}${p.role2 ? ' · ' + p.role2 : ''}</span>
       </div>
       ${mvp && html`<span class="pc-badge"><${Icon} n="trophy" s="14" /> MVP</span>`}
-      <${Avatar} p=${p} size=${64} />
+      ${noZoom ? html`<${Avatar} p=${p} size=${64} />` : html`<button type="button" class="av-btn" aria-label=${'Ingrandisci la foto di ' + dispName(p)} onClick=${() => C.openSheet({ k: 'photo', pid: p.id })}><${Avatar} p=${p} size=${64} /></button>`}
     </div>
     <div class="pc-name"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} s="18" /></div>
     <div class="pc-sub ell">${sub || fullName(p)}</div>
@@ -1775,7 +1780,7 @@ async function fileToAvatar(file) {
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
-    const S = 160, c = document.createElement('canvas');
+    const S = 320, c = document.createElement('canvas');
     c.width = c.height = S;
     const m = Math.min(img.width, img.height);
     c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, S, S);
@@ -2052,7 +2057,7 @@ function SelfRateScreen({ forced }) {
   const [vals, setVals] = useState(() => Object.assign(defaultVoci(), Engine.cleanVoci(me && (Engine.hasNewSelf(me) ? me.self : Engine.legacyVoci(me.self)))));
   const [busy, setBusy] = useState(false);
   if (!me) return html`<${Page} title="Autovalutazione" onBack=${C.back}><div class="card empty">Crea prima il tuo profilo.</div><//>`;
-  if (!me.selfUnlock && !isNew) {
+  if (!me.selfUnlock && !isNew && !C.isAdmin) {
     return html`<${Page} title="Autovalutazione" onBack=${C.back}>
       <div class="note"><${Icon} n="lock" s="16" /><span>La tua autovalutazione è bloccata dal ${fmtTs(numOr(me.selfAt, Date.now()))}. Solo l'amministratore può sbloccarla.</span></div>
     <//>`;
@@ -2065,7 +2070,7 @@ function SelfRateScreen({ forced }) {
     if (ok) { C.flash('Autovalutazione salvata'); if (!forced) C.back(); }
   };
   const ask = () => C.openSheet({ k: 'confirm', title: 'Confermi l\'autovalutazione?', text: `Con questi valori il tuo punteggio di partenza è ${r0(ovr)}. Dopo il salvataggio non potrai più modificarla.`, label: 'Sì, salva', onYes: doSave });
-  return html`<${Page} title=${isNew ? 'Nuova autovalutazione' : 'Rifai l\'autovalutazione'} sub=${isNew ? 'Le stats sono cambiate: ora sono 16 voci da 1 a 99' : 'L\'amministratore l\'ha sbloccata per te'} onBack=${forced ? null : C.back}>
+  return html`<${Page} title=${isNew ? 'Nuova autovalutazione' : 'Rifai l\'autovalutazione'} sub=${isNew ? 'Le stats sono cambiate: ora sono 16 voci da 1 a 99' : me.selfUnlock ? 'L\'amministratore l\'ha sbloccata per te' : 'Come amministratore puoi modificarla'} onBack=${forced ? null : C.back}>
     ${isNew && html`<div class="note ok"><${Icon} n="info" s="16" /><span>Ciao ${dispName(me)}! L'app ora usa 5 aree e 16 voci, da 1 a 99 come su FIFA. Ti chiediamo di rifare l'autovalutazione, una volta sola. Abbiamo già messo i tuoi vecchi valori di attacco, centrocampo e difesa come punto di partenza.</span></div>`}
     <${SelfLockNote} />
     <div class="tiny faint">${SCALE_HINT}</div>
@@ -2322,8 +2327,8 @@ function MeScreen() {
         <${PlayerCard} p=${me} r=${r} />
         ${C.canWrite && html`<button class="btn block" onClick=${() => setEdit(true)}><${Icon} n="edit" s="16" /> Modifica nome, foto e ruoli</button>`}
         <section class="sec"><h2 class="h3">Stato fisico</h2><${InjuryEditor} key=${(me.injury && me.injury.since) || 'ok'} /></section>
-        ${me.selfUnlock
-          ? html`<div class="card todo hs-12"><${Icon} n="unlock" /><div class="grow"><div class="h3">Puoi rifare l'autovalutazione</div><div class="small muted">L'amministratore l'ha sbloccata, una volta sola.</div></div><button class="btn primary sm" onClick=${() => C.go({ t: 'self' })}>Rifalla</button></div>`
+        ${me.selfUnlock || C.isAdmin
+          ? html`<div class="card todo hs-12"><${Icon} n="unlock" /><div class="grow"><div class="h3">${C.isAdmin ? 'Modifica la tua autovalutazione' : 'Puoi rifare l\'autovalutazione'}</div><div class="small muted">${C.isAdmin ? 'Come amministratore puoi cambiarla quando vuoi.' : 'L\'amministratore l\'ha sbloccata, una volta sola.'}</div></div><button class="btn primary sm" onClick=${() => C.go({ t: 'self' })}>${C.isAdmin ? 'Modifica' : 'Rifalla'}</button></div>`
           : html`<div class="note"><${Icon} n="lock" s="16" /><span>La tua autovalutazione ${me.selfAt ? 'è del ' + fmtTs(me.selfAt) + ' e' : ''} non si può più cambiare. ${r.nPeers
             ? `Il punteggio (${r0(r.ovr)}) è la media tra lei e ${plural(r.nPeers, 'valutazione', 'valutazioni')} degli altri.`
             : `Nessuno ti ha ancora valutato: per ora il punteggio (${r0(r.ovr)}) è la tua autovalutazione.`}</span></div>`}
@@ -2675,7 +2680,7 @@ function PlayedSections({ m }) {
       <div class="sec-h"><h2 class="h3">MVP</h2>${!mv.closed && html`<span class="chip">Si chiude tra ${fmtLeft(mv.closesAt - Date.now())}</span>`}</div>
       ${mv.closed ? (mv.winners.length ? html`<div class="stack">
           ${mv.winners.map((pid) => { const p = C.playersById[pid], r = C.rated[pid]; return p && r && html`<button key=${pid} class="plain" onClick=${() => C.go({ t: 'player', id: pid })} aria-label=${'Scheda di ' + dispName(p)}>
-            <${PlayerCard} p=${p} r=${r} mvp sub=${(mv.winners.length > 1 ? 'MVP a pari merito' : 'MVP della partita') + ' · ' + plural(mv.counts[pid], 'voto', 'voti')} />
+            <${PlayerCard} p=${p} r=${r} mvp noZoom sub=${(mv.winners.length > 1 ? 'MVP a pari merito' : 'MVP della partita') + ' · ' + plural(mv.counts[pid], 'voto', 'voti')} />
           </button>`; })}
           <button class="link" style="align-self:flex-start" onClick=${() => setShowVotes(!showVotes)}>${showVotes ? 'Nascondi i voti' : 'Chi ha votato chi (' + mv.nVoted + ')'}</button>
           ${showVotes && html`<div class="card pad0 divided">${mv.votes.map((v) => html`<div key=${v.voter} class="row" style="padding:9px 14px">
@@ -3403,6 +3408,17 @@ function RatingDetailSheet({ pid, voter, self, onClose }) {
   <//>`;
 }
 
+function PhotoSheet({ pid, onClose }) {
+  const C = useContext(Ctx);
+  const p = C.playersById[pid];
+  if (!p) return null;
+  const hasPhoto = typeof p.photo === 'string' && p.photo.startsWith('data:image/');
+  return html`<${Sheet} title=${dispName(p)} onClose=${onClose}>
+    <div class="photo-big">${hasPhoto ? html`<img src=${p.photo} alt=${'Foto di ' + dispName(p)} />` : html`<span class="av" style=${'--h:' + hueOf(p.id)}>${p.icon || initialsOf(p)}</span>`}</div>
+    <div class="small muted" style="text-align:center">${fullName(p)}</div>
+  <//>`;
+}
+
 function HelpSheet({ onClose }) {
   return html`<${Sheet} title="Come funziona" onClose=${onClose}>
     <div class="stack">
@@ -3428,6 +3444,7 @@ function SheetHost({ sheet, onClose }) {
     case 'matchMenu': return html`<${MatchMenuSheet} id=${sheet.id} onClose=${onClose} />`;
     case 'ratingDetail': return html`<${RatingDetailSheet} pid=${sheet.pid} voter=${sheet.voter} self=${sheet.self} onClose=${onClose} />`;
     case 'help': return html`<${HelpSheet} onClose=${onClose} />`;
+    case 'photo': return html`<${PhotoSheet} pid=${sheet.pid} onClose=${onClose} />`;
     default: return null;
   }
 }
@@ -3805,11 +3822,17 @@ function Root() {
   if (!uid) return html`<${AuthForm} sb=${sb} />`;
   window.SC_SIGNOUT = () => sb.auth.signOut();
   window.SC_EMAIL = st.session.user.email;
-  window.claude = { use: async (n) => (n === 'db' ? db : n === 'user' ? { id: async () => uid, can: async () => true, isOwner: async () => isAdminEmail(st.session.user.email), canEdit: async () => isAdminEmail(st.session.user.email) } : null) };
+  window.claude = { use: async (n) => (n === 'db' ? db : n === 'user' ? { id: async () => uid, can: async () => true, isOwner: () => adminCheck(sb, st.session.user.email), canEdit: () => adminCheck(sb, st.session.user.email) } : null) };
   return html`<${App} key=${uid} />`;
 }
 
-/* amministratori: le email elencate in config.js (SC_CONFIG.admins) */
+/* amministratori: la tabella app_admins del database (funzione is_app_admin); se manca, le email di config.js */
+const __admin = {};
+function adminCheck(sb, email) {
+  const k = String(email || '').toLowerCase();
+  if (!__admin[k]) __admin[k] = sb.rpc('is_app_admin').then(({ data, error }) => (error ? isAdminEmail(email) : !!data), () => isAdminEmail(email));
+  return __admin[k];
+}
 function isAdminEmail(email) {
   const list = ((window.SC_CONFIG && window.SC_CONFIG.admins) || []).map((x) => String(x).trim().toLowerCase());
   return !!email && list.includes(String(email).trim().toLowerCase());
