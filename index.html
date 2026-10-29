@@ -741,6 +741,22 @@ select.input { appearance: auto; }
 .dayc.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .dayc.on .dw, .dayc.on .dm { color: var(--on-accent); opacity: 0.85; }
 
+/* ---- amici e affinità ---- */
+.chip.friend { background: #fde8ec; color: #c0264a; }
+:root[data-theme="dark"] .chip.friend { background: #4a1724; color: #ff9fb3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip.friend { background: #4a1724; color: #ff9fb3; } }
+.chip.friend .ic { width: 12px; height: 12px; }
+.aff-me { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 10px; }
+.aff-me .tiny { grid-column: 1 / -1; }
+.aff-bar { flex: 1; min-width: 50px; height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; display: block; }
+.aff-bar i { display: block; height: 100%; background: #e0486b; border-radius: 6px; }
+.row .aff-bar { flex: 0 0 70px; }
+.aff-v { min-width: 22px; text-align: right; }
+.duel-aff { display: grid; grid-template-columns: 1fr 1fr; color: #c0264a; font-weight: 600; margin-top: -8px; }
+.duel-aff span:first-child { text-align: left; padding-left: 4px; }
+.duel-aff span:last-child { text-align: right; padding-right: 4px; }
+.row-link { appearance: none; border: 0; background: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+
 </style>
 </head>
 <body>
@@ -1036,8 +1052,48 @@ const Engine = (() => {
     return { mod: best.mod, roles, total: best.total };
   }
 
+  /* ---------- AFFINITÀ ----------
+     Due giocatori nella stessa squadra: vittoria +1, pareggio +1/2, le sconfitte non tolgono niente.
+     Il livello va da 0 a 100 e cresce sempre più piano (circa 28 dopo 10 partite positive, 57 dopo 25).
+     La squadra prende fino a +3 punti di valore medio, in base all'affinità media tra tutte le coppie di compagni. */
+  const AFF_K = 30, AFF_BONUS = 3;
+  const affLevel = (p) => 100 * (1 - Math.exp(-p / AFF_K));
+  function affinityFrom(matches) {
+    const pts = {}, wins = {}, draws = {};
+    const key = (a, b) => (a < b ? a + '|' + b : b + '|' + a);
+    for (const m of matches || []) {
+      if (!m || m.status !== 'played' || !m.final || !hasResult(m)) continue;
+      const ra = m.result.a, rb = m.result.b;
+      const gn = m.final.gn || {};
+      const sides = [[m.final.a || [], ra > rb ? 1 : ra === rb ? 0.5 : 0], [m.final.b || [], rb > ra ? 1 : ra === rb ? 0.5 : 0]];
+      for (const [ids, w] of sides) {
+        if (!w) continue;
+        const pl = ids.filter((id) => !gn[id] && !(m.guests && m.guests[id]));
+        for (let i = 0; i < pl.length; i++) for (let j = i + 1; j < pl.length; j++) {
+          const k = key(pl[i], pl[j]);
+          pts[k] = (pts[k] || 0) + w;
+          if (w === 1) wins[k] = (wins[k] || 0) + 1; else draws[k] = (draws[k] || 0) + 1;
+        }
+      }
+    }
+    return {
+      get: (a, b) => (a === b ? 0 : affLevel(pts[key(a, b)] || 0)),
+      points: (a, b) => pts[key(a, b)] || 0,
+      record: (a, b) => ({ w: wins[key(a, b)] || 0, d: draws[key(a, b)] || 0 }),
+      top: (uid, n) => Object.keys(pts).map((k) => k.split('|')).filter((ab) => ab.includes(uid))
+        .map((ab) => { const o = ab[0] === uid ? ab[1] : ab[0]; const k = key(ab[0], ab[1]); return { id: o, p: pts[k], v: affLevel(pts[k]), w: wins[k] || 0, d: draws[k] || 0 }; })
+        .sort((x, y) => y.v - x.v).slice(0, n || 5),
+    };
+  }
+  function affBonusOf(ids, aff) {
+    if (!aff || ids.length < 2) return 0;
+    let s = 0, c = 0;
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) { s += aff.get(ids[i], ids[j]); c++; }
+    return c ? (AFF_BONUS * s) / c / 100 : 0;
+  }
+
   /* ---------- VALUTAZIONE DELLE SQUADRE ---------- */
-  function evalTeam(parts, roles) {
+  function evalTeam(parts, roles, aff) {
     const rc = [0, 0, 0, 0];
     const vals = {};
     const outs = [];
@@ -1055,7 +1111,8 @@ const Engine = (() => {
     const n = parts.length;
     const areas = {};
     for (const k of OUT_AREAS) areas[k] = outs.length ? mean(outs.map((x) => x.areas[k])) : 0;
-    return { n, rc, total, mean: n ? total / n : 0, loss, areas, gkVal, vals, label: moduleLabel(rc) };
+    const affB = affBonusOf(parts.map((x) => x.id), aff);
+    return { n, rc, total, base: n ? total / n : 0, aff: affB, mean: n ? total / n + affB : 0, loss, areas, gkVal, vals, label: moduleLabel(rc) };
   }
 
   function balanceLabel(b) {
@@ -1074,13 +1131,13 @@ const Engine = (() => {
     return { coreAvg, lossAvg, cost: coreAvg + LOSS_W * lossAvg, balance, label: balanceLabel(balance) };
   }
 
-  function evaluate(partsA, partsB, roles) {
-    const a = evalTeam(partsA, roles || {}), b = evalTeam(partsB, roles || {});
+  function evaluate(partsA, partsB, roles, aff) {
+    const a = evalTeam(partsA, roles || {}, aff), b = evalTeam(partsB, roles || {}, aff);
     return Object.assign({ a, b }, compareTeams(a, b));
   }
 
   /* stima veloce di una squadra, usata per scremare tutte le divisioni possibili */
-  function quickTeam(idx, P, format) {
+  function quickTeam(idx, P, format, M) {
     let tot = 0;
     const gks = [], outs = [];
     const cnt = [0, 0, 0];
@@ -1110,15 +1167,21 @@ const Engine = (() => {
     const src = outs.length ? outs : idx.map((i) => P[i]);
     const areas = {};
     for (const k of OUT_AREAS) areas[k] = mean(src.map((x) => x.areas[k]));
-    return { n, mean: n ? (tot - loss) / n : 0, loss, areas };
+    let affB = 0;
+    if (M && idx.length > 1) {
+      let s = 0, c = 0;
+      for (let a = 0; a < idx.length; a++) for (let b = a + 1; b < idx.length; b++) { s += M[idx[a]][idx[b]]; c++; }
+      affB = (AFF_BONUS * s) / c / 100;
+    }
+    return { n, mean: n ? (tot - loss) / n + affB : 0, loss, areas };
   }
 
-  function exactSplit(P, mask, format) {
+  function exactSplit(P, mask, format, aff) {
     const X = [], Y = [];
     P.forEach((p, i) => ((mask >> i) & 1 ? X : Y).push(p));
     const lx = bestLineup(X, format), ly = bestLineup(Y, format);
     const roles = Object.assign({}, lx.roles, ly.roles);
-    const c = compareTeams(evalTeam(X, roles), evalTeam(Y, roles));
+    const c = compareTeams(evalTeam(X, roles, aff), evalTeam(Y, roles, aff));
     return { mask, cost: c.cost, roles, x: X.map((p) => p.id), y: Y.map((p) => p.id) };
   }
 
@@ -1149,6 +1212,8 @@ const Engine = (() => {
       for (const r of OUT_ROLES) bestOut = Math.max(bestOut, valueIn(x, r));
       return Object.assign({}, x, { nat, conv: nat - valueIn(x, 'POR'), gkOut: nat - bestOut });
     });
+    const aff = o.aff || null;
+    const M = aff ? P.map((x) => P.map((y) => aff.get(x.id, y.id))) : null;
     const small = Math.floor(n / 2), forceFirst = n % 2 === 0;
     const cands = [];
     const pick = [];
@@ -1157,7 +1222,7 @@ const Engine = (() => {
         const inX = new Set(pick);
         const Y = [];
         for (let k = 0; k < n; k++) if (!inX.has(k)) Y.push(k);
-        const c = compareTeams(quickTeam(pick, P, format), quickTeam(Y, P, format));
+        const c = compareTeams(quickTeam(pick, P, format, M), quickTeam(Y, P, format, M));
         let mask = 0;
         for (const k of pick) mask |= 1 << k;
         cands.push({ mask, q: c.cost + rng() * 1e-7 });
@@ -1169,7 +1234,7 @@ const Engine = (() => {
     };
     rec(0);
     cands.sort((x, y) => x.q - y.q);
-    const top = cands.slice(0, 120).map((c) => exactSplit(P, c.mask, format));
+    const top = cands.slice(0, 120).map((c) => exactSplit(P, c.mask, format, aff));
     top.forEach((r) => { r.k = r.cost + rng() * 1e-7; });
     top.sort((x, y) => x.k - y.k);
     const best = top[0].cost;
@@ -1185,11 +1250,11 @@ const Engine = (() => {
   }
 
   /* il singolo scambio tra le due squadre che migliora di più (i ruoli vengono riassegnati) */
-  function bestSwap(partsA, partsB, roles, format) {
+  function bestSwap(partsA, partsB, roles, format, aff) {
     if (!partsA.length || !partsB.length) return null;
-    const base = evaluate(partsA, partsB, roles);
+    const base = evaluate(partsA, partsB, roles, aff);
     const la0 = bestLineup(partsA, format), lb0 = bestLineup(partsB, format);
-    const base2 = evaluate(partsA, partsB, Object.assign({}, la0.roles, lb0.roles));
+    const base2 = evaluate(partsA, partsB, Object.assign({}, la0.roles, lb0.roles), aff);
     const bar = Math.min(base.cost, base2.cost) - 1e-6;
     let best = null;
     for (let i = 0; i < partsA.length; i++) {
@@ -1198,7 +1263,7 @@ const Engine = (() => {
         const t = A2[i]; A2[i] = B2[j]; B2[j] = t;
         const la = bestLineup(A2, format), lb = bestLineup(B2, format);
         const r2 = Object.assign({}, la.roles, lb.roles);
-        const e = evaluate(A2, B2, r2);
+        const e = evaluate(A2, B2, r2, aff);
         if (e.cost < bar && (!best || e.cost < best.after.cost)) best = { a: partsA[i].id, b: partsB[j].id, before: base, after: e, roles: r2 };
       }
     }
@@ -1292,6 +1357,7 @@ const Engine = (() => {
     partOf, roleMalus, injMalus, valueIn, natural,
     modulesFor, moduleLabel, bestLineup, evalTeam, evaluate, suggestTeams, bestSwap, balanceLabel,
     mvpResult, hasResult, matchStats, accuracy,
+    affinityFrom, affBonusOf, AFF_BONUS,
   };
 })();
 
@@ -1487,6 +1553,27 @@ const Demo = (() => {
           }
           setD(path, nd);
           return win ? { status: 'open', day: win } : { status: 'poll' };
+        }
+        case 'friend_request':
+        case 'friend_respond':
+        case 'friend_remove': {
+          const other = a.p_uid, k = db.me < other ? db.me + '~' + other : other + '~' + db.me, path = 'friends/' + k, d = docs.get(path);
+          if (fn === 'friend_request') {
+            if (other === db.me) return 'self';
+            if (!docs.has('players/' + other)) fail('Questa persona non è più iscritta.');
+            if (d) {
+              if (d.status === 'pending' && d.by === other) { setD(path, Object.assign({}, d, { status: 'active', at: Date.now() })); return 'active'; }
+              return d.status;
+            }
+            setD(path, { a: k.split('~')[0], b: k.split('~')[1], by: db.me, status: 'pending', t: Date.now() });
+            return 'pending';
+          }
+          if (fn === 'friend_respond') {
+            if (!d || d.status !== 'pending' || d.by !== other) fail('La richiesta non c\'è più.');
+            if (a.p_accept) { setD(path, Object.assign({}, d, { status: 'active', at: Date.now() })); return 'active'; }
+            delD(path); return 'removed';
+          }
+          delD(path); return 'removed';
         }
         case 'leave_group': { delD(mp(a.p_gid, db.me)); refresh(a.p_gid); return null; }
         case 'delete_group': {
@@ -1786,6 +1873,16 @@ const Demo = (() => {
     // una richiesta di ingresso da approvare
     db.put('players/demo-17', { first: 'Pietro', last: 'Neri', nick: 'Pietrone', icon: '🐺', photo: '', role: 'DIF', role2: '', self: Object.fromEntries(Engine.VOCI.map((x) => [x.k, 58])), selfAt: now - DAY, selfUnlock: false, injury: null, created: now - DAY, updated: now - DAY, loc: P.carrara, birthYear: 2001 });
     db.put('members/' + GID + '~demo-17', { gid: GID, uid: 'demo-17', role: 'member', status: 'pending', t: now - 5 * HOUR });
+    // amici: due compagni di gruppo e uno di Milano; una richiesta ricevuta e una mandata
+    const fr = (x, y, by, status, dAgo) => { const k = x < y ? x + '~' + y : y + '~' + x; db.put('friends/' + k, { a: k.split('~')[0], b: k.split('~')[1], by, status, t: now - dAgo * DAY, at: status === 'active' ? now - dAgo * DAY + HOUR : undefined }); };
+    fr(ME, ids[8], ids[8], 'active', 40);
+    fr(ME, ids[1], ME, 'active', 35);
+    fr(ME, 'demo-x2', ME, 'active', 12);
+    fr(ME, 'demo-17', 'demo-17', 'pending', 0.2);
+    fr(ME, 'demo-x1', ME, 'pending', 2);
+    // Andre invita Luca alla partita di domani
+    const tm = db.dump().find(([pp]) => pp === GP + 'matches/m_demo_tomorrow');
+    if (tm) db.put(GP + 'matches/m_demo_tomorrow', Object.assign({}, tm[1], { invites: { [ME]: { by: ids[2], t: now - 3 * HOUR } } }));
     // chat del gruppo
     const chat = [
       [1, 46, 'Ragazzi giovedì ci siamo? Ho prenotato Le Giraffe alle 21'],
@@ -1977,6 +2074,7 @@ const ICONS = {
   cross: '<path d="M9.4 3.5h5.2v5.9h5.9v5.2h-5.9v5.9H9.4v-5.9H3.5V9.4h5.9z"/>',
   podium: '<path d="M9 20V9.5h6V20M3 20v-6h6M15 20v-4h6v4M2.5 20h19"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  heart: '<path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/>',
   filter: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
   chevdown: '<path d="m6 9 6 6 6-6"/>',
@@ -2283,7 +2381,7 @@ function buildRoster(m, C) {
 }
 
 /* le squadre definitive al momento della chiusura, con ruoli e previsione dell'app */
-function snapshotFinal(m, R) {
+function snapshotFinal(m, R, aff) {
   const inIds = new Set(R.confirmed.map((x) => x.id));
   const T = m.teamMode ? teamsOf(m, R) : null;
   const A = T ? T.a : ((m.teams && m.teams.a) || []).filter((i) => inIds.has(i));
@@ -2296,7 +2394,7 @@ function snapshotFinal(m, R) {
   [...A, ...B].forEach((i) => { keep[i] = roles[i]; });
   const gn = {};
   R.confirmed.filter((x) => x.guest).forEach((x) => { gn[x.id] = x.name; });
-  const ev = A.length && B.length ? Engine.evaluate(pa, pb, keep) : null;
+  const ev = A.length && B.length ? Engine.evaluate(pa, pb, keep, aff) : null;
   return {
     a: A, b: B, ids: R.confirmed.filter((x) => !x.guest).map((x) => x.id), roles: keep, gn,
     pred: ev ? { balance: ev.balance, va: ev.a.mean, vb: ev.b.mean } : null,
@@ -2383,6 +2481,12 @@ function makeActions(be, notify, dataRef, onDenied, gidRef) {
       return run('help/' + id, () => doc('help/' + id).set({ by: be.uid, topic, text, t: Date.now(), status: 'open', replies: [] }));
     },
     answerHelp: (id, replies, status) => run('help/' + id, () => doc('help/' + id).update({ replies, status })),
+    /* invito di un amico a una partita: lo vede tra le cose da fare */
+    inviteToMatch: (mid, pid) => upd(mid, { invites: { [pid]: { by: be.uid, t: Date.now() } } }),
+    /* amicizie (funzioni del database) */
+    friendRequest: (pid) => rpc('friend_request', { p_uid: pid }),
+    friendRespond: (pid, yes) => rpc('friend_respond', { p_uid: pid, p_accept: !!yes }),
+    friendRemove: (pid) => rpc('friend_remove', { p_uid: pid }),
     /* sondaggio sul giorno (funzioni del database: il voto che fa arrivare al numero crea la partita) */
     pollVote: (mid, days) => rpc('poll_vote', { p_gid: gidRef.current, p_mid: mid, p_days: days }),
     pollClose: (mid, day) => rpc('poll_close', { p_gid: gidRef.current, p_mid: mid, p_day: day }),
@@ -2608,7 +2712,7 @@ function autoTeamsTodo(C) {
     if (R.confirmed.length < R.cap) continue;
     const sig = rosterSig(R);
     if (m.teams && m.teams.auto && m.teams.sig === sig) continue;
-    const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'exact', format: m.format, rng: seededRng(m.id + '|' + sig) });
+    const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'exact', format: m.format, rng: seededRng(m.id + '|' + sig), aff: C.aff });
     if (r) out.push({ mid: m.id, a: r.a, b: r.b, roles: r.roles, sig });
   }
   return out;
@@ -2639,8 +2743,9 @@ function TeamsVersus({ m, D }) {
   const { A, B, roles, info } = D;
   if (!A.length && !B.length) return null;
   const pa = A.map((i) => info(i).part), pb = B.map((i) => info(i).part);
-  const ev = Engine.evaluate(pa, pb, roles);
+  const ev = Engine.evaluate(pa, pb, roles, C.aff);
   const pA = A.length && B.length ? Math.round(winProb(ev.a.mean, ev.b.mean) * 100) : null;
+  const showAff = ev.a.aff >= 0.05 || ev.b.aff >= 0.05;
   const rows = [
     ...OUT_AREAS.map((k) => ({ l: Engine.AREA_BY[k].name, a: ev.a.areas[k], b: ev.b.areas[k] })),
     { l: 'In porta', a: ev.a.gkVal || 0, b: ev.b.gkVal || 0 },
@@ -2671,6 +2776,7 @@ function TeamsVersus({ m, D }) {
         <div class="duel-bar"><i class="l" style=${'width:' + Math.min(100, ev.a.mean) / 2 + '%'}></i><i class="r" style=${'width:' + Math.min(100, ev.b.mean) / 2 + '%'}></i></div>
         <span class="duel-v num">${r0(ev.b.mean)}</span>
       </div>
+      ${showAff && html`<div class="duel-aff tiny"><span>${ev.a.aff >= 0.05 ? 'affinità +' + f1(ev.a.aff) : ''}</span><span>${ev.b.aff >= 0.05 ? 'affinità +' + f1(ev.b.aff) : ''}</span></div>`}
       ${pA != null && html`<div class="vs-sub small"><span>Pronostico dell'app: <b>${teamName(m, 'a')} ${pA}%</b> · <b>${teamName(m, 'b')} ${100 - pA}%</b></span><span class="muted">Equilibrio ${ev.balance}% · ${ev.label.toLowerCase()}</span></div>`}
       <div class="tug">
         ${rows.map((r) => html`<div key=${r.l} class="tug-row">
@@ -2680,7 +2786,7 @@ function TeamsVersus({ m, D }) {
           <span class="tug-v b num">${r0(r.b)}</span>
         </div>`)}
       </div>
-      <div class="tiny faint">Valore medio di ogni squadra con i ruoli assegnati, compresi malus fuori ruolo e infortuni.${D.final ? ' Calcolato con le stats di oggi.' : ''}</div>
+      <div class="tiny faint">Valore medio di ogni squadra con i ruoli assegnati, compresi malus fuori ruolo, infortuni e bonus affinità (fino a +${Engine.AFF_BONUS} per chi ha giocato e vinto spesso insieme).${D.final ? ' Calcolato con le stats di oggi.' : ''}</div>
     </div>
     <div class="vs-cols">
       <div class="vs-col">
@@ -2733,7 +2839,7 @@ function PitchView({ m, D }) {
   };
   const ptsA = place(A, yA), ptsB = place(B, yB);
   const pa = A.map((i) => info(i).part), pb = B.map((i) => info(i).part);
-  const ev = Engine.evaluate(pa, pb, roles);
+  const ev = Engine.evaluate(pa, pb, roles, C.aff);
   return html`<div class="stack">
     <div class="pitch-h"><${TeamTag} m=${m} side="b" /><span class="small muted">${ev.b.label || ''} · ${r0(ev.b.mean)}</span></div>
     <div class="pitch-wrap">
@@ -2905,6 +3011,149 @@ function PickRsvp({ m, R, onIn }) {
     ${meIn && !mySide && html`<div class="note warn"><${Icon} n="info" s="16" /><span>Ci sei: ora scegli la tua squadra.</span></div>`}
   </div>`;
 }
+
+
+/* ============================================================
+   APP: amici (richiesta da accettare), inviti alle partite, affinità tra compagni
+   ============================================================ */
+
+/* stato dell'amicizia con un'altra persona: 'friend', 'sent' (l'ho chiesta io), 'received', oppure null */
+function friendsIndex(docs, uid) {
+  const by = {};
+  for (const f of docs || []) {
+    const ab = String(f.id || '').split('~');
+    if (ab.length !== 2 || !uid || !ab.includes(uid)) continue;
+    const other = ab[0] === uid ? ab[1] : ab[0];
+    by[other] = f.status === 'active' ? 'friend' : f.by === uid ? 'sent' : 'received';
+  }
+  return by;
+}
+/* gli amici prima degli altri, a parità di tutto il resto */
+const friendsFirst = (C, cmp) => (a, b) => (C.isFriend(b.id) - C.isFriend(a.id)) || cmp(a, b);
+
+function FriendChip() {
+  return html`<span class="chip friend" title="Amico"><${Icon} n="heart" s="12" fill /> Amico</span>`;
+}
+
+/* nella scheda di un giocatore: chiedi, accetta, togli */
+function FriendButton({ pid }) {
+  const C = useContext(Ctx);
+  const [busy, setBusy] = useState(false);
+  const p = C.playersById[pid];
+  if (!p || pid === C.uid || !C.me || !C.canWrite) return null;
+  const st = C.friendStatus(pid);
+  const run = async (fn, msg) => { setBusy(true); const r = await fn(); setBusy(false); if (r && r.ok && msg) C.flash(typeof msg === 'function' ? msg(r.data) : msg); };
+  if (st === 'friend') {
+    return html`<div class="hs" style="gap:10px">
+      <${FriendChip} /><span class="small muted grow">Siete amici</span>
+      <button class="link" style="color:var(--ink-2)" disabled=${busy} onClick=${() => C.openSheet({ k: 'confirm', title: 'Togliere ' + dispName(p) + ' dagli amici?', text: 'Non sarete più amici sull\'app. Potrete chiedervelo di nuovo quando volete.', label: 'Togli dagli amici', danger: true, onYes: () => run(() => C.act.friendRemove(pid), dispName(p) + ' non è più tra i tuoi amici') })}>Togli</button>
+    </div>`;
+  }
+  if (st === 'received') {
+    return html`<div class="card stack-8">
+      <div class="small"><b>${dispName(p)}</b> ti ha chiesto l'amicizia.</div>
+      <div class="hs" style="gap:8px">
+        <button class="btn sm accent grow" disabled=${busy} onClick=${() => run(() => C.act.friendRespond(pid, true), 'Ora tu e ' + dispName(p) + ' siete amici')}><${Icon} n="check" s="16" /> Accetta</button>
+        <button class="btn sm ghost grow" disabled=${busy} onClick=${() => run(() => C.act.friendRespond(pid, false), 'Richiesta rifiutata')}>Rifiuta</button>
+      </div>
+    </div>`;
+  }
+  if (st === 'sent') {
+    return html`<div class="hs" style="gap:10px">
+      <span class="chip warn">Richiesta di amicizia inviata</span><span class="grow"></span>
+      <button class="link" style="color:var(--ink-2)" disabled=${busy} onClick=${() => run(() => C.act.friendRemove(pid), 'Richiesta ritirata')}>Ritira</button>
+    </div>`;
+  }
+  return html`<button class="btn block" disabled=${busy} onClick=${() => run(() => C.act.friendRequest(pid), (d) => (d === 'active' ? 'Ora tu e ' + dispName(p) + ' siete amici' : 'Richiesta mandata a ' + dispName(p)))}><${Icon} n="heart" s="16" /> Aggiungi agli amici</button>`;
+}
+
+function FriendsScreen() {
+  const C = useContext(Ctx);
+  const [busy, setBusy] = useState(null);
+  const ids = (st) => Object.keys(C.friendOf).filter((id) => C.friendOf[id] === st && C.playersById[id]).sort((a, b) => dispName(C.playersById[a]).localeCompare(dispName(C.playersById[b]), 'it'));
+  const received = ids('received'), friends = ids('friend'), sent = ids('sent');
+  const run = async (id, fn, msg) => { setBusy(id); const r = await fn(); setBusy(null); if (r && r.ok && msg) C.flash(msg); };
+  const row = (id, right) => {
+    const p = C.playersById[id];
+    return html`<div key=${id} class="row" style="padding:10px 14px">
+      <button type="button" class="row-link" onClick=${() => C.go({ t: 'player', id })}>
+        <${Avatar} p=${p} size=${40} />
+        <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} /></span><span class="row-s ell" style="display:block">${[fullName(p), p.loc && p.loc.name].filter(Boolean).join(' · ')}</span></span>
+      </button>
+      ${right}
+    </div>`;
+  };
+  return html`<${Page} title="Amici" sub=${plural(friends.length, 'amico', 'amici')} onBack=${C.back}>
+    ${received.length > 0 && html`<section class="sec"><div class="sec-h"><h2 class="h3">Richieste ricevute</h2><span class="chip warn num">${received.length}</span></div>
+      <div class="card pad0 divided">${received.map((id) => row(id, html`<div class="hs" style="gap:6px">
+        <button class="btn sm accent" disabled=${busy === id} onClick=${() => run(id, () => C.act.friendRespond(id, true), 'Ora siete amici')}>Accetta</button>
+        <button class="btn sm ghost" disabled=${busy === id} onClick=${() => run(id, () => C.act.friendRespond(id, false), 'Richiesta rifiutata')}>No</button>
+      </div>`))}</div></section>`}
+    <section class="sec"><h2 class="h3">I tuoi amici</h2>
+      ${friends.length ? html`<div class="card pad0 divided">${friends.map((id) => row(id, html`<${Icon} n="chev" s="16" />`))}</div>`
+        : html`<div class="card empty small">Ancora nessun amico. Cerca qualcuno in Giocatori → Tutti gli iscritti e tocca "Aggiungi agli amici" nella sua scheda.</div>`}
+    </section>
+    ${sent.length > 0 && html`<section class="sec"><h2 class="h3">Richieste mandate</h2>
+      <div class="card pad0 divided">${sent.map((id) => row(id, html`<button class="btn sm ghost" disabled=${busy === id} onClick=${() => run(id, () => C.act.friendRemove(id), 'Richiesta ritirata')}>Ritira</button>`))}</div></section>`}
+    <div class="tiny faint">Un'amicizia la vedete solo voi due. Gli amici compaiono per primi quando cerchi i giocatori e puoi invitarli alle partite del tuo gruppo.</div>
+    <button class="btn block" onClick=${() => { C.goTab('players'); }}><${Icon} n="search" s="16" /> Cerca tra gli iscritti</button>
+  <//>`;
+}
+
+/* invitare amici a una partita: chi è nel gruppo lo trova tra le cose da fare */
+function InviteSheet({ mid, onClose }) {
+  const C = useContext(Ctx);
+  const [busy, setBusy] = useState(null);
+  const m = C.matchesById[mid];
+  if (!m) return null;
+  const canAdd = !!C.gid && (C.isGroupAdmin || C.isAdmin);
+  const list = Object.keys(C.friendOf).filter((id) => C.friendOf[id] === 'friend' && C.playersById[id])
+    .sort((a, b) => (C.isInGroup(b) - C.isInGroup(a)) || dispName(C.playersById[a]).localeCompare(dispName(C.playersById[b]), 'it'));
+  const invite = async (id, add) => {
+    setBusy(id);
+    if (add) { const r = await C.act.rpc('add_member', { p_gid: C.gid, p_uid: id }); if (!r.ok) { setBusy(null); return; } }
+    const ok = await C.act.inviteToMatch(mid, id);
+    setBusy(null);
+    if (ok) C.flash('Invito mandato a ' + dispName(C.playersById[id]));
+  };
+  return html`<${Sheet} title="Invita amici" onClose=${onClose}>
+    <div class="small muted">Chi inviti trova la partita tra le cose da fare, appena apre l'app, e risponde da lì.</div>
+    ${list.length ? html`<div class="card pad0 divided">${list.map((id) => {
+      const p = C.playersById[id], r = m.rsvp && m.rsvp[id], inv = m.invites && m.invites[id];
+      const member = C.isInGroup(id);
+      let right;
+      if (r && r.s === 'in') right = html`<span class="chip ok">Iscritto</span>`;
+      else if (r && r.s) right = html`<span class="chip">${r.s === 'out' ? 'Non viene' : 'Forse'}</span>`;
+      else if (inv) right = html`<span class="chip warn">Invitato</span>`;
+      else if (member) right = html`<button class="btn sm primary" disabled=${busy === id} onClick=${() => invite(id, false)}>Invita</button>`;
+      else if (canAdd) right = html`<button class="btn sm" disabled=${busy === id} onClick=${() => invite(id, true)}>Aggiungi e invita</button>`;
+      else right = html`<span class="chip">Non è nel gruppo</span>`;
+      return html`<div key=${id} class="row" style="padding:10px 14px">
+        <${Avatar} p=${p} size=${36} />
+        <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} /></span><span class="row-s ell" style="display:block">${member ? fullName(p) : 'Non è in ' + (C.group ? C.group.name : 'questo gruppo')}</span></span>
+        ${right}
+      </div>`;
+    })}</div>` : html`<div class="card empty small">Non hai ancora amici sull'app. Aggiungili dalla loro scheda giocatore.</div>`}
+    ${!canAdd && list.some((id) => !C.isInGroup(id)) && html`<div class="tiny faint">Chi non è nel gruppo lo può aggiungere un amministratore del gruppo; poi potrai invitarlo.</div>`}
+  <//>`;
+}
+
+/* ---------- affinità: i compagni con cui si vince di più ---------- */
+function AffinityList({ pid }) {
+  const C = useContext(Ctx);
+  const top = C.aff.top(pid, 5).filter((x) => C.playersById[x.id] && x.v >= 1);
+  if (!top.length) return html`<div class="card small muted">Ancora nessuna affinità: cresce piano piano vincendo o pareggiando nella stessa squadra.</div>`;
+  return html`<div class="card pad0 divided">${top.map((x) => {
+    const p = C.playersById[x.id];
+    return html`<button key=${x.id} class="row tap" style="padding:10px 14px" onClick=${() => C.go({ t: 'player', id: x.id })}>
+      <${Avatar} p=${p} size=${34} />
+      <span class="row-main"><span class="row-t ell">${dispName(p)}</span><span class="row-s">${fmtAffRec(x.w, x.d)}</span></span>
+      <span class="aff-bar"><i style=${'width:' + Math.max(3, x.v) + '%'}></i></span>
+      <b class="num aff-v">${Math.round(x.v)}</b>
+    </button>`;
+  })}</div>`;
+}
+const fmtAffRec = (w, d) => [w ? plural(w, 'vittoria', 'vittorie') : '', d ? plural(d, 'pareggio', 'pareggi') : ''].filter(Boolean).join(' e ') + ' insieme';
 
 
 /* ============================================================
@@ -3273,6 +3522,7 @@ function RecentGames({ s }) {
 function PlayerSections({ p, r, s }) {
   return html`
     <section class="sec"><h2 class="h3">Partite</h2><${MatchStatTiles} s=${s} /></section>
+    <section class="sec"><h2 class="h3">Compagni più affiatati</h2><${AffinityList} pid=${p.id} /></section>
     <section class="sec"><h2 class="h3">Stats</h2><${AreaDetail} p=${p} r=${r} /></section>
     <section class="sec"><div class="sec-h"><h2 class="h3">Valutazioni ricevute</h2><span class="chip num">${r.nPeers + (r.self ? 1 : 0)}</span></div><${ReceivedList} p=${p} r=${r} /></section>
     <section class="sec"><h2 class="h3">Ultime partite</h2><${RecentGames} s=${s} /></section>`;
@@ -3328,7 +3578,9 @@ function PlayerScreen({ id, scope }) {
     ${member && html`<${Seg} value=${mode} onChange=${setMode} options=${STATS_SCOPE} />`}
     <${PlayerCard} p=${p} r=${r} />
     <${PlaceAge} p=${p} from=${isMe ? null : C.me && C.me.loc} />
+    ${!isMe && member && C.isInGroup(C.uid) && html`<div class="aff-me"><span class="small muted">Affinità con te</span><span class="aff-bar"><i style=${'width:' + Math.max(2, C.aff.get(C.uid, id)) + '%'}></i></span><b class="num">${Math.round(C.aff.get(C.uid, id))}</b><span class="tiny faint">${(() => { const r = C.aff.record(C.uid, id); return r.w || r.d ? fmtAffRec(r.w, r.d) : 'mai vinto insieme'; })()}</span></div>`}
     <${InjuryCard} inj=${p.injury} mine=${isMe} />
+    <${FriendButton} pid=${id} />
     ${all && html`<${GeneralNote} r=${r} mine=${isMe} />`}
     ${isMe
       ? html`<button class="btn block" onClick=${() => C.goTab('me')}><${Icon} n="user" s="16" /> Vai al tuo profilo</button>`
@@ -3373,6 +3625,9 @@ function MeScreen() {
         ${all && html`<${GeneralNote} r=${r} mine />`}
         ${C.canWrite && !me.loc && html`<div class="note hs-12"><${Icon} n="pin" s="16" /><span class="grow">Aggiungi il tuo comune: così ti trova chi cerca giocatori nella tua zona.</span><button class="btn sm" onClick=${() => setEdit(true)}>Aggiungi</button></div>`}
         ${C.canWrite && html`<button class="btn block" onClick=${() => setEdit(true)}><${Icon} n="edit" s="16" /> Modifica profilo</button>`}
+        <button class="card" style="text-align:left" onClick=${() => C.go({ t: 'friends' })}>
+          <div class="hs-12"><${Icon} n="heart" /><div class="grow"><div class="h3">Amici</div><div class="small muted">${(() => { const v = Object.values(C.friendOf); const n = v.filter((x) => x === 'friend').length, q = v.filter((x) => x === 'received').length; return plural(n, 'amico', 'amici') + (q ? ' · ' + plural(q, 'richiesta', 'richieste') + ' da guardare' : ''); })()}</div></div>${C.badges.friends > 0 && html`<span class="count-badge">${C.badges.friends}</span>`}<${Icon} n="chev" /></div>
+        </button>
         <section class="sec"><h2 class="h3">Stato fisico</h2><${InjuryEditor} key=${(me.injury && me.injury.since) || 'ok'} /></section>
         ${me.selfUnlock || C.isAdmin
           ? html`<div class="card todo hs-12"><${Icon} n="unlock" /><div class="grow"><div class="h3">${C.isAdmin ? 'Modifica la tua autovalutazione' : 'Puoi rifare l\'autovalutazione'}</div><div class="small muted">${C.isAdmin ? 'Come amministratore puoi cambiarla quando vuoi.' : 'L\'amministratore l\'ha sbloccata, una volta sola.'}</div></div><button class="btn primary sm" onClick=${() => C.go({ t: 'self' })}>${C.isAdmin ? 'Modifica' : 'Rifalla'}</button></div>`
@@ -3408,6 +3663,7 @@ function PlayersScreen() {
   const [ageMin, setAgeMin] = useState('');
   const [ageMax, setAgeMax] = useState('');
   const [healthy, setHealthy] = useState(false);
+  const [onlyFriends, setOnlyFriends] = useState(false);
   const all = !C.gid || scope === 'all';
   useEffect(() => { if (all) C.loadGlobal(); }, [all]);
   const R = all ? C.ratedAll : C.rated;
@@ -3415,7 +3671,7 @@ function PlayersScreen() {
   const t = q.trim().toLowerCase();
   const oMin = numOrNull(ovrMin), oMax = numOrNull(ovrMax), aMin = numOrNull(ageMin), aMax = numOrNull(ageMax);
   const zoneOn = km > 0 && !!from;
-  const nActive = (zoneOn ? 1 : 0) + (roles.length ? 1 : 0) + (oMin != null || oMax != null ? 1 : 0) + (aMin != null || aMax != null ? 1 : 0) + (healthy ? 1 : 0);
+  const nActive = (zoneOn ? 1 : 0) + (roles.length ? 1 : 0) + (oMin != null || oMax != null ? 1 : 0) + (aMin != null || aMax != null ? 1 : 0) + (healthy ? 1 : 0) + (onlyFriends ? 1 : 0);
   const dist = (p) => (from && p.loc ? kmBetween(from, p.loc) : null);
   const far = (p) => { const d = dist(p); return d == null ? 1e9 : d; };
   const list = base.filter((p) => {
@@ -3430,13 +3686,14 @@ function PlayersScreen() {
     if (aMin != null && a < aMin) return false;
     if (aMax != null && a > aMax) return false;
     if (healthy && p.injury && p.injury.level) return false;
+    if (onlyFriends && !C.isFriend(p.id)) return false;
     return true;
-  }).sort(sort === 'lvl' ? (a, b) => R[b.id].ovr - R[a.id].ovr
+  }).sort(friendsFirst(C, sort === 'lvl' ? (a, b) => R[b.id].ovr - R[a.id].ovr
     : sort === 'km' ? (a, b) => far(a) - far(b) || R[b.id].ovr - R[a.id].ovr
-      : (a, b) => dispName(a).localeCompare(dispName(b), 'it'));
+      : (a, b) => dispName(a).localeCompare(dispName(b), 'it')));
   const injured = base.filter((p) => p.injury && p.injury.level).length;
   const toggleRole = (r) => setRoles(roles.includes(r) ? roles.filter((x) => x !== r) : roles.concat(r));
-  const reset = () => { setKm(0); setFrom(myLoc); setRoles([]); setOvrMin(''); setOvrMax(''); setAgeMin(''); setAgeMax(''); setHealthy(false); };
+  const reset = () => { setKm(0); setFrom(myLoc); setRoles([]); setOvrMin(''); setOvrMax(''); setAgeMin(''); setAgeMax(''); setHealthy(false); setOnlyFriends(false); };
   const sub = (p) => {
     if (p.injury && p.injury.level) return injSummary(p.injury);
     const bits = [fullName(p)];
@@ -3470,6 +3727,7 @@ function PlayersScreen() {
           </div>
         </div>
         <label class="check"><input type="checkbox" checked=${healthy} onChange=${(e) => setHealthy(e.target.checked)} /><span>Senza infortunati</span></label>
+        <label class="check"><input type="checkbox" checked=${onlyFriends} onChange=${(e) => setOnlyFriends(e.target.checked)} /><span>Solo amici</span></label>
         ${(aMin != null || aMax != null) && html`<div class="tiny faint">Con il filtro per età compare solo chi ha messo l'anno di nascita.</div>`}
         ${nActive > 0 && html`<button class="btn ghost sm" onClick=${reset}>Togli tutti i filtri</button>`}
       </div>`}
@@ -3477,7 +3735,7 @@ function PlayersScreen() {
     </div>
     ${list.length ? html`<div class="card pad0 divided">${list.map((p) => html`<button key=${p.id} class="row tap" style="padding:10px 14px" onClick=${() => C.go({ t: 'player', id: p.id, scope: all ? 'all' : 'group' })}>
       <${Avatar} p=${p} size=${40} />
-      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} />${p.id === C.uid && html`<span class="chip ok">Tu</span>`}</span><span class=${'row-s ell' + (p.injury && p.injury.level ? ' inj-t' : '')} style="display:block">${sub(p)}</span></span>
+      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} />${p.id === C.uid && html`<span class="chip ok">Tu</span>`}${C.isFriend(p.id) && html`<${FriendChip} />`}</span><span class=${'row-s ell' + (p.injury && p.injury.level ? ' inj-t' : '')} style="display:block">${sub(p)}</span></span>
       <${RoleChips} role=${p.role} role2=${p.role2} />
       <${Ovr} v=${R[p.id].ovr} />
     </button>`)}</div>` : html`<div class="card empty"><div class="h3">${base.length ? 'Nessun risultato' : 'Ancora nessun giocatore'}</div><div>${base.length ? (nActive ? 'Prova ad allargare i filtri.' : 'Prova con un altro nome.') : 'Quando gli amici creano il profilo compaiono qui.'}</div>${nActive > 0 && html`<button class="btn" onClick=${reset}>Togli i filtri</button>`}</div>`}
@@ -3529,6 +3787,7 @@ function MatchCard({ m }) {
     if (mv && mv.winners.length) chips.push(html`<span class="chip"><${Icon} n="trophy" s="14" /> ${joinNames(mv.winners.map((id) => nameFor(id, m, C)))}</span>`);
     if (!chips.length) chips.push(html`<span class="chip">Giocata</span>`);
   } else if (inConf) chips.push(html`<span class="chip ok"><${Icon} n="check" s="14" /> Ci sei</span>`);
+  else if (!mine && m.invites && m.invites[C.uid]) chips.push(html`<span class="chip warn"><${Icon} n="heart" s="12" fill /> Sei invitato</span>`);
   else if (waitPos >= 0) chips.push(html`<span class="chip warn">In attesa · n° ${waitPos + 1}</span>`);
   else if (mine && mine.s === 'maybe') chips.push(html`<span class="chip warn">Forse</span>`);
   else if (mine && mine.s === 'out') chips.push(html`<span class="chip">Non ci sei</span>`);
@@ -3569,6 +3828,7 @@ function HomeScreen() {
   const resTodo = played.filter((m) => !Engine.hasResult(m) && (iPlayed(m) || C.isAdmin) && canEditPlayed(m, C)).slice(0, 3);
   const recent = played.slice(0, 2);
   const polls = ms.filter(pollVisible).sort((a, b) => numOr(b.created, 0) - numOr(a.created, 0));
+  const invites = upcoming.filter((m) => m.invites && m.invites[C.uid] && !(m.rsvp && m.rsvp[C.uid] && m.rsvp[C.uid].s)).slice(0, 3);
   const pollTodo = C.me ? polls.filter((m) => pollOpenDays(m).length && !myPollDays(m, C.uid).length).slice(0, 2) : [];
 
   return html`<div class="page">
@@ -3576,9 +3836,11 @@ function HomeScreen() {
 
     <${OverdueNote} />
 
-    ${(mvpTodo.length > 0 || resTodo.length > 0 || pollTodo.length > 0 || C.badges.requests > 0) && html`<section class="sec">
+    ${(mvpTodo.length > 0 || resTodo.length > 0 || pollTodo.length > 0 || invites.length > 0 || C.badges.requests > 0 || C.badges.friends > 0) && html`<section class="sec">
       <h2 class="h3">Da fare</h2>
       <div class="cards">
+        ${invites.map((m) => { const by = C.playersById[m.invites[C.uid].by]; return html`<${TodoCard} key=${'i' + m.id} icon="heart" title=${(by ? dispName(by) + ' ti invita' : 'Sei invitato') + ': ' + dayShort(m).toLowerCase() + (m.time ? ' alle ' + m.time : '')} text=${fmtOf(m).name + ' · ' + (m.field || 'campo da definire') + '. Rispondi se ci sei.'} onClick=${() => C.go({ t: 'match', id: m.id })} />`; })}
+        ${C.badges.friends > 0 && html`<${TodoCard} icon="heart" title=${plural(C.badges.friends, 'richiesta', 'richieste') + ' di amicizia'} text="Accetta o rifiuta dalla pagina Amici" onClick=${() => C.go({ t: 'friends' })} />`}
         ${pollTodo.map((m) => html`<${TodoCard} key=${'p' + m.id} icon="calendar" title=${'Quando giochiamo? Partita a ' + m.format} text=${'Segna i giorni in cui sei libero: si gioca il primo che arriva a ' + pollNeed(m)} onClick=${() => C.go({ t: 'match', id: m.id })} />`)}
         ${C.badges.requests > 0 && html`<${TodoCard} icon="users" title=${plural(C.badges.requests, 'richiesta', 'richieste') + ' per entrare nel gruppo'} text="Accetta o rifiuta chi vuole giocare con voi" onClick=${() => C.go({ t: 'group' })} />`}
         ${mvpTodo.map((m) => { const mv = C.stats.mvps[m.id]; return html`<${TodoCard} key=${'v' + m.id} icon="trophy" title=${'Vota l\'MVP di ' + dayShort(m).toLowerCase()} text=${'Si chiude tra ' + fmtLeft(mv.closesAt - Date.now()) + ' · hanno votato ' + mv.nVoted + ' su ' + mv.nEligible} onClick=${() => C.go({ t: 'mvp', id: m.id })} />`; })}
@@ -3686,7 +3948,7 @@ function MatchScreen({ id }) {
     doIt();
   };
   const closeMatch = async () => {
-    const fin = snapshotFinal(m, R);
+    const fin = snapshotFinal(m, R, C.aff);
     const ok = await C.act.markPlayed(m.id, fin);
     if (ok) { C.flash('Partita chiusa: il voto MVP è aperto per 24 ore'); C.go({ t: 'result', id: m.id }); }
   };
@@ -3731,6 +3993,7 @@ function MatchScreen({ id }) {
         ${mineS === 'in' && waitPos >= 0 && html`<div class="note warn" style="margin-top:12px"><${Icon} n="clock" s="16" /><span>Sei in lista d'attesa al n° ${waitPos + 1}: se qualcuno si ritira entri tu.</span></div>`}
         ${mineS === 'in' && waitPos < 0 && html`<div class="tiny faint" style="margin-top:10px">Il ruolo te lo assegna l'app${pick ? ' dentro la tua squadra' : ' quando fa le squadre'}, partendo dai tuoi ruoli preferiti.</div>`}
         ${!C.me && C.canWrite && html`<div class="note" style="margin-top:12px">Crea prima il tuo profilo dalla scheda Profilo per rispondere.</div>`}
+        ${!mineS && m.invites && m.invites[C.uid] && html`<div class="note ok" style="margin-top:12px"><${Icon} n="heart" s="16" /><span>${C.playersById[m.invites[C.uid].by] ? dispName(C.playersById[m.invites[C.uid].by]) : 'Un amico'} ti ha invitato a questa partita.</span></div>`}
       </section>`}
 
       ${(open || phase === 'toclose') && html`<section class="sec">
@@ -3754,6 +4017,7 @@ function MatchScreen({ id }) {
         ${canAct && open && html`<div class="hs wrap">
           <button class="btn sm" onClick=${() => C.openSheet({ k: 'addPlayer', mid: m.id })}><${Icon} n="plus" s="16" /> Aggiungi giocatore</button>
           <button class="btn sm" onClick=${() => C.openSheet({ k: 'guest', mid: m.id })}><${Icon} n="plus" s="16" /> Aggiungi ospite</button>
+          <button class="btn sm" onClick=${() => C.openSheet({ k: 'invite', mid: m.id })}><${Icon} n="heart" s="16" /> Invita amici</button>
         </div>`}
       </section>`}
 
@@ -3787,7 +4051,7 @@ function TeamsTab({ m, R, D }) {
   const legacy = !m.teamMode;
   const hasLineup = D.A.length + D.B.length > 0;
   const makeTeams = (extra) => {
-    const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'bal', format: m.format });
+    const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'bal', format: m.format, aff: C.aff });
     if (r) C.act.saveTeams(m.id, r.a, r.b, r.roles, extra);
   };
   if (phase === 'played') {
@@ -3797,7 +4061,7 @@ function TeamsTab({ m, R, D }) {
   const backToAuto = () => {
     if (R.confirmed.length >= R.cap) {
       const sig = rosterSig(R);
-      const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'exact', format: m.format, rng: seededRng(m.id + '|' + sig) });
+      const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'exact', format: m.format, rng: seededRng(m.id + '|' + sig), aff: C.aff });
       if (r) { C.act.saveTeams(m.id, r.a, r.b, r.roles, { auto: true, manual: false, sig }); setEditing(false); return; }
     }
     C.act.saveTeams(m.id, [], [], {}, { manual: false, auto: false, sig: '' });
@@ -3947,9 +4211,8 @@ function TeamBoard({ m, R, T }) {
   const A = T.a, B = T.b, free = T.free, roles = T.roles;
   const P = (i) => R.confirmedById[i];
   const part = (i) => P(i).part;
-  const ev = Engine.evaluate(A.map(part), B.map(part), roles);
+  const ev = Engine.evaluate(A.map(part), B.map(part), roles, C.aff);
   const whereOf = (i) => (A.includes(i) ? 'a' : B.includes(i) ? 'b' : 'f');
-  const nameA = teamName(m, 'a'), nameB = teamName(m, 'b');
 
   const save = (a, b, r) => {
     setSug(null);
@@ -3993,12 +4256,12 @@ function TeamBoard({ m, R, T }) {
   const dropOn = (d, i) => { if (canMove && P(d) && whereOf(d) !== whereOf(i)) { swap(d, i); setSel(null); } };
 
   const shuffle = () => {
-    const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode, format: fmt, current: { a: A, b: B } });
+    const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode, format: fmt, current: { a: A, b: B }, aff: C.aff });
     if (r) { setSel(null); save(r.a, r.b, r.roles); }
   };
   const suggest = () => {
     if (free.length) { C.flash('Prima metti tutti i giocatori in una squadra'); return; }
-    setSug(Engine.bestSwap(A.map(part), B.map(part), roles, fmt) || 'none');
+    setSug(Engine.bestSwap(A.map(part), B.map(part), roles, fmt, C.aff) || 'none');
   };
   const reset = () => C.openSheet({ k: 'confirm', title: 'Azzerare le squadre?', text: 'Squadre e ruoli salvati vengono cancellati. Potrai crearne di nuovi subito dopo.', label: 'Azzera', danger: true, onYes: () => { setSel(null); save([], [], {}); } });
 
@@ -4133,7 +4396,7 @@ function ResultScreen({ id }) {
     if (A.join() !== (fin.a || []).join() || B.join() !== (fin.b || []).join()) {
       const pa = A.map((i) => partFor(i, m, C)), pb = B.map((i) => partFor(i, m, C));
       const roles = Object.assign({}, Engine.bestLineup(pa, m.format).roles, Engine.bestLineup(pb, m.format).roles);
-      const e = Engine.evaluate(pa, pb, roles);
+      const e = Engine.evaluate(pa, pb, roles, C.aff);
       finPatch = { a: A, b: B, roles, pred: { balance: e.balance, va: e.a.mean, vb: e.b.mean } };
     }
     const ok = await C.act.saveResult(m.id, result, finPatch);
@@ -4328,6 +4591,7 @@ function MenuSheet({ onClose }) {
     <div class="menu-list">
       ${C.group && item('users', 'Il mio gruppo: ' + C.group.name, () => go({ t: 'group' }), badge(C.badges.requests))}
       ${item('pitch', 'Gruppi: cambia, cerca o crea', () => go({ t: 'groups' }))}
+      ${item('heart', 'Amici', () => go({ t: 'friends' }), badge(C.badges.friends))}
       ${item('settings', 'Impostazioni', () => go({ t: 'settings' }))}
       ${item('help', 'Help: scrivi agli sviluppatori', () => go({ t: 'help' }), badge(C.badges.helpReplies))}
       ${item('code', 'Sviluppatori', () => go({ t: 'devs' }))}
@@ -4551,7 +4815,7 @@ function AddMembersScreen() {
   const cands = C.allPlayers
     .filter((p) => st(p.id) !== 'active')
     .filter((p) => !t || (fullName(p) + ' ' + (p.nick || '')).toLowerCase().includes(t))
-    .sort((a, b) => (st(b.id) === 'pending') - (st(a.id) === 'pending') || far(a) - far(b) || dispName(a).localeCompare(dispName(b), 'it'));
+    .sort((a, b) => (st(b.id) === 'pending') - (st(a.id) === 'pending') || (C.isFriend(b.id) - C.isFriend(a.id)) || far(a) - far(b) || dispName(a).localeCompare(dispName(b), 'it'));
   const whereP = (p) => { const d = gl && p.loc ? kmBetween(gl, p.loc) : null; return p.loc ? (d != null ? p.loc.name + ' · ' + fmtKm(d) : p.loc.name) : ''; };
   const add = async (p) => {
     setBusy(p.id);
@@ -4564,7 +4828,7 @@ function AddMembersScreen() {
     <input id="add-search" class="input" type="search" placeholder="Cerca per nome o soprannome" value=${q} onInput=${(e) => setQ(e.target.value)} />
     ${cands.length ? html`<div class="card pad0 divided">${cands.map((p) => { const pend = st(p.id) === 'pending'; return html`<div key=${p.id} class="row" style="padding:10px 14px">
       <${Avatar} p=${p} size=${40} />
-      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} /></span><span class="row-s ell" style="display:block">${pend ? 'Ha chiesto di entrare' : [fullName(p), p.role + (p.role2 ? '/' + p.role2 : ''), whereP(p)].filter(Boolean).join(' · ')}</span></span>
+      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} />${C.isFriend(p.id) && html`<${FriendChip} />`}</span><span class="row-s ell" style="display:block">${pend ? 'Ha chiesto di entrare' : [fullName(p), p.role + (p.role2 ? '/' + p.role2 : ''), whereP(p)].filter(Boolean).join(' · ')}</span></span>
       <${Ovr} v=${C.ratedAll[p.id].ovr} size="sm" />
       <button class="btn sm primary" disabled=${busy === p.id} onClick=${() => add(p)}>${pend ? 'Accetta' : 'Aggiungi'}</button>
     </div>`; })}</div>` : html`<div class="card empty small">${t ? 'Nessun iscritto con questo nome fuori dal gruppo.' : 'Tutti gli iscritti all\'app sono già nel gruppo.'}</div>`}
@@ -4997,13 +5261,13 @@ function AddPlayerSheet({ mid, onClose }) {
   const list = C.players
     .filter((p) => { const r = m.rsvp && m.rsvp[p.id]; return !(r && r.s === 'in'); })
     .filter((p) => !t || (fullName(p) + ' ' + (p.nick || '')).toLowerCase().includes(t))
-    .sort((a, b) => dispName(a).localeCompare(dispName(b), 'it'));
+    .sort(friendsFirst(C, (a, b) => dispName(a).localeCompare(dispName(b), 'it')));
   return html`<${Sheet} title="Aggiungi giocatore" onClose=${onClose}>
     <input id="ap-search" class="input" type="search" placeholder="Cerca per nome" value=${q} onInput=${(e) => setQ(e.target.value)} />
     <div class="small muted">Per chi ha confermato a voce o in un altro modo. Entra come "ci sono".</div>
     ${list.length ? html`<div class="card pad0 divided">${list.map((p) => html`<div key=${p.id} class="row" style="padding:10px 14px">
       <${Avatar} p=${p} size=${36} />
-      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} s="14" /></span><span class="row-s ell" style="display:block">${fullName(p)}</span></span>
+      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} s="14" />${C.isFriend(p.id) && html`<${FriendChip} />`}</span><span class="row-s ell" style="display:block">${fullName(p)}</span></span>
       <${RoleChips} role=${p.role} role2=${p.role2} />
       <button class="btn sm primary" onClick=${() => { C.act.setRsvp(mid, p.id, 'in'); C.flash(dispName(p) + ' aggiunto'); }}>Aggiungi</button>
     </div>`)}</div>` : html`<div class="empty small">${C.players.length ? 'Nessun giocatore da aggiungere.' : 'Nessun iscritto.'}</div>`}
@@ -5134,6 +5398,8 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Squadre e ruoli</h3><p class="muted">I ruoli li assegna l'app, insieme alle squadre. Prova tutte le divisioni possibili e per ogni squadra sceglie il modulo che le va meglio (a 5: 1-1-2-1, 1-2-1-1, 1-2-2; a 7: 1-2-3-1, 1-3-1-2, 1-3-2-1, dove 1-2-1-2-1 conta come 1-2-3-1; a 8: 1-3-3-1, 1-2-3-2, 1-3-2-2, 1-2-4-1). Nel tuo ruolo o nel secondo vali il tuo punteggio. In un ruolo vicino (difesa e centrocampo, centrocampo e attacco) vali ${CFG.MALUS_NEAR} punti in meno, in un ruolo lontano (difesa e attacco) ${CFG.MALUS_FAR} in meno. Se vai in porta senza essere portiere conta la tua Porta; un portiere fuori dai pali vale la media delle sue aree di movimento. Con il cerotto conti ${CFG.INJ_LIGHT} punti in meno, con la croce rossa ${CFG.INJ_BAD}. L'app cerca le squadre più vicine nel valore medio e area per area, tenendo fuori ruolo meno gente possibile. Puoi sempre cambiare ruoli e giocatori a mano.</p></div>
       <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. Poi l'app ti propone di aggiornare le valutazioni dei compagni, anche più tardi.</p></div>
       <div><h3 class="h3">Gruppi e stats generali</h3><p class="muted">Partite, storico, messaggi e valutazioni sono di ogni gruppo. Puoi stare in più gruppi: cambi gruppo toccando il suo nome in alto. Nella scheda Giocatori vedi i membri del gruppo oppure tutti gli iscritti all'app. Le stats nel gruppo sono la media delle valutazioni date in quel gruppo; le stats generali sono la media di tutte le valutazioni ricevute in tutti i gruppi, autovalutazione compresa.</p></div>
+      <div><h3 class="h3">Affinità</h3><p class="muted">Più partite due giocatori vincono (o pareggiano) nella stessa squadra, più cresce la loro affinità, piano piano: una vittoria vale 1, un pareggio mezzo, le sconfitte non tolgono niente. Si arriva a circa 28 dopo 10 partite positive insieme, 57 dopo 25, 81 dopo 50 (massimo 100). Una squadra di compagni affiatati prende fino a +${Engine.AFF_BONUS} punti sul valore medio, e l'app ne tiene conto quando fa le squadre.</p></div>
+      <div><h3 class="h3">Amici</h3><p class="muted">Chiedi l'amicizia dalla scheda di un giocatore: diventate amici quando l'altro accetta. Gli amici compaiono per primi nelle ricerche e puoi invitarli alle partite del tuo gruppo.</p></div>
       <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti.</p></div>
     </div>
   <//>`;
@@ -5156,6 +5422,7 @@ function SheetHost({ sheet, onClose }) {
     case 'groupSwitch': return html`<${GroupSwitchSheet} onClose=${onClose} />`;
     case 'member2': return html`<${MemberActionsSheet} key=${sheet.uid} uid=${sheet.uid} onClose=${onClose} />`;
     case 'colors': return html`<${ColorSheet} mid=${sheet.mid} onClose=${onClose} />`;
+    case 'invite': return html`<${InviteSheet} mid=${sheet.mid} onClose=${onClose} />`;
     case 'pollClose': return html`<${PollCloseSheet} mid=${sheet.mid} onClose=${onClose} />`;
     default: return null;
   }
@@ -5189,9 +5456,9 @@ function Gate({ status, startDemo }) {
   </div>`;
 }
 
-const GLOBAL_COLS = ['players', 'groups', 'members', 'fields', 'help'];
+const GLOBAL_COLS = ['players', 'groups', 'members', 'fields', 'help', 'friends'];
 const GROUP_COLS = ['matches', 'ratings', 'mvp', 'chat'];
-const EMPTY_GLOBAL = { players: null, groups: null, members: null, fields: [], help: [] };
+const EMPTY_GLOBAL = { players: null, groups: null, members: null, fields: [], help: [], friends: [] };
 const EMPTY_GROUP = { matches: null, ratings: null, mvp: null, chat: null };
 
 function App() {
@@ -5336,6 +5603,11 @@ function App() {
   const globalDocs = useMemo(() => (gvotes ? gvotes.map((x, i) => ({ id: '~' + i, r: { [x.target]: x.vote } })) : (data.ratings || [])), [gvotes, data.ratings]);
   const ratedAll = useMemo(() => Engine.computeRatings(allPlayers, globalDocs), [gdata.players, globalDocs]);
   const stats = useMemo(() => Engine.matchStats(players, matches, data.mvp || [], Date.now()), [players, data.matches, data.mvp, tick]);
+  /* affinità tra compagni: dalle partite giocate in questo gruppo */
+  const aff = useMemo(() => Engine.affinityFrom(matches), [data.matches]);
+  /* amicizie: le vedono solo i due interessati */
+  const friendOf = useMemo(() => friendsIndex(gdata.friends, uid), [gdata.friends, be]);
+  const friendReqs = Object.keys(friendOf).filter((id) => friendOf[id] === 'received' && playersById[id]).length;
   const me = uid ? playersById[uid] : null;
   const group = validGid ? groupsById[validGid] : null;
   const myMember = validGid ? memberById[validGid + '~' + uid] : null;
@@ -5357,7 +5629,7 @@ function App() {
   const markHelpSeen = () => { const t = Math.max(0, ...help.filter((h) => h.by === uid).map(lastReplyT)); if (t > helpSeen) { writeLS(helpSeenKey, String(t)); setReadMark((x) => x + 1); } };
   const requests = (isGroupAdmin || isAdmin) ? members.filter((m) => m.gid === validGid && m.status === 'pending').length : 0;
   const helpOpen = isAdmin ? help.filter((h) => h.status !== 'done').length : 0;
-  const badges = { chat: unread, requests, helpReplies, helpOpen, menu: requests + helpReplies + helpOpen };
+  const badges = { chat: unread, requests, helpReplies, helpOpen, friends: friendReqs, menu: requests + helpReplies + helpOpen + friendReqs };
 
   const go = (s) => { setStack((st) => [...st, s]); window.scrollTo(0, 0); };
   const back = () => { setStack((st) => st.slice(0, -1)); };
@@ -5368,7 +5640,8 @@ function App() {
 
   const ctx = {
     uid, me, canWrite, isAdmin, isGroupAdmin, demo: !!(be && be.demo), act,
-    players, allPlayers, playersById, rated, ratedAll, loadGlobal, isInGroup: (id) => inGroup.has(id), stats,
+    players, allPlayers, playersById, rated, ratedAll, loadGlobal, isInGroup: (id) => inGroup.has(id), stats, aff,
+    friendOf, friendStatus: (id) => friendOf[id] || null, isFriend: (id) => friendOf[id] === 'friend',
     matches, matchesById, allFields, fieldOf: (m) => fieldOfMatch(m, allFields), ratings: data.ratings || [], mvp: data.mvp || [],
     gid: validGid, group, groups: gdata.groups || [], groupsById, members, memberById, myGroups, switchGroup,
     chat, markRead, help, markHelpSeen, badges, theme, setTheme,
@@ -5403,6 +5676,7 @@ function App() {
   else if (top && top.t === 'settings') view = html`<${SettingsScreen} key="settings" />`;
   else if (top && top.t === 'help') view = html`<${HelpScreen} key="help" />`;
   else if (top && top.t === 'devs') view = html`<${DevelopersScreen} key="devs" />`;
+  else if (top && top.t === 'friends') view = html`<${FriendsScreen} key="friends" />`;
   else if (top && top.t === 'admin') view = html`<${AdminScreen} key="admin" />`;
   else if (top && top.t === 'player') view = html`<${PlayerScreen} key=${'p' + top.id + (top.scope || '')} id=${top.id} scope=${top.scope} />`;
   else if (top && top.t === 'self') view = html`<${SelfRateScreen} key="self" />`;
@@ -5428,7 +5702,7 @@ function App() {
     { t: 'history', i: 'history', l: 'Storico' },
     { t: 'chat', i: 'chat', l: 'Messaggi', badge: unread },
     { t: 'players', i: 'users', l: 'Giocatori' },
-    { t: 'me', i: 'user', l: 'Profilo' },
+    { t: 'me', i: 'user', l: 'Profilo', badge: friendReqs },
   ];
 
   return html`<${Ctx.Provider} value=${ctx}>
