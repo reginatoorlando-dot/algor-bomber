@@ -800,17 +800,20 @@ button.pc-ovr { appearance: none; border: 0; background: none; padding: 0; margi
 .fifa-flip .back { transform: rotateY(180deg); }
 .fifa-flip.on .front { transform: rotateY(-180deg); }
 .fifa-flip.on .back { transform: rotateY(0deg); }
-.fifa { --c1: #f7e7a1; --c2: #d8ad45; --c3: #8f6a1f; --ink: #34260a; --line: rgba(52, 38, 10, 0.28);
-  clip-path: polygon(14% 0, 86% 0, 100% 7%, 100% 88%, 50% 100%, 0 88%, 0 7%);
-  background: radial-gradient(120% 80% at 30% 10%, var(--c1), var(--c2) 55%, var(--c3));
-  color: var(--ink); display: flex; flex-direction: column; align-items: center; padding: 9% 9% 15%; overflow: hidden; }
-.fifa.silver { --c1: #fbfcfd; --c2: #c7cdd3; --c3: #7f888f; --ink: #1f2428; --line: rgba(31, 36, 40, 0.25); }
-.fifa.bronze { --c1: #f6d6b4; --c2: #c98b55; --c3: #7c4a26; --ink: #33200f; --line: rgba(51, 32, 15, 0.28); }
-.fifa::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 14px); pointer-events: none; }
-.fifa-shine { position: absolute; inset: -40%; background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%); transform: translateX(-60%); animation: fifa-shine 2.6s ease-in-out 0.4s 1 both; pointer-events: none; }
-@keyframes fifa-shine { to { transform: translateX(60%); } }
+.fifa { --ink: #2c2008; --line: rgba(44, 32, 8, 0.32);
+  color: var(--ink); display: flex; flex-direction: column; align-items: center; padding: 15% 11.5% 20%; }
+.fifa.back { padding: 13% 11% 20%; }
+.fifa.silver { --ink: #1c2125; --line: rgba(28, 33, 37, 0.3); }
+.fifa.bronze { --ink: #2e1c0d; --line: rgba(46, 28, 13, 0.32); }
+.fifa.mvpc { --ink: #f0dca0; --line: rgba(240, 220, 160, 0.35); }
+.fifa > * { position: relative; z-index: 1; }
+/* il retro non deve trasparire: anche i figli nascondono il lato girato (servono per ombre e animazioni) */
+.fifa-flip .fifa > *, .fifa-flip .fifa::after { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.fifa > .fifa-frame { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; overflow: visible; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.42)); }
+.fifa-sh { animation: fifa-sh 2.4s ease-in-out 0.35s 1 both; }
+@keyframes fifa-sh { to { transform: translateX(440px); } }
 .fifa-top { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 4%; width: 100%; align-items: start; }
-.fifa-ovr { display: flex; flex-direction: column; align-items: center; padding-top: 6%; }
+.fifa-ovr { display: flex; flex-direction: column; align-items: center; padding-top: 3%; }
 .fifa-ovr b { font: 800 clamp(44px, 15vw, 64px)/0.9 var(--f-display); letter-spacing: -0.04em; }
 .fifa-ovr span { font: 800 clamp(13px, 4.2vw, 17px)/1.1 var(--f-body); letter-spacing: 0.08em; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .fifa-ovr em { font-style: normal; font-size: 0.72em; opacity: 0.7; }
@@ -824,51 +827,59 @@ button.pc-ovr { appearance: none; border: 0; background: none; padding: 0; margi
 .fifa-stats .fs b { font: 800 clamp(18px, 6vw, 24px)/1 var(--f-display); }
 .fifa-stats .fs span { font: 700 12px/1 var(--f-body); letter-spacing: 0.06em; opacity: 0.8; }
 .fifa-stats .fs.dim { opacity: 0.5; }
-.fifa-foot { position: relative; margin-top: auto; font-size: 11.5px; font-weight: 600; opacity: 0.75; text-align: center; max-width: 82%; }
+.fifa-foot { position: relative; margin-top: auto; font-size: 10.5px; font-weight: 600; opacity: 0.75; text-align: center; max-width: 72%; line-height: 1.25; }
 .fifa-bh { position: relative; display: flex; align-items: baseline; gap: 10px; width: 100%; justify-content: center; padding-bottom: 4%; border-bottom: 1.5px solid var(--line); }
 .fifa-bh b { font: 800 30px/1 var(--f-display); }
 .fifa-bh span { font: 800 16px/1 var(--f-display); letter-spacing: 0.05em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fifa-voci { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 3% 8%; width: 100%; margin-top: 4%; font-size: clamp(10.5px, 3.1vw, 12.5px); }
-.fv-h { display: flex; justify-content: space-between; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); padding-bottom: 2px; margin-bottom: 2px; }
+.fv-h { display: flex; justify-content: space-between; gap: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid var(--line); padding-bottom: 2px; margin-bottom: 2px; }
 .fv-r { display: flex; justify-content: space-between; gap: 6px; line-height: 1.45; }
 .fv-r span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fv.dim { opacity: 0.55; }
 
-/* ---- card: entrata lunga, raggi di luce, versione MVP, condivisione ---- */
+/* ---- card: entrata (gira e si posa, poi una luce si diffonde e compaiono le stats), raggi nei momenti speciali ---- */
 .fifa-ov { overflow: hidden; }
-.fifa-ov.long { perspective: 1100px; }
-.fifa.mvpc { --c1: #3f7253; --c2: #1d3527; --c3: #0d1912; --ink: #f3dfa2; --line: rgba(243, 223, 162, 0.32); }
-.fifa-mvp { position: absolute; top: 3%; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; font: 800 11px/1 var(--f-body); letter-spacing: 0.12em; padding: 5px 9px; border-radius: 999px; background: rgba(243, 223, 162, 0.16); border: 1px solid var(--line); z-index: 1; }
-.fifa-rays { position: absolute; left: 50%; top: 45%; width: 180vmax; height: 180vmax; margin: -90vmax 0 0 -90vmax; pointer-events: none; animation: rays-in 1.1s ease-out both; --ray: 255, 214, 90; }
-.fifa-rays.silver { --ray: 220, 232, 244; }
-.fifa-rays.bronze { --ray: 236, 168, 110; }
+.fifa-ov.enter { perspective: 1100px; }
+.fifa-mvp { position: absolute; top: 2.6%; left: 0; right: 0; margin: 0 auto; width: max-content; display: inline-flex; align-items: center; gap: 4px; font: 800 10.5px/1 var(--f-body); letter-spacing: 0.12em; padding: 5px 9px; border-radius: 999px; background: rgba(240, 220, 160, 0.14); border: 1px solid var(--line); }
+.fifa > .fifa-mvp { position: absolute; }
+.fifa-rays { position: absolute; left: 50%; top: 45%; width: 180vmax; height: 180vmax; margin: -90vmax 0 0 -90vmax; pointer-events: none; animation: rays-life 2.2s ease-out both; --ray: 240, 200, 90; }
+.fifa-rays.silver { --ray: 215, 228, 242; }
+.fifa-rays.bronze { --ray: 232, 166, 112; }
 .fifa-rays.mvpc { --ray: 241, 194, 47; }
-.fifa-rays i { position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg, rgba(var(--ray), 0) 0deg 8deg, rgba(var(--ray), 0.3) 8deg 15deg); -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.6) 22%, transparent 48%); mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.6) 22%, transparent 48%); animation: rays-spin 26s linear infinite; }
-@keyframes rays-in { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: none; } }
+.fifa-rays i { position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg, rgba(var(--ray), 0) 0deg 8deg, rgba(var(--ray), 0.22) 8deg 15deg); -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.55) 22%, transparent 46%); mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.55) 22%, transparent 46%); animation: rays-spin 30s linear infinite; }
+@keyframes rays-life { 0% { opacity: 0; transform: scale(0.3); } 50% { opacity: 1; transform: none; } 100% { opacity: 0.45; transform: none; } }
 @keyframes rays-spin { to { transform: rotate(360deg); } }
-.fifa-rays.skip { animation: none; }
-.fifa-flash { position: absolute; left: 50%; top: 45%; width: 70vmin; height: 70vmin; margin: -35vmin 0 0 -35vmin; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 65%); pointer-events: none; animation: fifa-flash 1.5s ease-out both; }
-@keyframes fifa-flash { 0%, 38% { opacity: 0; transform: scale(0.2); } 52% { opacity: 1; } 100% { opacity: 0; transform: scale(2.4); } }
-.fifa-flip.walk { transform-style: preserve-3d; animation: fifa-walk 1.9s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
-.fifa-flip.walk.skip { animation: none; }
-@keyframes fifa-walk {
-  0% { opacity: 0; transform: translateY(34vh) scale(0.35) rotateY(-540deg); }
-  14% { opacity: 1; }
-  56% { transform: translateY(-2.5vh) scale(1.07) rotateY(0deg); }
-  70% { transform: translateY(0) scale(0.98); }
-  84% { transform: scale(1.012); }
+.fifa-rays.skip { animation: none; opacity: 0.45; }
+.fifa-flash { --fl: 255, 255, 255; position: absolute; left: 50%; top: 45%; width: 72vmin; height: 72vmin; margin: -36vmin 0 0 -36vmin; border-radius: 50%; background: radial-gradient(circle, rgba(var(--fl), 0.8), rgba(var(--fl), 0) 65%); pointer-events: none; animation: fifa-flash 1.6s ease-out both; }
+.fifa-flash.gold { --fl: 255, 236, 186; }
+.fifa-flash.silver { --fl: 236, 243, 250; }
+.fifa-flash.bronze { --fl: 255, 224, 196; }
+.fifa-flash.mvpc { --fl: 255, 232, 170; }
+@keyframes fifa-flash { 0%, 50% { opacity: 0; transform: scale(0.25); } 64% { opacity: 0.9; } 100% { opacity: 0; transform: scale(2.3); } }
+.fifa-flip.enter { transform-style: preserve-3d; animation: fifa-enter 1.05s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+@keyframes fifa-enter {
+  0% { opacity: 0; transform: translateY(26vh) scale(0.42) rotateY(-540deg); }
+  12% { opacity: 1; }
+  72% { transform: translateY(-1.5vh) scale(1.05) rotateY(0deg); }
   100% { opacity: 1; transform: none; }
 }
-.fifa-flip.walk .fifa-shine { animation-delay: 1.35s; }
+/* "backwards": finita l'animazione non resta niente sui figli, così il retro non traspare quando si gira */
+.fifa-flip.enter .rv { animation: fifa-reveal 0.6s ease-out backwards; animation-delay: var(--d, 1s); }
+@keyframes fifa-reveal { from { opacity: 0; filter: blur(9px); transform: scale(1.06); } to { opacity: 1; filter: none; transform: none; } }
+.fifa-flip.enter .fifa.front::after { content: ''; position: absolute; inset: 6% 8% 16%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0)); opacity: 0; pointer-events: none; z-index: 2; animation: face-glow 1.15s ease-out 0.72s backwards; }
+@keyframes face-glow { 0% { opacity: 0; transform: scale(0.4); } 32% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5); } }
+.fifa-flip.enter .fifa-sh { animation-delay: 1.45s; }
+.fifa-flip.enter.skip, .fifa-flip.enter.skip .rv, .fifa-flip.enter.skip .fifa-sh { animation: none; }
+.fifa-flip.enter.skip .fifa.front::after { animation: none; opacity: 0; }
 .fifa-tag { position: relative; color: #fff; font: 800 14.5px/1 var(--f-display); letter-spacing: 0.03em; padding: 9px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.26); animation: tag-in 0.45s ease-out both; }
-.fifa-tag.late { animation-delay: 1.3s; }
+.fifa-tag.late { animation-delay: 1.45s; }
 @keyframes tag-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .fifa-share { position: relative; appearance: none; border: 0; display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 999px; background: #fff; color: #0f1812; font: 700 14.5px/1 var(--f-body); cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
 .fifa-hint { position: relative; }
 .share-prev { display: block; width: auto; max-width: 100%; max-height: 52vh; margin: 0 auto; border-radius: 14px; box-shadow: var(--shadow); }
 .confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 200; }
 @media (prefers-reduced-motion: reduce) {
-  .fifa-ov, .fifa-flip, .fifa-flip.walk, .fifa-shine, .fifa-rays, .fifa-rays i, .fifa-flash, .fifa-tag { animation: none !important; }
+  .fifa-ov, .fifa-flip, .fifa-flip.enter, .fifa-flip .rv, .fifa-sh, .fifa-rays, .fifa-rays i, .fifa-flash, .fifa-tag, .fifa-flip.enter .fifa.front::after { animation: none !important; }
 }
 
 /* ---- traguardi ---- */
@@ -3377,33 +3388,108 @@ const fmtAffRec = (w, d) => [w ? plural(w, 'vittoria', 'vittorie') : '', d ? plu
 
 /* ============================================================
    APP: la card in stile FIFA a tutto schermo (si gira toccandola: davanti le aree, dietro tutte le voci)
-   Entrata breve ogni volta; lunga, con i raggi di luce, per le card d'oro, l'MVP dell'ultima partita
-   e quando il punteggio è salito dall'ultima volta che la si è aperta su questo telefono.
+   Lo scudo è più elaborato salendo di livello: bronzo semplice, argento con cresta e doppio bordo,
+   oro con corona, orecchie e fregi. L'MVP dell'ultima partita ha lo scudo d'oro in verde e oro.
+   All'apertura ogni card gira ed entra dal basso, poi una luce si diffonde e compaiono le stats.
+   Nei momenti speciali (MVP, punteggio salito) dietro ci sono anche i raggi di luce.
    ============================================================ */
+/* forme nello spazio 200×300 (la card è 2:3), uguali sullo schermo e nell'immagine da condividere */
+const CARD_SHAPES = {
+  bronze: {
+    outer: 'M30 3H170L197 27V255Q197 261 191 264L104 297Q100 299 96 297L9 264Q3 261 3 255V27Z',
+    lines: [{ d: 'M33 11H167L189 31V251L100 287L11 251V31Z', w: 1.2, o: 0.5 }],
+    orn: [{ d: 'M91 12L100 18L109 12', w: 1.1, o: 0.5 }],
+    tex: 'diag',
+  },
+  silver: {
+    outer: 'M34 4H84C90 4 93 2 96 1.2Q100 0 104 1.2C107 2 110 4 116 4H166A30 30 0 0 0 196 34V126L191 133L196 140V248Q196 260 186 265L106 296Q100 299 94 296L14 265Q4 260 4 248V140L9 133L4 126V34A30 30 0 0 0 34 4Z',
+    lines: [
+      { d: 'M38 11H82C88 11 92 9 96 8Q100 7 104 8C108 9 112 11 118 11H162A27 27 0 0 0 189 38V126L185 133L189 140V245Q189 255 181 259L100 290L19 259Q11 255 11 245V140L15 133L11 126V38A27 27 0 0 0 38 11Z', w: 1.1, o: 0.55 },
+      { d: 'M39 17H161A22 22 0 0 0 183 39V242Q183 251 176 255L100 284L24 255Q17 251 17 242V39A22 22 0 0 0 39 17Z', w: 0.7, o: 0.4 },
+    ],
+    orn: [{ d: 'M100 12L103.5 15.5L100 19L96.5 15.5Z', fill: true, o: 0.55 }],
+    tex: 'brush',
+  },
+  gold: {
+    outer: 'M36 6H70C74 6 76 2 80 2C84 2 86 5 90 5C93 5 95 0 100 0C105 0 107 5 110 5C114 5 116 2 120 2C124 2 126 6 130 6H164A26 26 0 0 0 190 32L198 40V96Q192 106 198 116V236C198 252 190 260 176 266L110 294Q100 300 90 294L24 266C10 260 2 252 2 236V116Q8 106 2 96V40L10 32A26 26 0 0 0 36 6Z',
+    lines: [
+      { d: 'M40 14H72C76 14 78 10 82 10C86 10 88 13 92 13C95 13 96 8 100 8C104 8 105 13 108 13C112 13 114 10 118 10C122 10 124 14 128 14H160A24 24 0 0 0 184 38L190 44V96Q185 106 190 116V234C190 247 183 254 172 259L106 286Q100 289 94 286L28 259C17 254 10 247 10 234V116Q15 106 10 96V44L16 38A24 24 0 0 0 40 14Z', w: 1.2, o: 0.6 },
+      { d: 'M44 20H156A20 20 0 0 0 176 40L182 46V232C182 243 176 249 167 253L100 279L33 253C24 249 18 243 18 232V46L24 40A20 20 0 0 0 44 20Z', w: 0.7, o: 0.42 },
+    ],
+    orn: [
+      { d: 'M97.4 15A2.6 2.6 0 1 0 102.6 15A2.6 2.6 0 1 0 97.4 15Z', fill: true, o: 0.6 },
+      { d: 'M27 56C27 47 33 43 39 45C43 46.5 43 51 39 52', w: 1, o: 0.55 },
+      { d: 'M173 56C173 47 167 43 161 45C157 46.5 157 51 161 52', w: 1, o: 0.55 },
+      { d: 'M186 101Q182 106 186 111', w: 1, o: 0.5 },
+      { d: 'M14 101Q18 106 14 111', w: 1, o: 0.5 },
+      { d: 'M100 263L105 268L100 273L95 268Z', fill: true, o: 0.55 },
+      { d: 'M78 262Q90 263 95 268', w: 1, o: 0.5 },
+      { d: 'M122 262Q110 263 105 268', w: 1, o: 0.5 },
+    ],
+    tex: 'lattice',
+  },
+};
+/* colori un po' più spenti, metallici: nessun livello brilla più degli altri */
+const CARD_TIERS = {
+  bronze: { c1: '#efcfac', c2: '#c08556', c3: '#764828', ink: '#2e1c0d', line: 'rgba(46,28,13,0.32)', hi: 'rgba(255,236,214,0.85)', lo: 'rgba(70,38,16,0.85)', glow: 'rgba(230,150,90,0.22)', shape: 'bronze' },
+  silver: { c1: '#f6f8fa', c2: '#c4cbd2', c3: '#7b848c', ink: '#1c2125', line: 'rgba(28,33,37,0.3)', hi: 'rgba(255,255,255,0.95)', lo: 'rgba(70,78,86,0.85)', glow: 'rgba(210,225,240,0.2)', shape: 'silver' },
+  gold: { c1: '#f1e0a6', c2: '#c9a04a', c3: '#80601f', ink: '#2c2008', line: 'rgba(44,32,8,0.32)', hi: 'rgba(255,246,214,0.9)', lo: 'rgba(96,70,18,0.85)', glow: 'rgba(240,200,90,0.22)', shape: 'gold' },
+  mvpc: { c1: '#3d6d50', c2: '#1c3326', c3: '#0c1711', ink: '#f0dca0', line: 'rgba(240,220,160,0.35)', hi: 'rgba(240,220,160,0.75)', lo: 'rgba(0,0,0,0.6)', glow: 'rgba(241,194,47,0.24)', shape: 'gold' },
+};
+
+function CardFrame({ tier, uid, noShine }) {
+  const T = CARD_TIERS[tier] || CARD_TIERS.bronze;
+  const S = CARD_SHAPES[T.shape];
+  const id = 'cf-' + uid;
+  const tex = S.tex === 'lattice'
+    ? html`<pattern id=${id + 'p'} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H10M0 0V10" stroke="#fff" stroke-opacity="0.1" stroke-width="0.8" fill="none" /></pattern>`
+    : S.tex === 'brush'
+      ? html`<pattern id=${id + 'p'} width="200" height="3" patternUnits="userSpaceOnUse"><rect width="200" height="0.6" fill="#fff" fill-opacity="0.15" /></pattern>`
+      : html`<pattern id=${id + 'p'} width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(25)"><rect width="1.2" height="9" fill="#fff" fill-opacity="0.1" /></pattern>`;
+  return html`<svg class="fifa-frame" viewBox="0 0 200 300" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <radialGradient id=${id + 'g'} cx="0.3" cy="0.1" r="1.1" fx="0.3" fy="0.1"><stop offset="0" stop-color=${T.c1} /><stop offset="0.55" stop-color=${T.c2} /><stop offset="1" stop-color=${T.c3} /></radialGradient>
+      <linearGradient id=${id + 'e'} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color=${T.hi} /><stop offset="0.45" stop-color=${T.hi} stop-opacity="0.15" /><stop offset="1" stop-color=${T.lo} /></linearGradient>
+      <linearGradient id=${id + 's'} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset="0.5" stop-color="#fff" stop-opacity="0.42" /><stop offset="1" stop-color="#fff" stop-opacity="0" /></linearGradient>
+      <clipPath id=${id + 'c'}><path d=${S.outer} /></clipPath>
+      ${tex}
+    </defs>
+    <path d=${S.outer} fill=${'url(#' + id + 'g)'} />
+    <g clip-path=${'url(#' + id + 'c)'}>
+      <rect width="200" height="300" fill=${'url(#' + id + 'p)'} />
+      ${!noShine && html`<g transform="skewX(-18)"><rect class="fifa-sh" x="-150" y="-10" width="110" height="320" fill=${'url(#' + id + 's)'} /></g>`}
+    </g>
+    ${S.lines.map((l, i) => html`<path key=${'l' + i} d=${l.d} fill="none" stroke=${T.ink} stroke-opacity=${l.o} stroke-width=${l.w} stroke-linejoin="round" />`)}
+    ${S.orn.map((o, i) => (o.fill
+      ? html`<path key=${'o' + i} d=${o.d} fill=${T.ink} fill-opacity=${o.o} />`
+      : html`<path key=${'o' + i} d=${o.d} fill="none" stroke=${T.ink} stroke-opacity=${o.o} stroke-width=${o.w} stroke-linecap="round" />`))}
+    <path d=${S.outer} fill="none" stroke=${'url(#' + id + 'e)'} stroke-width="2.4" stroke-linejoin="round" />
+  </svg>`;
+}
+
 function FifaOverlay({ pid, all, onClose }) {
   const C = useContext(Ctx);
   const [flip, setFlip] = useState(false);
   const p = C.playersById[pid];
   const r = p && (all ? C.ratedAll : C.rated)[pid];
   const [fx] = useState(() => {
-    if (!p || !r) return { long: false };
+    if (!p || !r) return { enter: false };
     const cur = r0(r.ovr);
     const key = 'sc-ovr-' + (all ? 'all' : C.gid || 'x') + '-' + pid;
     const prev = Number(readLS(key, '0')) || 0;
     writeLS(key, String(cur));
     const up = prev > 0 && cur > prev ? { from: prev, to: cur } : null;
     const mvp = isLastMvp(C, pid);
-    const gold = Engine.tierOf(r.ovr) === 'gold';
-    return { long: !reducedMotion() && !!(up || mvp || gold), up, mvp, gold };
+    return { enter: !reducedMotion(), up, mvp, special: !!(up || mvp) };
   });
   /* 'intro' mentre entra, 'done' a fine animazione, 'skip' se la si tocca prima */
-  const [phase, setPhase] = useState(fx.long ? 'intro' : 'done');
+  const [phase, setPhase] = useState(fx.enter ? 'intro' : 'done');
   useEffect(() => {
     const k = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', k);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const t = fx.long ? setTimeout(() => setPhase((ph) => (ph === 'intro' ? 'done' : ph)), 2100) : 0;
+    const t = fx.enter ? setTimeout(() => setPhase((ph) => (ph === 'intro' ? 'done' : ph)), 1750) : 0;
     return () => { document.removeEventListener('keydown', k); document.body.style.overflow = prev; clearTimeout(t); };
   }, []);
   if (!p || !r) return null;
@@ -3413,43 +3499,44 @@ function FifaOverlay({ pid, all, onClose }) {
   const age = ageOf(p);
   const sub = [C.gid && !all && C.group ? C.group.name : 'Stats generali', p.loc && p.loc.name, age && age + ' anni'].filter(Boolean).join(' · ');
   const nick = (dispName(p) || '').toUpperCase();
-  const tag = fx.up ? 'Punteggio salito: ' + fx.up.from + ' → ' + fx.up.to : fx.mvp ? 'MVP dell\'ultima partita' : fx.long && fx.gold ? 'Card d\'oro' : '';
+  const tag = fx.up ? 'Punteggio salito: ' + fx.up.from + ' → ' + fx.up.to : fx.mvp ? 'MVP dell\'ultima partita' : '';
   const tap = (e) => { e.stopPropagation(); if (phase === 'intro') { setPhase('skip'); return; } setFlip(!flip); };
   const mine = pid === C.uid;
-  return html`<div class=${'fifa-ov' + (fx.long ? ' long' : '')} role="dialog" aria-modal="true" aria-label=${'Card di ' + dispName(p)} onClick=${onClose}>
-    ${fx.long && html`<div class=${'fifa-rays ' + tier + (phase === 'skip' ? ' skip' : '')} aria-hidden="true"><i></i></div>`}
-    ${fx.long && phase === 'intro' && html`<div class="fifa-flash" aria-hidden="true"></div>`}
+  const uid = String(pid).replace(/[^a-zA-Z0-9]/g, '');
+  return html`<div class=${'fifa-ov' + (fx.enter ? ' enter' : '')} role="dialog" aria-modal="true" aria-label=${'Card di ' + dispName(p)} onClick=${onClose}>
+    ${fx.special && html`<div class=${'fifa-rays ' + tier + (phase === 'skip' ? ' skip' : '')} aria-hidden="true"><i></i></div>`}
+    ${fx.enter && phase === 'intro' && html`<div class=${'fifa-flash ' + tier} aria-hidden="true"></div>`}
     <button class="fifa-x" aria-label="Chiudi" onClick=${onClose}><${Icon} n="x" /></button>
-    <div class=${'fifa-flip' + (flip ? ' on' : '') + (fx.long ? ' walk' : '') + (phase === 'skip' ? ' skip' : '')} onClick=${tap} role="button" tabindex="0" aria-label="Gira la card"
+    <div class=${'fifa-flip' + (flip ? ' on' : '') + (fx.enter ? ' enter' : '') + (phase === 'skip' ? ' skip' : '')} onClick=${tap} role="button" tabindex="0" aria-label="Gira la card"
       onKeyDown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(e); } }}>
       <div class=${'fifa ' + tier + ' front'}>
-        <div class="fifa-shine"></div>
-        ${fx.mvp && html`<span class="fifa-mvp"><${Icon} n="trophy" s="13" /> MVP</span>`}
-        <div class="fifa-top">
+        <${CardFrame} tier=${tier} uid=${'f' + uid} />
+        ${fx.mvp && html`<span class="fifa-mvp rv" style="--d:1.3s"><${Icon} n="trophy" s="13" /> MVP</span>`}
+        <div class="fifa-top rv" style="--d:0.98s">
           <div class="fifa-ovr"><b class="num">${r0(r.ovr)}</b><span>${p.role}${p.role2 ? html`<em>${p.role2}</em>` : ''}</span>${jerseyOf(p) != null && html`<i class="fifa-no num" title="Numero di maglia">${jerseyOf(p)}</i>`}</div>
           <div class="fifa-ph">${photo ? html`<img src=${photo} alt="" />` : html`<span class="fifa-ic">${p.icon || initialsOf(p)}</span>`}</div>
         </div>
-        <div class="fifa-name">${nick}</div>
-        <div class="fifa-full">${fullName(p)}</div>
-        <div class="fifa-stats">
+        <div class="fifa-name rv" style="--d:1.1s">${nick}</div>
+        <div class="fifa-full rv" style="--d:1.14s">${fullName(p)}</div>
+        <div class="fifa-stats rv" style="--d:1.22s">
           ${AREAS.map((a) => { const counts = gk ? a.k === 'por' : a.k !== 'por'; return html`<div key=${a.k} class=${'fs' + (counts ? '' : ' dim')}><b class="num">${r0(r.areas[a.k])}</b><span>${a.code}</span></div>`; })}
         </div>
-        <div class="fifa-foot">${sub}</div>
+        <div class="fifa-foot rv" style="--d:1.3s">${sub}</div>
       </div>
       <div class=${'fifa ' + tier + ' back'}>
-        <div class="fifa-shine"></div>
-        <div class="fifa-bh"><b class="num">${r0(r.ovr)}</b><span>${nick}</span></div>
+        <${CardFrame} tier=${tier} uid=${'b' + uid} noShine />
+        ${phase !== 'intro' && html`<div class="fifa-bh"><b class="num">${r0(r.ovr)}</b><span>${nick}</span></div>
         <div class="fifa-voci">
           ${AREAS.map((a) => html`<div key=${a.k} class=${'fv' + ((gk ? a.k === 'por' : a.k !== 'por') ? '' : ' dim')}>
             <div class="fv-h"><span>${a.name}</span><b class="num">${r0(r.areas[a.k])}</b></div>
             ${a.voci.map((x) => html`<div key=${x.k} class="fv-r"><span>${x.name}</span><b class="num">${r0(r.voci[x.k])}</b></div>`)}
           </div>`)}
         </div>
-        <div class="fifa-foot">${r.nPeers ? 'Media di ' + plural(r.nPeers, 'valutazione', 'valutazioni') + ' e dell\'autovalutazione' : 'Per ora solo l\'autovalutazione'}</div>
+        <div class="fifa-foot">${r.nPeers ? 'Media di ' + plural(r.nPeers, 'valutazione', 'valutazioni') + ' e dell\'autovalutazione' : 'Per ora solo l\'autovalutazione'}</div>`}
       </div>
     </div>
-    ${tag && html`<div class=${'fifa-tag' + (fx.long ? ' late' : '')}>${tag}</div>`}
-    ${mine && html`<button class="fifa-share" onClick=${(e) => { e.stopPropagation(); openCardShare(C, p, r, all, tier === 'mvpc' ? 'mvp' : tier); }}><${Icon} n="share" s="16" /> Condividi la tua card</button>`}
+    ${tag && html`<div class=${'fifa-tag' + (fx.enter ? ' late' : '')}>${tag}</div>`}
+    ${mine && html`<button class="fifa-share" onClick=${(e) => { e.stopPropagation(); openCardShare(C, p, r, all, tier); }}><${Icon} n="share" s="16" /> Condividi la tua card</button>`}
     <div class="fifa-hint">${phase === 'intro' ? 'Tocca la card per saltare l\'animazione' : 'Tocca la card per girarla · tocca fuori per chiudere'}</div>
   </div>`;
 }
@@ -3934,26 +4021,58 @@ const upperIt = (s) => String(s || '').toLocaleUpperCase('it-IT');
 const groupTag = (C) => (C.group && normTxt(C.group.name) !== 'algor bomber' ? ' · ' + upperIt(C.group.name) : '');
 const canvasToBlob = (cv) => new Promise((res) => cv.toBlob((b) => res(b), 'image/png'));
 
-/* ---------- la card FIFA ---------- */
-const CARD_PAL = {
-  gold: { c1: '#f7e7a1', c2: '#d8ad45', c3: '#8f6a1f', ink: '#34260a', line: 'rgba(52,38,10,0.28)', glow: 'rgba(255,205,80,0.38)' },
-  silver: { c1: '#fbfcfd', c2: '#c7cdd3', c3: '#7f888f', ink: '#1f2428', line: 'rgba(31,36,40,0.25)', glow: 'rgba(210,225,240,0.3)' },
-  bronze: { c1: '#f6d6b4', c2: '#c98b55', c3: '#7c4a26', ink: '#33200f', line: 'rgba(51,32,15,0.28)', glow: 'rgba(230,150,90,0.3)' },
-  mvp: { c1: '#3f7253', c2: '#1d3527', c3: '#0d1912', ink: '#f3dfa2', line: 'rgba(243,223,162,0.32)', glow: 'rgba(241,194,47,0.36)' },
-};
+/* ---------- la card FIFA: stesso scudo e stessi colori dello schermo ---------- */
+function drawCardFrame(ctx, x0, y0, cw, T, S) {
+  const k = cw / 200;
+  const P2 = (d) => new Path2D(d);
+  const outer = P2(S.outer);
+  ctx.save();
+  ctx.translate(x0, y0); ctx.scale(k, k);
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 26; ctx.fillStyle = T.c2; ctx.fill(outer); ctx.restore();
+  ctx.save();
+  ctx.clip(outer);
+  const rg = ctx.createRadialGradient(60, 30, 2, 60, 30, 260);
+  rg.addColorStop(0, T.c1); rg.addColorStop(0.55, T.c2); rg.addColorStop(1, T.c3);
+  ctx.fillStyle = rg; ctx.fillRect(0, 0, 200, 300);
+  ctx.strokeStyle = '#fff';
+  if (S.tex === 'lattice') {
+    ctx.globalAlpha = 0.1; ctx.lineWidth = 0.8;
+    for (let c = -300; c < 500; c += 14.14) { ctx.beginPath(); ctx.moveTo(0, c); ctx.lineTo(200, c + 200); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, c); ctx.lineTo(200, c - 200); ctx.stroke(); }
+  } else if (S.tex === 'brush') {
+    ctx.globalAlpha = 0.15; ctx.lineWidth = 0.6;
+    for (let y = 0.3; y < 300; y += 3) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(200, y); ctx.stroke(); }
+  } else {
+    ctx.globalAlpha = 0.1; ctx.lineWidth = 1.2;
+    for (let x = -160; x < 360; x += 9.9) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x - 140, 300); ctx.stroke(); }
+  }
+  ctx.globalAlpha = 1;
+  const sh = ctx.createLinearGradient(20, 0, 160, 110);
+  sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(0.5, 'rgba(255,255,255,0.3)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sh; ctx.fillRect(0, 0, 200, 300);
+  ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  S.lines.forEach((l) => { ctx.globalAlpha = l.o; ctx.strokeStyle = T.ink; ctx.lineWidth = l.w; ctx.stroke(P2(l.d)); });
+  S.orn.forEach((o) => { ctx.globalAlpha = o.o; if (o.fill) { ctx.fillStyle = T.ink; ctx.fill(P2(o.d)); } else { ctx.strokeStyle = T.ink; ctx.lineWidth = o.w; ctx.stroke(P2(o.d)); } });
+  ctx.globalAlpha = 1;
+  const eg = ctx.createLinearGradient(0, 0, 200, 300);
+  eg.addColorStop(0, T.hi); eg.addColorStop(0.45, 'rgba(255,255,255,0.12)'); eg.addColorStop(1, T.lo);
+  ctx.strokeStyle = eg; ctx.lineWidth = 2.4; ctx.stroke(outer);
+  ctx.restore();
+}
 async function drawCardImage({ p, r, pal, sub, label }) {
   await ensureFonts();
   const fonts = canvasFonts();
-  const P = CARD_PAL[pal] || CARD_PAL.bronze;
+  const T = CARD_TIERS[pal] || CARD_TIERS.bronze, S = CARD_SHAPES[T.shape];
+  const P = { ink: T.ink, line: T.line };
   const cv = newCanvas(), ctx = cv.getContext('2d');
   const cw = 780, ch = 1170, x0 = (IMG_W - cw) / 2, y0 = 330;
-  darkBackground(ctx, { y: y0 + ch * 0.45, r: 760, c: P.glow });
-  /* raggi di luce dietro la card */
+  darkBackground(ctx, { y: y0 + ch * 0.45, r: 760, c: T.glow });
+  /* raggi di luce, leggeri, dietro la card */
   ctx.save();
   ctx.translate(IMG_W / 2, y0 + ch * 0.45);
-  ctx.fillStyle = P.glow;
-  ctx.globalAlpha = 0.45;
-  for (let i = 0; i < 18; i++) { ctx.rotate((Math.PI * 2) / 18); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-60, -1300); ctx.lineTo(60, -1300); ctx.closePath(); ctx.fill(); }
+  ctx.fillStyle = T.glow;
+  ctx.globalAlpha = 0.5;
+  for (let i = 0; i < 16; i++) { ctx.rotate((Math.PI * 2) / 16); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-55, -1300); ctx.lineTo(55, -1300); ctx.closePath(); ctx.fill(); }
   ctx.restore();
   brandLine(ctx, fonts, 170, 'ALGOR BOMBER');
   if (sub && normTxt(sub) !== 'algor bomber') {
@@ -3961,42 +4080,24 @@ async function drawCardImage({ p, r, pal, sub, label }) {
     fitFont(ctx, sub, 600, 34, fonts.body, 900, 20);
     ctx.textAlign = 'center'; ctx.fillText(sub, IMG_W / 2, 228);
   }
-  /* la sagoma della card */
-  const poly = [[0.14, 0], [0.86, 0], [1, 0.07], [1, 0.88], [0.5, 1], [0, 0.88], [0, 0.07]];
-  const shape = () => { ctx.beginPath(); poly.forEach(([a, b], i) => { const X = x0 + a * cw, Y = y0 + b * ch; if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y); }); ctx.closePath(); };
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 70; ctx.shadowOffsetY = 30;
-  shape(); ctx.fillStyle = P.c2; ctx.fill();
-  ctx.restore();
-  ctx.save();
-  shape(); ctx.clip();
-  const rg = ctx.createRadialGradient(x0 + cw * 0.3, y0 + ch * 0.1, 10, x0 + cw * 0.3, y0 + ch * 0.1, cw * 1.25);
-  rg.addColorStop(0, P.c1); rg.addColorStop(0.55, P.c2); rg.addColorStop(1, P.c3);
-  ctx.fillStyle = rg; ctx.fillRect(x0, y0, cw, ch);
-  ctx.globalAlpha = 0.09; ctx.strokeStyle = '#fff'; ctx.lineWidth = 5;
-  for (let x = x0 - ch; x < x0 + cw + ch; x += 44) { ctx.beginPath(); ctx.moveTo(x, y0 + ch); ctx.lineTo(x + ch * 0.47, y0); ctx.stroke(); }
-  ctx.globalAlpha = 1;
-  const sh = ctx.createLinearGradient(x0, y0, x0 + cw, y0 + ch * 0.6);
-  sh.addColorStop(0.25, 'rgba(255,255,255,0)'); sh.addColorStop(0.42, 'rgba(255,255,255,0.32)'); sh.addColorStop(0.55, 'rgba(255,255,255,0)');
-  ctx.fillStyle = sh; ctx.fillRect(x0, y0, cw, ch);
-  ctx.restore();
+  if (typeof Path2D !== 'undefined') drawCardFrame(ctx, x0, y0, cw, T, S);
   ctx.fillStyle = P.ink; ctx.strokeStyle = P.line;
   /* punteggio, ruoli e numero */
-  const lx = x0 + 70 + 100;
+  const lx = x0 + 205;
   ctx.textAlign = 'center';
-  ctx.font = F(800, 206, fonts.disp); ctx.fillText(String(r0(r.ovr)), lx, y0 + 268);
-  ctx.font = F(800, 56, fonts.body); spaced(ctx, p.role || '', lx, y0 + 342, 5, 'center');
-  let ly = y0 + 342;
+  ctx.font = F(800, 176, fonts.disp); ctx.fillText(String(r0(r.ovr)), lx, y0 + 292);
+  ctx.font = F(800, 54, fonts.body); spaced(ctx, p.role || '', lx, y0 + 360, 5, 'center');
+  let ly = y0 + 360;
   if (p.role2) { ctx.globalAlpha = 0.7; ctx.font = F(800, 40, fonts.body); spaced(ctx, p.role2, lx, ly + 56, 4, 'center'); ctx.globalAlpha = 1; ly += 56; }
   const no = jerseyOf(p);
   if (no != null) {
     ctx.font = F(800, 46, fonts.disp);
     const t = 'N° ' + no, tw = ctx.measureText(t).width + 40;
-    ctx.lineWidth = 4; rrect(ctx, lx - tw / 2, ly + 40, tw, 66, 16); ctx.stroke();
-    ctx.fillText(t, lx, ly + 90);
+    ctx.lineWidth = 4; rrect(ctx, lx - tw / 2, ly + 34, tw, 64, 16); ctx.stroke();
+    ctx.fillText(t, lx, ly + 82);
   }
   /* foto, icona o iniziali */
-  const pw = 400, px = x0 + cw - 70 - pw, py = y0 + 92;
+  const pw = 360, px = x0 + cw - 96 - pw, py = y0 + 112;
   const photoShape = () => {
     const R = pw / 2, rb = 48;
     ctx.beginPath(); ctx.moveTo(px, py + R); ctx.arc(px + R, py + R, R, Math.PI, 0);
@@ -4014,13 +4115,13 @@ async function drawCardImage({ p, r, pal, sub, label }) {
   ctx.fillStyle = P.ink; ctx.textAlign = 'center';
   const nick = upperIt(dispName(p));
   fitFont(ctx, nick, 800, 98, fonts.disp, cw - 150, 40);
-  ctx.fillText(nick, IMG_W / 2, y0 + 650);
-  ctx.globalAlpha = 0.75; fitFont(ctx, fullName(p), 500, 40, fonts.body, cw - 160, 22); ctx.fillText(fullName(p), IMG_W / 2, y0 + 708); ctx.globalAlpha = 1;
-  ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0 + 90, y0 + 755); ctx.lineTo(x0 + cw - 90, y0 + 755); ctx.stroke();
+  ctx.fillText(nick, IMG_W / 2, y0 + 640);
+  ctx.globalAlpha = 0.75; fitFont(ctx, fullName(p), 500, 40, fonts.body, cw - 160, 22); ctx.fillText(fullName(p), IMG_W / 2, y0 + 694); ctx.globalAlpha = 1;
+  ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0 + 100, y0 + 738); ctx.lineTo(x0 + cw - 100, y0 + 738); ctx.stroke();
   /* le 5 aree: 3 sopra e 2 sotto */
   const gk = p.role === 'POR';
   const cells = AREAS.map((a) => ({ v: String(r0(r.areas[a.k])), c: a.code, on: gk ? a.k === 'por' : a.k !== 'por' }));
-  const pos = [[IMG_W / 2 - 220, y0 + 860], [IMG_W / 2, y0 + 860], [IMG_W / 2 + 220, y0 + 860], [IMG_W / 2 - 110, y0 + 958], [IMG_W / 2 + 110, y0 + 958]];
+  const pos = [[IMG_W / 2 - 215, y0 + 838], [IMG_W / 2, y0 + 838], [IMG_W / 2 + 215, y0 + 838], [IMG_W / 2 - 108, y0 + 928], [IMG_W / 2 + 108, y0 + 928]];
   cells.forEach((cl, i) => {
     const [cx, cy] = pos[i];
     ctx.globalAlpha = cl.on ? 1 : 0.5;
@@ -4033,10 +4134,10 @@ async function drawCardImage({ p, r, pal, sub, label }) {
   });
   ctx.globalAlpha = 0.75; ctx.textAlign = 'center';
   const foot = [label, p.loc && p.loc.name, ageOf(p) && ageOf(p) + ' anni'].filter(Boolean).join(' · ');
-  fitFont(ctx, foot, 600, 34, fonts.body, cw * 0.66, 20); ctx.fillText(foot, IMG_W / 2, y0 + ch * 0.865);
+  fitFont(ctx, foot, 600, 30, fonts.body, cw * 0.5, 18); ctx.fillText(foot, IMG_W / 2, y0 + 992);
   ctx.globalAlpha = 1;
   /* sotto la card */
-  ctx.fillStyle = '#fff'; ctx.font = F(800, 42, fonts.disp); spaced(ctx, pal === 'mvp' ? 'MVP DELL\'ULTIMA PARTITA' : 'LA MIA CARD', IMG_W / 2, y0 + ch + 120, 6, 'center');
+  ctx.fillStyle = '#fff'; ctx.font = F(800, 42, fonts.disp); spaced(ctx, pal === 'mvpc' ? 'MVP DELL\'ULTIMA PARTITA' : 'LA MIA CARD', IMG_W / 2, y0 + ch + 120, 6, 'center');
   const d = new Date();
   ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = F(500, 34, fonts.body); ctx.textAlign = 'center';
   ctx.fillText(d.getDate() + ' ' + MON_FULL[d.getMonth()] + ' ' + d.getFullYear(), IMG_W / 2, y0 + ch + 172);
