@@ -3756,8 +3756,16 @@ function BadgeBar({ done, total }) {
   </div>`;
 }
 
-/* nel profilo: solo la vetrina, il resto con "Vedi tutti" */
-function BadgeSection({ pid }) {
+/* per chi non è nel gruppo: i traguardi si contano dalle partite del gruppo, che vede solo chi ne fa parte */
+function BadgeOutside({ p }) {
+  const C = useContext(Ctx);
+  return html`<section class="sec"><h2 class="h3">Traguardi</h2>
+    <div class="card small muted">I traguardi si contano dalle partite di ogni gruppo, quindi si vedono tra compagni di gruppo. ${C.group ? dispName(p) + ' non è in ' + C.group.name + '.' : ''}</div>
+  </section>`;
+}
+
+/* nel profilo: solo la vetrina, il resto con "Vedi tutti" (anche nella vista "Generali": sono quelli del gruppo) */
+function BadgeSection({ pid, where }) {
   const C = useContext(Ctx);
   const list = badgesOf(pid, C);
   const done = list.filter((b) => b.done).length;
@@ -3778,6 +3786,7 @@ function BadgeSection({ pid }) {
     <div class="sec-h"><h2 class="h3">Traguardi</h2><button class="link" onClick=${() => C.go({ t: 'badges', id: pid })}>Vedi tutti</button></div>
     <div class="card stack-12">
       <${BadgeBar} done=${done} total=${list.length} />
+      ${where && C.group && html`<div class="tiny faint" style="margin-top:-6px">Nelle partite di ${C.group.name}</div>`}
       ${top.length
         ? html`<div class="badges">${top.map((b) => html`<${BadgeTile} key=${b.k} b=${b} pid=${pid} />`)}</div>`
         : html`<div class="small muted">Ancora nessun traguardo: arrivano giocando. Tocca "Vedi tutti" per vedere quali sono.</div>`}
@@ -4834,7 +4843,8 @@ function PlayerScreen({ id, scope }) {
     </div>`}
     ${C.isAdmin && !isMe && html`<button class="btn danger block" onClick=${delAccount}><${Icon} n="x" s="16" /> Elimina l'account di ${dispName(p)}</button>`}
     ${all
-      ? html`<section class="sec"><h2 class="h3">Stats generali</h2><${AreaDetail} p=${p} r=${r} /></section>`
+      ? html`<section class="sec"><h2 class="h3">Stats generali</h2><${AreaDetail} p=${p} r=${r} /></section>
+        ${member ? html`<${BadgeSection} pid=${p.id} where />` : html`<${BadgeOutside} p=${p} />`}`
       : html`<${PlayerSections} p=${p} r=${r} s=${s} />`}
   <//>`;
 }
@@ -4871,7 +4881,8 @@ function MeScreen() {
             : `Nessuno ti ha ancora valutato: per ora il punteggio (${r0(r.ovr)}) è la tua autovalutazione.`}</span></div>`}
         ${C.isAdmin && html`<div class="note ok"><${Icon} n="shield" s="16" /><span>Sei l'amministratore: puoi correggere anche le partite vecchie e sbloccare un'autovalutazione dalla scheda di ogni giocatore.</span></div>`}
         ${all
-          ? html`<section class="sec"><h2 class="h3">Stats generali</h2><${AreaDetail} p=${me} r=${r} /></section>`
+          ? html`<section class="sec"><h2 class="h3">Stats generali</h2><${AreaDetail} p=${me} r=${r} /></section>
+            ${member && html`<${BadgeSection} pid=${me.id} where />`}`
           : html`<${PlayerSections} p=${me} r=${r} s=${s} />`}
       `}
     ` : html`<div class="card empty"><div class="h3">Nessun profilo</div><div>${C.canWrite ? 'Crea il tuo profilo per rispondere alle partite.' : 'Hai accesso in sola lettura.'}</div></div>`}
@@ -4883,22 +4894,30 @@ function MeScreen() {
 
 /* ---------- giocatori: del gruppo o tutti gli iscritti all'app, con i filtri ---------- */
 const numOrNull = (v) => { const t = String(v == null ? '' : v).trim(); if (!t) return null; const n = Number(t); return isFinite(n) ? n : null; };
+/* stato che resta com'era quando si apre un giocatore e si torna indietro (per questa visita) */
+const KEPT = new Map();
+function useKept(key, init) {
+  const [v, setV] = useState(() => (KEPT.has(key) ? KEPT.get(key) : (typeof init === 'function' ? init() : init)));
+  const set = (x) => setV((prev) => { const nv = typeof x === 'function' ? x(prev) : x; KEPT.set(key, nv); return nv; });
+  return [v, set];
+}
 function PlayersScreen() {
   const C = useContext(Ctx);
   const myLoc = (C.me && C.me.loc) || null;
-  const [q, setQ] = useState('');
-  const [sort, setSort] = useState('lvl');
-  const [scope, setScope] = useState(C.gid ? 'group' : 'all');
-  const [showF, setShowF] = useState(false);
-  const [km, setKm] = useState(0);
-  const [from, setFrom] = useState(myLoc);
-  const [roles, setRoles] = useState([]);
-  const [ovrMin, setOvrMin] = useState('');
-  const [ovrMax, setOvrMax] = useState('');
-  const [ageMin, setAgeMin] = useState('');
-  const [ageMax, setAgeMax] = useState('');
-  const [healthy, setHealthy] = useState(false);
-  const [onlyFriends, setOnlyFriends] = useState(false);
+  const K = 'pl.' + (C.gid || '-') + '.';
+  const [q, setQ] = useKept(K + 'q', '');
+  const [sort, setSort] = useKept(K + 'sort', 'lvl');
+  const [scope, setScope] = useKept(K + 'scope', C.gid ? 'group' : 'all');
+  const [showF, setShowF] = useKept(K + 'showF', false);
+  const [km, setKm] = useKept(K + 'km', 0);
+  const [from, setFrom] = useKept(K + 'from', myLoc);
+  const [roles, setRoles] = useKept(K + 'roles', []);
+  const [ovrMin, setOvrMin] = useKept(K + 'ovrMin', '');
+  const [ovrMax, setOvrMax] = useKept(K + 'ovrMax', '');
+  const [ageMin, setAgeMin] = useKept(K + 'ageMin', '');
+  const [ageMax, setAgeMax] = useKept(K + 'ageMax', '');
+  const [healthy, setHealthy] = useKept(K + 'healthy', false);
+  const [onlyFriends, setOnlyFriends] = useKept(K + 'onlyFriends', false);
   const all = !C.gid || scope === 'all';
   useEffect(() => { if (all) C.loadGlobal(); }, [all]);
   const R = all ? C.ratedAll : C.rated;
