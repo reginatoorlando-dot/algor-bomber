@@ -757,6 +757,77 @@ select.input { appearance: auto; }
 .duel-aff span:last-child { text-align: right; padding-right: 4px; }
 .row-link { appearance: none; border: 0; background: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
 
+/* ---- card a tutto schermo in stile FIFA ---- */
+button.pc-ovr { appearance: none; border: 0; background: none; padding: 0; margin: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; position: relative; align-items: flex-start; }
+.pc-exp { position: absolute; left: 0; top: -14px; opacity: 0.55; letter-spacing: 0; }
+.pc-exp .ic { width: 13px; height: 13px; }
+.fifa-ov { position: fixed; inset: 0; z-index: 80; background: rgba(6, 10, 8, 0.86); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; animation: fifa-in 0.25s ease-out; }
+@keyframes fifa-in { from { opacity: 0; } to { opacity: 1; } }
+.fifa-x { position: absolute; top: max(14px, env(safe-area-inset-top)); right: 14px; width: 42px; height: 42px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.14); color: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.fifa-hint { color: rgba(255, 255, 255, 0.7); font-size: 12.5px; text-align: center; }
+.fifa-flip { position: relative; width: min(84vw, 340px, 56vh); aspect-ratio: 2 / 3; perspective: 1400px; cursor: pointer; animation: fifa-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+@keyframes fifa-pop { from { transform: scale(0.8) rotate(-3deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.fifa-flip .fifa { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.2, 1); }
+.fifa-flip .back { transform: rotateY(180deg); }
+.fifa-flip.on .front { transform: rotateY(-180deg); }
+.fifa-flip.on .back { transform: rotateY(0deg); }
+.fifa { --c1: #f7e7a1; --c2: #d8ad45; --c3: #8f6a1f; --ink: #34260a; --line: rgba(52, 38, 10, 0.28);
+  clip-path: polygon(14% 0, 86% 0, 100% 7%, 100% 88%, 50% 100%, 0 88%, 0 7%);
+  background: radial-gradient(120% 80% at 30% 10%, var(--c1), var(--c2) 55%, var(--c3));
+  color: var(--ink); display: flex; flex-direction: column; align-items: center; padding: 9% 9% 15%; overflow: hidden; }
+.fifa.silver { --c1: #fbfcfd; --c2: #c7cdd3; --c3: #7f888f; --ink: #1f2428; --line: rgba(31, 36, 40, 0.25); }
+.fifa.bronze { --c1: #f6d6b4; --c2: #c98b55; --c3: #7c4a26; --ink: #33200f; --line: rgba(51, 32, 15, 0.28); }
+.fifa::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 14px); pointer-events: none; }
+.fifa-shine { position: absolute; inset: -40%; background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%); transform: translateX(-60%); animation: fifa-shine 2.6s ease-in-out 0.4s 1 both; pointer-events: none; }
+@keyframes fifa-shine { to { transform: translateX(60%); } }
+.fifa-top { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 4%; width: 100%; align-items: start; }
+.fifa-ovr { display: flex; flex-direction: column; align-items: center; padding-top: 6%; }
+.fifa-ovr b { font: 800 clamp(44px, 15vw, 64px)/0.9 var(--f-display); letter-spacing: -0.04em; }
+.fifa-ovr span { font: 800 clamp(13px, 4.2vw, 17px)/1.1 var(--f-body); letter-spacing: 0.08em; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.fifa-ovr em { font-style: normal; font-size: 0.72em; opacity: 0.7; }
+.fifa-ph { aspect-ratio: 1; width: 100%; max-width: 190px; justify-self: end; border-radius: 50% 50% 12% 12%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 2px var(--line); }
+.fifa-ph img { width: 100%; height: 100%; object-fit: cover; }
+.fifa-ic { font-size: clamp(54px, 20vw, 92px); line-height: 1; font-weight: 800; }
+.fifa-name { position: relative; margin-top: 5%; font: 800 clamp(20px, 7vw, 30px)/1.05 var(--f-display); letter-spacing: 0.04em; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fifa-full { position: relative; font-size: 12px; opacity: 0.75; margin-top: 2px; }
+.fifa-stats { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 10px; width: 100%; margin-top: 6%; padding-top: 5%; border-top: 1.5px solid var(--line); }
+.fifa-stats .fs { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+.fifa-stats .fs b { font: 800 clamp(18px, 6vw, 24px)/1 var(--f-display); }
+.fifa-stats .fs span { font: 700 12px/1 var(--f-body); letter-spacing: 0.06em; opacity: 0.8; }
+.fifa-stats .fs.dim { opacity: 0.5; }
+.fifa-foot { position: relative; margin-top: auto; font-size: 11.5px; font-weight: 600; opacity: 0.75; text-align: center; max-width: 82%; }
+.fifa-bh { position: relative; display: flex; align-items: baseline; gap: 10px; width: 100%; justify-content: center; padding-bottom: 4%; border-bottom: 1.5px solid var(--line); }
+.fifa-bh b { font: 800 30px/1 var(--f-display); }
+.fifa-bh span { font: 800 16px/1 var(--f-display); letter-spacing: 0.05em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fifa-voci { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 3% 8%; width: 100%; margin-top: 4%; font-size: clamp(10.5px, 3.1vw, 12.5px); }
+.fv-h { display: flex; justify-content: space-between; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); padding-bottom: 2px; margin-bottom: 2px; }
+.fv-r { display: flex; justify-content: space-between; gap: 6px; line-height: 1.45; }
+.fv-r span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fv.dim { opacity: 0.55; }
+
+/* ---- traguardi ---- */
+.badges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px; }
+.badge { appearance: none; border: 0; background: none; padding: 4px 0; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--ink); cursor: pointer; min-width: 0; position: relative; }
+.bd-n { font: 600 11.5px/1.2 var(--f-body); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.badge:not(.done) .bd-n { color: var(--ink-3); }
+.bd-new { position: absolute; top: 0; right: 6px; background: var(--accent); color: var(--on-accent); font: 700 9.5px/1 var(--f-body); padding: 3px 5px; border-radius: 6px; }
+.bd-p { width: 60%; height: 4px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.bd-p i { display: block; height: 100%; background: var(--ink-3); }
+.emblem { --es: 52px; --r1: #e8b46a; --r2: #9a5f2c; width: var(--es); height: calc(var(--es) * 1.12); display: inline-flex; background: linear-gradient(160deg, var(--r1), var(--r2)); clip-path: polygon(50% 0, 100% 14%, 100% 58%, 50% 100%, 0 58%, 0 14%); padding: calc(var(--es) * 0.07); }
+.emblem.silver { --r1: #f1f4f6; --r2: #8d979e; }
+.emblem.gold { --r1: #ffe38a; --r2: #b98a1e; }
+.em-in { flex: 1; display: flex; align-items: center; justify-content: center; clip-path: polygon(50% 0, 100% 14%, 100% 58%, 50% 100%, 0 58%, 0 14%); background: radial-gradient(circle at 50% 35%, var(--surface), var(--surface-2)); }
+.em-e { font-size: calc(var(--es) * 0.46); line-height: 1; margin-top: -8%; }
+.emblem.off { --r1: var(--surface-2); --r2: var(--line); }
+.emblem.off .em-e { filter: grayscale(1); opacity: 0.35; }
+.bd-big { display: flex; justify-content: center; padding: 6px 0 4px; }
+
+/* ---- meteo ---- */
+.wx { display: inline-flex; align-items: center; gap: 3px; font: 600 12.5px/1 var(--f-body); color: var(--ink-2); white-space: nowrap; }
+.wx-i { font-size: 15px; line-height: 1; }
+.wx-p { color: #2f6fc0; font-size: 11.5px; }
+.wx-l { color: var(--ink-2); font-weight: 500; }
+
 </style>
 </head>
 <body>
@@ -2074,6 +2145,7 @@ const ICONS = {
   cross: '<path d="M9.4 3.5h5.2v5.9h5.9v5.2h-5.9v5.9H9.4v-5.9H3.5V9.4h5.9z"/>',
   podium: '<path d="M9 20V9.5h6V20M3 20v-6h6M15 20v-4h6v4M2.5 20h19"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  expand: '<path d="M15 4h5v5M9 20H4v-5M20 4l-6 6M4 20l6-6"/>',
   heart: '<path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/>',
   filter: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
@@ -2149,16 +2221,15 @@ function Ovr({ v, size }) {
   return html`<span class=${'ovr ' + t + (size ? ' ' + size : '')} title=${'Punteggio ' + r0(v) + ' · ' + Engine.TIER_NAME[t]}>${r0(v)}</span>`;
 }
 
-function PlayerCard({ p, r, mvp, sub, noZoom }) {
+function PlayerCard({ p, r, mvp, sub, noZoom, fifa }) {
   const C = useContext(Ctx);
   const tier = mvp ? 'mvp' : Engine.tierOf(r.ovr);
   const gk = p.role === 'POR';
+  const ovr = html`<b class="num">${r0(r.ovr)}</b><span>${p.role}${p.role2 ? ' · ' + p.role2 : ''}</span>`;
   return html`<div class=${'pcard ' + tier}>
     <div class="pc-top">
-      <div class="pc-ovr">
-        <b class="num">${r0(r.ovr)}</b>
-        <span>${p.role}${p.role2 ? ' · ' + p.role2 : ''}</span>
-      </div>
+      ${fifa ? html`<button type="button" class="pc-ovr tap" aria-label=${'Apri la card di ' + dispName(p) + ' a tutto schermo'} onClick=${() => C.openSheet({ k: 'fifa', pid: p.id, all: fifa === 'all' })}>${ovr}<span class="pc-exp"><${Icon} n="expand" s="14" /></span></button>`
+        : html`<div class="pc-ovr">${ovr}</div>`}
       ${mvp && html`<span class="pc-badge"><${Icon} n="trophy" s="14" /> MVP</span>`}
       ${noZoom ? html`<${Avatar} p=${p} size=${64} />` : html`<button type="button" class="av-btn" aria-label=${'Ingrandisci la foto di ' + dispName(p)} onClick=${() => C.openSheet({ k: 'photo', pid: p.id })}><${Avatar} p=${p} size=${64} /></button>`}
     </div>
@@ -2523,6 +2594,12 @@ function useComuni() {
   useEffect(() => { if (!list) loadComuni().then(setList, () => setErr(true)); }, []);
   return { list, err };
 }
+/* carica l'elenco solo se serve davvero (per esempio per trovare il comune di un gruppo vecchio) */
+function useComuniIf(on) {
+  const [list, setList] = useState(COMUNI);
+  useEffect(() => { if (on && !COMUNI) loadComuni().then(setList, () => {}); }, [on]);
+  return list;
+}
 function searchComuni(list, q, n) {
   const max = n || 8;
   const t = normTxt(q);
@@ -2875,6 +2952,7 @@ const pollOpenDays = (m) => pollDays(m).filter((d) => d >= todayYmd());
 const myPollDays = (m, uid) => Object.keys((pollVotes(m)[uid]) || {});
 const ymdLabel = (s, long) => {
   const d = new Date(s + 'T12:00:00');
+  if (long === 'mid') return `${cap1(DOW_FULL[d.getDay()])} ${d.getDate()} ${MON[d.getMonth()]}`;
   return long ? `${cap1(DOW_FULL[d.getDay()])} ${d.getDate()} ${MON_FULL[d.getMonth()]}` : `${cap1(DOW[d.getDay()])} ${d.getDate()} ${MON[d.getMonth()]}`;
 };
 /* i sondaggi restano in vista fino al giorno dopo l'ultimo giorno proposto */
@@ -2939,6 +3017,7 @@ function PollScreen({ m }) {
   const closeNow = () => C.openSheet({ k: 'pollClose', mid: m.id });
   const cancel = () => C.openSheet({ k: 'confirm', title: 'Annullare il sondaggio?', text: 'Il sondaggio sparisce dalle Partite e nessuno potrà più votare.', label: 'Annulla sondaggio', danger: true, onYes: async () => { if (await C.act.setStatus(m.id, 'cancelled')) { C.flash('Sondaggio annullato'); C.back(); } } });
   const by = m.by && C.playersById[m.by];
+  const wxd = useForecast(useMatchPlace(m));
   return html`<${Page} title="Quando giochiamo?" sub=${fmtOf(m).name + ' · ' + (m.time ? 'ore ' + m.time : 'ora da definire') + (m.field ? ' · ' + m.field : '')} onBack=${C.back}>
     <div class="note ok"><${Icon} n="calendar" s="16" /><span>Segna tutti i giorni in cui sei libero. Appena un giorno arriva a <b>${need}</b> la partita nasce da sola, con chi l'ha votato; ${m.teamMode === 'pick' ? 'poi ognuno sceglie la sua squadra.' : 'le squadre le fa l\'app.'}</span></div>
     <div class="card pad0 divided">${days.map((d) => {
@@ -2946,12 +3025,13 @@ function PollScreen({ m }) {
       return html`<div key=${d} class=${'poll-day' + (past ? ' past' : '') + (on ? ' on' : '')}>
         <button type="button" class="pd-check" disabled=${past || !canVote || !!busy} aria-pressed=${on} aria-label=${(on ? 'Togli ' : 'Segna ') + ymdLabel(d, true)} onClick=${() => toggle(d)}>${busy === d ? html`<span class="spin"></span>` : on ? html`<${Icon} n="check" s="18" />` : ''}</button>
         <div class="grow stack-4">
-          <div class="hs" style="justify-content:space-between"><b>${ymdLabel(d, true)}</b><span class=${'chip num' + (vs.length >= need ? ' ok' : '')}>${vs.length}/${need}</span></div>
+          <div class="hs" style="justify-content:space-between;gap:8px"><b class="ell">${ymdLabel(d, 'mid')}</b><span class="hs" style="gap:8px;flex:none">${!past && html`<${WxBadge} w=${wxFor(wxd, d, m.time)} />`}<span class=${'chip num' + (vs.length >= need ? ' ok' : '')}>${vs.length}/${need}</span></span></div>
           <div class="bar"><i style=${'width:' + Math.min(100, (vs.length / need) * 100) + '%'}></i></div>
           <div class="tiny muted ell">${past ? 'Giorno passato' : vs.length ? vs.map((u) => (C.playersById[u] ? dispName(C.playersById[u]) : 'Ex giocatore')).join(', ') : 'Ancora nessuno'}</div>
         </div>
       </div>`;
     })}</div>
+    ${wxd && html`<${WxCredit} />`}
     ${!canVote && html`<div class="note">${C.me ? 'Hai accesso in sola lettura.' : 'Crea prima il tuo profilo per votare.'}</div>`}
     ${by && html`<div class="tiny faint">Sondaggio di ${dispName(by)}. ${m.teamMode === 'pick' ? 'Squadre scelte dai partecipanti.' : 'Squadre automatiche.'}</div>`}
     ${org && html`<div class="stack-8">
@@ -3154,6 +3234,289 @@ function AffinityList({ pid }) {
   })}</div>`;
 }
 const fmtAffRec = (w, d) => [w ? plural(w, 'vittoria', 'vittorie') : '', d ? plural(d, 'pareggio', 'pareggi') : ''].filter(Boolean).join(' e ') + ' insieme';
+
+
+/* ============================================================
+   APP: la card in stile FIFA a tutto schermo (si gira toccandola: davanti le aree, dietro le 16 voci)
+   ============================================================ */
+function FifaOverlay({ pid, all, onClose }) {
+  const C = useContext(Ctx);
+  const [flip, setFlip] = useState(false);
+  const p = C.playersById[pid];
+  const r = p && (all ? C.ratedAll : C.rated)[pid];
+  useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', k);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', k); document.body.style.overflow = prev; };
+  }, []);
+  if (!p || !r) return null;
+  const tier = Engine.tierOf(r.ovr);
+  const gk = p.role === 'POR';
+  const photo = typeof p.photo === 'string' && p.photo.startsWith('data:image/') ? p.photo : null;
+  const age = ageOf(p);
+  const sub = [C.gid && !all && C.group ? C.group.name : 'Stats generali', p.loc && p.loc.name, age && age + ' anni'].filter(Boolean).join(' · ');
+  const nick = (dispName(p) || '').toUpperCase();
+  return html`<div class="fifa-ov" role="dialog" aria-modal="true" aria-label=${'Card di ' + dispName(p)} onClick=${onClose}>
+    <button class="fifa-x" aria-label="Chiudi" onClick=${onClose}><${Icon} n="x" /></button>
+    <div class=${'fifa-flip' + (flip ? ' on' : '')} onClick=${(e) => { e.stopPropagation(); setFlip(!flip); }} role="button" tabindex="0" aria-label="Gira la card"
+      onKeyDown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFlip(!flip); } }}>
+      <div class=${'fifa ' + tier + ' front'}>
+        <div class="fifa-shine"></div>
+        <div class="fifa-top">
+          <div class="fifa-ovr"><b class="num">${r0(r.ovr)}</b><span>${p.role}${p.role2 ? html`<em>${p.role2}</em>` : ''}</span></div>
+          <div class="fifa-ph">${photo ? html`<img src=${photo} alt="" />` : html`<span class="fifa-ic">${p.icon || initialsOf(p)}</span>`}</div>
+        </div>
+        <div class="fifa-name">${nick}</div>
+        <div class="fifa-full">${fullName(p)}</div>
+        <div class="fifa-stats">
+          ${AREAS.map((a) => { const counts = gk ? a.k === 'por' : a.k !== 'por'; return html`<div key=${a.k} class=${'fs' + (counts ? '' : ' dim')}><b class="num">${r0(r.areas[a.k])}</b><span>${a.code}</span></div>`; })}
+        </div>
+        <div class="fifa-foot">${sub}</div>
+      </div>
+      <div class=${'fifa ' + tier + ' back'}>
+        <div class="fifa-shine"></div>
+        <div class="fifa-bh"><b class="num">${r0(r.ovr)}</b><span>${nick}</span></div>
+        <div class="fifa-voci">
+          ${AREAS.map((a) => html`<div key=${a.k} class=${'fv' + ((gk ? a.k === 'por' : a.k !== 'por') ? '' : ' dim')}>
+            <div class="fv-h"><span>${a.name}</span><b class="num">${r0(r.areas[a.k])}</b></div>
+            ${a.voci.map((x) => html`<div key=${x.k} class="fv-r"><span>${x.name}</span><b class="num">${r0(r.voci[x.k])}</b></div>`)}
+          </div>`)}
+        </div>
+        <div class="fifa-foot">${r.nPeers ? 'Media di ' + plural(r.nPeers, 'valutazione', 'valutazioni') + ' e dell\'autovalutazione' : 'Per ora solo l\'autovalutazione'}</div>
+      </div>
+    </div>
+    <div class="fifa-hint">Tocca la card per girarla · tocca fuori per chiudere</div>
+  </div>`;
+}
+
+
+/* ============================================================
+   APP: meteo previsto per i giorni delle partite (Open-Meteo, gratuito, fino a 16 giorni)
+   Posizione: il campo scelto, altrimenti il comune del gruppo. Mai la posizione delle persone.
+   ============================================================ */
+const WX_TTL = 3 * 3600000;
+const wxMem = {};
+const wxKey = (loc) => loc.lat.toFixed(2) + ',' + loc.lng.toFixed(2);
+function loadForecast(loc) {
+  const k = wxKey(loc);
+  const hit = wxMem[k];
+  if (hit && Date.now() - hit.t < WX_TTL) return hit.p;
+  try {
+    const raw = window.localStorage.getItem('sc-wx-' + k);
+    if (raw) { const o = JSON.parse(raw); if (o && Date.now() - o.t < WX_TTL && o.d) { wxMem[k] = { t: o.t, p: Promise.resolve(o.d) }; return wxMem[k].p; } }
+  } catch (e) { /* archivio non disponibile */ }
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + loc.lat.toFixed(3) + '&longitude=' + loc.lng.toFixed(3)
+    + '&hourly=weather_code,temperature_2m,precipitation_probability'
+    + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+    + '&timezone=Europe%2FRome&forecast_days=16';
+  const p = fetch(url).then((r) => { if (!r.ok) throw new Error('meteo'); return r.json(); }).then((d) => {
+    try { window.localStorage.setItem('sc-wx-' + k, JSON.stringify({ t: Date.now(), d })); } catch (e) { /* pazienza */ }
+    return d;
+  });
+  wxMem[k] = { t: Date.now(), p };
+  p.catch(() => { delete wxMem[k]; });
+  return p;
+}
+/* il meteo di un giorno: all'ora della partita se c'è, altrimenti quello della giornata */
+function wxFor(d, ymd, time) {
+  if (!d || !ymd) return null;
+  if (time && d.hourly && Array.isArray(d.hourly.time)) {
+    const hh = String(time).slice(0, 2);
+    const i = d.hourly.time.indexOf(ymd + 'T' + hh + ':00');
+    if (i >= 0 && d.hourly.weather_code[i] != null) {
+      return { code: d.hourly.weather_code[i], temp: d.hourly.temperature_2m[i], pop: d.hourly.precipitation_probability ? d.hourly.precipitation_probability[i] : null, at: hh + ':00' };
+    }
+  }
+  if (d.daily && Array.isArray(d.daily.time)) {
+    const i = d.daily.time.indexOf(ymd);
+    if (i >= 0 && d.daily.weather_code[i] != null) {
+      return { code: d.daily.weather_code[i], temp: d.daily.temperature_2m_max[i], tmin: d.daily.temperature_2m_min[i], pop: d.daily.precipitation_probability_max ? d.daily.precipitation_probability_max[i] : null, at: null };
+    }
+  }
+  return null;
+}
+/* codici WMO: icona e parola */
+function wxInfo(code) {
+  const c = Number(code);
+  if (c === 0) return { i: '☀️', l: 'Sereno' };
+  if (c === 1) return { i: '🌤️', l: 'Quasi sereno' };
+  if (c === 2) return { i: '⛅', l: 'Poco nuvoloso' };
+  if (c === 3) return { i: '☁️', l: 'Nuvoloso' };
+  if (c === 45 || c === 48) return { i: '🌫️', l: 'Nebbia' };
+  if (c >= 51 && c <= 57) return { i: '🌦️', l: 'Pioviggine' };
+  if ((c >= 61 && c <= 67) || (c >= 80 && c <= 82)) return { i: '🌧️', l: c === 65 || c === 82 ? 'Pioggia forte' : 'Pioggia' };
+  if ((c >= 71 && c <= 77) || c === 85 || c === 86) return { i: '❄️', l: 'Neve' };
+  if (c >= 95) return { i: '⛈️', l: 'Temporale' };
+  return { i: '🌡️', l: 'Meteo' };
+}
+/* dove si gioca: il campo (se ha le coordinate), altrimenti il comune del gruppo */
+function matchPlace(m, C) {
+  const f = m && C.fieldOf(m);
+  if (f && isFinite(f.lat) && isFinite(f.lng)) return { lat: f.lat, lng: f.lng, name: f.name };
+  const g = groupLoc(C.group);
+  return g ? { lat: g.lat, lng: g.lng, name: g.name } : null;
+}
+function useMatchPlace(m) {
+  const C = useContext(Ctx);
+  const f = m && C.fieldOf(m);
+  const hasField = !!(f && isFinite(f.lat) && isFinite(f.lng));
+  const g = C.group;
+  useComuniIf(!!(m && !hasField && g && !(g.loc && isFinite(g.loc.lat))));
+  return m ? matchPlace(m, C) : null;
+}
+function useForecast(loc) {
+  const [d, setD] = useState(null);
+  const k = loc ? wxKey(loc) : '';
+  useEffect(() => {
+    let dead = false;
+    if (!loc) { setD(null); return undefined; }
+    loadForecast(loc).then((x) => { if (!dead) setD(x); }, () => { if (!dead) setD(null); });
+    return () => { dead = true; };
+  }, [k]);
+  return d;
+}
+function WxBadge({ w, long }) {
+  if (!w) return null;
+  const info = wxInfo(w.code);
+  const t = Math.round(w.temp);
+  const title = info.l + ', ' + t + '°' + (w.pop != null ? ', pioggia ' + w.pop + '%' : '') + (w.at ? ' alle ' + w.at : ' (giornata)');
+  return html`<span class="wx" title=${title} aria-label=${'Meteo previsto: ' + title}>
+    <span class="wx-i" aria-hidden="true">${info.i}</span><span class="num">${t}°</span>${w.pop != null && w.pop >= 20 && html`<span class="wx-p num">${w.pop}%</span>`}${long && html`<span class="wx-l">${info.l.toLowerCase()}</span>`}
+  </span>`;
+}
+function WxCredit() {
+  return html`<div class="tiny faint">Meteo previsto da <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>, fino a 16 giorni prima.</div>`;
+}
+
+
+/* ============================================================
+   APP: traguardi (stemmi) del giocatore, calcolati dalle partite del gruppo
+   ============================================================ */
+
+/* le partite giocate da un giocatore, dalla più vecchia: risultato, gol, assist, porta, MVP */
+function playerTimeline(uid, C) {
+  return C.matches
+    .filter((m) => m.status === 'played' && m.final && (m.final.ids || []).includes(uid))
+    .sort((x, y) => mStart(x) - mStart(y))
+    .map((m) => {
+      const fin = m.final;
+      const side = (fin.a || []).includes(uid) ? 'a' : (fin.b || []).includes(uid) ? 'b' : null;
+      const res = Engine.hasResult(m) ? m.result : null;
+      const e = (res && res.ev && res.ev[uid]) || {};
+      let out = null, conceded = null;
+      if (res && side) {
+        const my = side === 'a' ? res.a : res.b, ot = side === 'a' ? res.b : res.a;
+        out = my > ot ? 'w' : my === ot ? 'd' : 'l';
+        conceded = ot;
+      }
+      const mv = C.stats.mvps[m.id];
+      return {
+        m, date: m.date, out, conceded,
+        g: numOr(e.g, 0), a: numOr(e.a, 0), og: numOr(e.og, 0),
+        gk: !!(fin.roles && fin.roles[uid] === 'POR'),
+        mvp: !!(mv && mv.closed && mv.winners.includes(uid)),
+      };
+    });
+}
+
+/* un traguardo: { done, at (giorno), cur, max } */
+const firstWhere = (tl, pred) => { const x = tl.find(pred); return { done: !!x, at: x ? x.date : null }; };
+const reach = (tl, val, n) => {
+  let s = 0;
+  for (const x of tl) { s += val(x); if (s >= n) return { done: true, at: x.date, cur: n, max: n }; }
+  return { done: false, at: null, cur: s, max: n };
+};
+const streak = (tl, pred, n) => {
+  let run = 0, best = 0;
+  for (const x of tl) {
+    if (!x.out) continue; /* senza risultato la partita non conta */
+    run = pred(x) ? run + 1 : 0;
+    best = Math.max(best, run);
+    if (run >= n) return { done: true, at: x.date, cur: n, max: n };
+  }
+  return { done: false, at: null, cur: best, max: n };
+};
+
+const BADGE_GROUPS = [
+  { k: 'gol', l: 'Gol' }, { k: 'ass', l: 'Assist' }, { k: 'mvp', l: 'MVP' }, { k: 'pres', l: 'Presenze' },
+  { k: 'win', l: 'Vittorie' }, { k: 'gk', l: 'In porta' }, { k: 'team', l: 'Squadra e amici' },
+];
+const BADGES = [
+  { k: 'gol1', g: 'gol', e: '⚽', n: 'Primo gol', d: 'Segna il tuo primo gol.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.g >= 1) },
+  { k: 'doppietta', g: 'gol', e: '✌️', n: 'Doppietta', d: '2 gol nella stessa partita.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.g >= 2) },
+  { k: 'tripletta', g: 'gol', e: '🎩', n: 'Tripletta', d: '3 gol nella stessa partita.', t: 'silver', f: (tl) => firstWhere(tl, (x) => x.g >= 3) },
+  { k: 'poker', g: 'gol', e: '🃏', n: 'Poker', d: '4 gol nella stessa partita.', t: 'gold', f: (tl) => firstWhere(tl, (x) => x.g >= 4) },
+  { k: 'manita', g: 'gol', e: '🖐️', n: 'Manita', d: '5 gol o più nella stessa partita.', t: 'gold', f: (tl) => firstWhere(tl, (x) => x.g >= 5) },
+  { k: 'bomber', g: 'gol', e: '🎯', n: 'Bomber', d: '25 gol in questo gruppo.', t: 'silver', f: (tl) => reach(tl, (x) => x.g, 25) },
+  { k: 'leggenda', g: 'gol', e: '👑', n: 'Leggenda', d: '100 gol in questo gruppo.', t: 'gold', f: (tl) => reach(tl, (x) => x.g, 100) },
+  { k: 'assist1', g: 'ass', e: '🅰️', n: 'Primo assist', d: 'Fai il tuo primo assist.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.a >= 1) },
+  { k: 'regista', g: 'ass', e: '🎼', n: 'Regista', d: '3 assist nella stessa partita.', t: 'silver', f: (tl) => firstWhere(tl, (x) => x.a >= 3) },
+  { k: 'uomoassist', g: 'ass', e: '🧠', n: 'Uomo assist', d: '25 assist in questo gruppo.', t: 'gold', f: (tl) => reach(tl, (x) => x.a, 25) },
+  { k: 'mvp1', g: 'mvp', e: '🏆', n: 'Primo MVP', d: 'Vinci il voto MVP di una partita.', t: 'silver', f: (tl) => firstWhere(tl, (x) => x.mvp) },
+  { k: 'mvp5', g: 'mvp', e: '🌟', n: 'Pallone d\'oro', d: '5 volte MVP.', t: 'gold', f: (tl) => reach(tl, (x) => (x.mvp ? 1 : 0), 5) },
+  { k: 'esordio', g: 'pres', e: '👟', n: 'Esordio', d: 'Gioca la tua prima partita.', t: 'bronze', f: (tl) => reach(tl, () => 1, 1) },
+  { k: 'habitue', g: 'pres', e: '📅', n: 'Habitué', d: '10 partite giocate.', t: 'bronze', f: (tl) => reach(tl, () => 1, 10) },
+  { k: 'veterano', g: 'pres', e: '🎖️', n: 'Veterano', d: '50 partite giocate.', t: 'silver', f: (tl) => reach(tl, () => 1, 50) },
+  { k: 'bandiera', g: 'pres', e: '🚩', n: 'Bandiera', d: '100 partite giocate.', t: 'gold', f: (tl) => reach(tl, () => 1, 100) },
+  { k: 'win1', g: 'win', e: '✅', n: 'Prima vittoria', d: 'Vinci la tua prima partita.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.out === 'w') },
+  { k: 'striscia', g: 'win', e: '🔥', n: 'Striscia', d: '3 vittorie di fila.', t: 'silver', f: (tl) => streak(tl, (x) => x.out === 'w', 3) },
+  { k: 'inarrestabile', g: 'win', e: '☄️', n: 'Inarrestabile', d: '5 vittorie di fila.', t: 'gold', f: (tl) => streak(tl, (x) => x.out === 'w', 5) },
+  { k: 'imbattibile', g: 'win', e: '🛡️', n: 'Imbattibile', d: '10 partite di fila senza perdere.', t: 'gold', f: (tl) => streak(tl, (x) => x.out !== 'l', 10) },
+  { k: 'saracinesca', g: 'gk', e: '🧱', n: 'Saracinesca', d: 'In porta, al massimo 2 gol subiti in una partita.', t: 'silver', f: (tl) => firstWhere(tl, (x) => x.gk && x.conceded != null && x.conceded <= 2) },
+  { k: 'inviolata', g: 'gk', e: '🔒', n: 'Porta inviolata', d: 'In porta, nessun gol subito.', t: 'gold', f: (tl) => firstWhere(tl, (x) => x.gk && x.conceded === 0) },
+  { k: 'coppia', g: 'team', e: '💞', n: 'Coppia d\'oro', d: 'Affinità 50 o più con un compagno.', t: 'silver', f: (tl, uid, C) => { const top = C.aff.top(uid, 1)[0]; const v = top ? Math.round(top.v) : 0; return { done: v >= 50, at: null, cur: Math.min(v, 50), max: 50 }; } },
+  { k: 'organizzatore', g: 'team', e: '📣', n: 'Organizzatore', d: 'Organizza 5 partite che poi si giocano.', t: 'bronze', f: (tl, uid, C) => { const n = C.matches.filter((m) => m.by === uid && m.status === 'played').length; return { done: n >= 5, at: null, cur: Math.min(n, 5), max: 5 }; } },
+  { k: 'compagnia', g: 'team', e: '🤝', n: 'Compagnia', d: '5 amici sull\'app.', t: 'bronze', own: true, f: (tl, uid, C) => { const n = uid === C.uid ? Object.values(C.friendOf).filter((x) => x === 'friend').length : 0; return { done: n >= 5, at: null, cur: Math.min(n, 5), max: 5 }; } },
+  { k: 'ops', g: 'gol', e: '🙈', n: 'Ops!', d: 'Il primo autogol: capita anche ai migliori.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.og >= 1) },
+];
+
+/* tutti i traguardi di un giocatore, con lo stato */
+function badgesOf(uid, C) {
+  const tl = playerTimeline(uid, C);
+  return BADGES
+    .filter((b) => !b.own || uid === C.uid)
+    .map((b) => Object.assign({}, b, b.f(tl, uid, C)));
+}
+const isNewBadge = (b) => { if (!b.done || !b.at) return false; const d = new Date(b.at + 'T12:00:00'); return Date.now() - d.getTime() < 8 * 86400000; };
+
+function Emblem({ b, s }) {
+  return html`<span class=${'emblem ' + b.t + (b.done ? '' : ' off')} style=${s ? '--es:' + s + 'px' : ''} aria-hidden="true"><span class="em-in"><span class="em-e">${b.e}</span></span></span>`;
+}
+
+function BadgeGrid({ pid }) {
+  const C = useContext(Ctx);
+  const list = badgesOf(pid, C);
+  const done = list.filter((b) => b.done).length;
+  const order = (b) => (b.done ? 0 : 1);
+  return html`<div class="stack-8">
+    <div class="small muted">${done ? plural(done, 'traguardo raggiunto', 'traguardi raggiunti') + ' su ' + list.length : 'Ancora nessun traguardo: arrivano giocando'} · in questo gruppo</div>
+    <div class="badges">${list.slice().sort((x, y) => order(x) - order(y)).map((b) => html`<button key=${b.k} type="button" class=${'badge' + (b.done ? ' done' : '')} onClick=${() => C.openSheet({ k: 'badge', pid, bk: b.k })} aria-label=${b.n + (b.done ? ': raggiunto' : ': da raggiungere')}>
+      <${Emblem} b=${b} />
+      <span class="bd-n">${b.n}</span>
+      ${b.done ? isNewBadge(b) && html`<span class="bd-new">Nuovo</span>` : b.max > 1 && html`<span class="bd-p"><i style=${'width:' + Math.round((b.cur / b.max) * 100) + '%'}></i></span>`}
+    </button>`)}</div>
+  </div>`;
+}
+
+function BadgeSheet({ pid, bk, onClose }) {
+  const C = useContext(Ctx);
+  const b = badgesOf(pid, C).find((x) => x.k === bk);
+  const p = C.playersById[pid];
+  if (!b || !p) return null;
+  const TIER = { bronze: 'Bronzo', silver: 'Argento', gold: 'Oro' };
+  return html`<${Sheet} title=${b.n} onClose=${onClose}>
+    <div class="bd-big"><${Emblem} b=${b} s=${96} /></div>
+    <div class="stack-8" style="text-align:center">
+      <div class="h3">${b.d}</div>
+      <div class="small muted">Stemma ${TIER[b.t].toLowerCase()} · ${(BADGE_GROUPS.find((g) => g.k === b.g) || {}).l || ''}</div>
+      ${b.done
+        ? html`<div class="note ok" style="justify-content:center"><${Icon} n="check" s="16" /><span>${pid === C.uid ? 'Raggiunto' : dispName(p) + ' l\'ha raggiunto'}${b.at ? ' il ' + fmtYmd(b.at) : ''}.</span></div>`
+        : html`<div class="note" style="justify-content:center"><span>${b.max > 1 ? 'A che punto: ' + b.cur + ' su ' + b.max + '.' : 'Ancora da raggiungere.'}</span></div>`}
+    </div>
+  <//>`;
+}
 
 
 /* ============================================================
@@ -3522,6 +3885,7 @@ function RecentGames({ s }) {
 function PlayerSections({ p, r, s }) {
   return html`
     <section class="sec"><h2 class="h3">Partite</h2><${MatchStatTiles} s=${s} /></section>
+    <section class="sec"><h2 class="h3">Traguardi</h2><${BadgeGrid} pid=${p.id} /></section>
     <section class="sec"><h2 class="h3">Compagni più affiatati</h2><${AffinityList} pid=${p.id} /></section>
     <section class="sec"><h2 class="h3">Stats</h2><${AreaDetail} p=${p} r=${r} /></section>
     <section class="sec"><div class="sec-h"><h2 class="h3">Valutazioni ricevute</h2><span class="chip num">${r.nPeers + (r.self ? 1 : 0)}</span></div><${ReceivedList} p=${p} r=${r} /></section>
@@ -3576,7 +3940,7 @@ function PlayerScreen({ id, scope }) {
   const sub = !isMe && C.group && !member ? 'Non è in ' + C.group.name : null;
   return html`<${Page} title=${dispName(p)} sub=${sub} onBack=${C.back}>
     ${member && html`<${Seg} value=${mode} onChange=${setMode} options=${STATS_SCOPE} />`}
-    <${PlayerCard} p=${p} r=${r} />
+    <${PlayerCard} p=${p} r=${r} fifa=${all ? 'all' : 'group'} />
     <${PlaceAge} p=${p} from=${isMe ? null : C.me && C.me.loc} />
     ${!isMe && member && C.isInGroup(C.uid) && html`<div class="aff-me"><span class="small muted">Affinità con te</span><span class="aff-bar"><i style=${'width:' + Math.max(2, C.aff.get(C.uid, id)) + '%'}></i></span><b class="num">${Math.round(C.aff.get(C.uid, id))}</b><span class="tiny faint">${(() => { const r = C.aff.record(C.uid, id); return r.w || r.d ? fmtAffRec(r.w, r.d) : 'mai vinto insieme'; })()}</span></div>`}
     <${InjuryCard} inj=${p.injury} mine=${isMe} />
@@ -3620,7 +3984,7 @@ function MeScreen() {
       ${edit ? html`<div class="card"><${ProfileForm} initial=${me} onSaved=${() => setEdit(false)} /></div>
         <button class="btn ghost block" onClick=${() => setEdit(false)}>Annulla</button>` : html`
         ${member && html`<${Seg} value=${mode} onChange=${setMode} options=${STATS_SCOPE} />`}
-        <${PlayerCard} p=${me} r=${r} />
+        <${PlayerCard} p=${me} r=${r} fifa=${all ? 'all' : 'group'} />
         <${PlaceAge} p=${me} />
         ${all && html`<${GeneralNote} r=${r} mine />`}
         ${C.canWrite && !me.loc && html`<div class="note hs-12"><${Icon} n="pin" s="16" /><span class="grow">Aggiungi il tuo comune: così ti trova chi cerca giocatori nella tua zona.</span><button class="btn sm" onClick=${() => setEdit(true)}>Aggiungi</button></div>`}
@@ -3915,6 +4279,7 @@ function MatchScreen({ id }) {
   const m = C.matchesById[id];
   const [tab, setTab] = useState('info');
   const R = useMemo(() => (m && m.status !== 'poll' ? buildRoster(m, C) : null), [m, C.playersById, C.rated, C.players]);
+  const wxData = useForecast(useMatchPlace(m && m.status !== 'poll' && m.date && phaseOf(m) === 'upcoming' ? m : null));
   if (!m) {
     return html`<${Page} title="Partita" onBack=${C.back}><div class="card empty"><div class="h3">Partita non trovata</div><div>Potrebbe essere stata eliminata.</div></div><//>`;
   }
@@ -3930,6 +4295,7 @@ function MatchScreen({ id }) {
   const pick = m.teamMode === 'pick';
   const D = lineupData(m, C, R);
   const hasLineup = D.A.length + D.B.length > 0;
+  const wx = open ? wxFor(wxData, m.date, m.time) : null;
 
   const respond = (s, side) => {
     if (!C.canWrite) { C.flash('Hai accesso in sola lettura'); return; }
@@ -3978,6 +4344,7 @@ function MatchScreen({ id }) {
         <div class="hs"><${Icon} n="clock" s="16" /><b class="num">${m.time || 'Ora da definire'}</b><span class="muted">· ${fmt.name}, ${m.format} vs ${m.format}</span></div>
         <div class="hs"><${Icon} n="pin" s="16" /><span>${m.field || 'Campo da definire'}</span></div>
         <${FieldLinks} m=${m} />
+        ${wx && html`<div class="hs"><${WxBadge} w=${wx} long /><span class="tiny faint">${wx.at ? 'alle ' + wx.at : 'nella giornata'} · <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></span></div>`}
         ${m.note && html`<div class="small muted">${m.note}</div>`}
         ${m.teamMode && html`<div class="hs"><${Icon} n="users" s="16" /><span class="small">${TEAM_MODE_TEXT[m.teamMode]}</span></div>`}
         ${colorsRow}
@@ -5399,6 +5766,7 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. Poi l'app ti propone di aggiornare le valutazioni dei compagni, anche più tardi.</p></div>
       <div><h3 class="h3">Gruppi e stats generali</h3><p class="muted">Partite, storico, messaggi e valutazioni sono di ogni gruppo. Puoi stare in più gruppi: cambi gruppo toccando il suo nome in alto. Nella scheda Giocatori vedi i membri del gruppo oppure tutti gli iscritti all'app. Le stats nel gruppo sono la media delle valutazioni date in quel gruppo; le stats generali sono la media di tutte le valutazioni ricevute in tutti i gruppi, autovalutazione compresa.</p></div>
       <div><h3 class="h3">Affinità</h3><p class="muted">Più partite due giocatori vincono (o pareggiano) nella stessa squadra, più cresce la loro affinità, piano piano: una vittoria vale 1, un pareggio mezzo, le sconfitte non tolgono niente. Si arriva a circa 28 dopo 10 partite positive insieme, 57 dopo 25, 81 dopo 50 (massimo 100). Una squadra di compagni affiatati prende fino a +${Engine.AFF_BONUS} punti sul valore medio, e l'app ne tiene conto quando fa le squadre.</p></div>
+      <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo, nel profilo di ciascuno. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le 16 voci.</p></div>
       <div><h3 class="h3">Amici</h3><p class="muted">Chiedi l'amicizia dalla scheda di un giocatore: diventate amici quando l'altro accetta. Gli amici compaiono per primi nelle ricerche e puoi invitarli alle partite del tuo gruppo.</p></div>
       <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti.</p></div>
     </div>
@@ -5423,6 +5791,8 @@ function SheetHost({ sheet, onClose }) {
     case 'member2': return html`<${MemberActionsSheet} key=${sheet.uid} uid=${sheet.uid} onClose=${onClose} />`;
     case 'colors': return html`<${ColorSheet} mid=${sheet.mid} onClose=${onClose} />`;
     case 'invite': return html`<${InviteSheet} mid=${sheet.mid} onClose=${onClose} />`;
+    case 'fifa': return html`<${FifaOverlay} pid=${sheet.pid} all=${sheet.all} onClose=${onClose} />`;
+    case 'badge': return html`<${BadgeSheet} pid=${sheet.pid} bk=${sheet.bk} onClose=${onClose} />`;
     case 'pollClose': return html`<${PollCloseSheet} mid=${sheet.mid} onClose=${onClose} />`;
     default: return null;
   }

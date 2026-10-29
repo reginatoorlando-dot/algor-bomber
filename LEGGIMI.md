@@ -55,6 +55,9 @@ Aggiunge il sondaggio sul giorno: ognuno segna i giorni in cui è libero e, appe
 Una volta sola: Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-amici.sql` e premi **Run**; deve comparire "Aggiornamento completato". Non sposta e non cancella dati.
 Aggiunge le amicizie (richiesta da accettare; le vedono solo le due persone) e toglie le amicizie insieme all'account quando lo si elimina. L'affinità tra compagni la calcola l'app dalle partite giocate.
 
+## Card, traguardi e meteo
+Non serve niente sul database. Il meteo dei giorni delle partite arriva da Open-Meteo (gratuito per uso non commerciale, previsioni fino a 16 giorni), usando la posizione del campo o il comune del gruppo; la posizione delle persone non viene mai chiesta.
+
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
 - I progetti gratuiti di Supabase vengono messi in pausa dopo qualche giorno senza uso: se succede, dal sito di Supabase si riattiva con un clic. Verifica le condizioni attuali del piano gratuito.
