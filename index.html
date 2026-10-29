@@ -647,6 +647,27 @@ select.input { appearance: auto; }
 .chat-input .send { width: 46px; height: 44px; padding: 0; border-radius: 12px; flex: none; }
 .shell.chat-shell { padding-bottom: 76px; }
 
+/* ---- comuni, età, filtri, infortuni ---- */
+.place-val { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 7px 8px 7px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); }
+.place-val > .ic { color: var(--accent); flex: none; }
+.place-list { max-height: 320px; overflow-y: auto; }
+.icon-btn.sm { width: 32px; height: 32px; border-radius: 10px; }
+.pmeta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: -4px; font-size: 13.5px; color: var(--ink-2); }
+.meta-i { display: inline-flex; align-items: center; gap: 5px; }
+.meta-i .ic { color: var(--ink-3); }
+.meta-i em { font-style: normal; color: var(--ink-3); margin-left: 6px; }
+.chips-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.pick-chip { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 7px 12px; font: 600 13px/1.2 var(--f-body); cursor: pointer; }
+.pick-chip.on { border-color: var(--ink); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.range2 { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; }
+.range2 > span { color: var(--ink-3); }
+.range2 .input { padding: 10px 8px; text-align: center; }
+.check { display: flex; align-items: center; gap: 10px; font-size: 14.5px; color: var(--ink); cursor: pointer; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.filters { gap: 14px; }
+.row-s.inj-t { color: var(--warn); }
+.bad-t { color: var(--bad); }
+
 </style>
 </head>
 <body>
@@ -1263,6 +1284,8 @@ const Demo = (() => {
       },
     };
     /* --- funzioni del database simulate (stesse regole dell'SQL) --- */
+    const cleanLoc = (l) => (l && typeof l.lat === 'number' && typeof l.lng === 'number' && l.lat > 35 && l.lat < 48 && l.lng > 6 && l.lng < 19.5 && l.name
+      ? { name: String(l.name).slice(0, 60), prov: String(l.prov || '').toUpperCase().slice(0, 3), lat: l.lat, lng: l.lng } : null);
     const mp = (g, u) => 'members/' + g + '~' + u;
     const fail = (message) => { throw { code: 'invalid_argument', message }; };
     const setD = (path, d) => { docs.set(path, clone(d)); emit(colOf(path)); };
@@ -1286,7 +1309,8 @@ const Demo = (() => {
           if (ct.length < 2 || ct.length > 40) fail('La città deve avere tra 2 e 40 caratteri.');
           if (!docs.has('players/' + db.me)) fail('Crea prima il tuo profilo.');
           const g = 'g_' + Math.random().toString(36).slice(2, 12);
-          setD('groups/' + g, { name: nm, city: ct, by: db.me, created: Date.now(), n: 1 });
+          const lc = cleanLoc(a.p_loc);
+          setD('groups/' + g, Object.assign({ name: nm, city: lc ? lc.name : ct, by: db.me, created: Date.now(), n: 1 }, lc ? { loc: lc } : {}));
           setD(mp(g, db.me), { gid: g, uid: db.me, role: 'admin', status: 'active', t: Date.now() });
           return g;
         }
@@ -1317,6 +1341,19 @@ const Demo = (() => {
           const admins = membersOf(a.p_gid).filter((x) => x.d.status === 'active' && x.d.role === 'admin').length;
           if (a.p_role === 'member' && m.role === 'admin' && admins <= 1) fail('Il gruppo deve avere almeno un amministratore: nominane prima un altro.');
           setD(p, Object.assign({}, m, { role: a.p_role })); return null;
+        }
+        case 'update_group': {
+          if (!canManage(a.p_gid)) fail('Solo gli amministratori del gruppo possono modificarlo.');
+          const gd = docs.get('groups/' + a.p_gid);
+          if (!gd) fail('Questo gruppo non esiste più.');
+          const nm = String(a.p_name || '').trim(), lc = cleanLoc(a.p_loc), ct = lc ? lc.name : String(a.p_city || '').trim();
+          if (nm.length < 2 || nm.length > 40) fail('Il nome del gruppo deve avere tra 2 e 40 caratteri.');
+          if (ct.length < 2) fail('Scegli la città del gruppo.');
+          const nd = Object.assign({}, gd, { name: nm, city: ct });
+          delete nd.loc;
+          if (lc) nd.loc = lc;
+          setD('groups/' + a.p_gid, nd);
+          return null;
         }
         case 'add_member': {
           if (!canManage(a.p_gid)) fail('Solo gli amministratori del gruppo possono aggiungere persone.');
@@ -1429,6 +1466,18 @@ const Demo = (() => {
       return t;
     });
 
+    // dove giocano e quando sono nati (uno non ha messo niente)
+    const L = (name, prov, lat, lng) => ({ name, prov, lat, lng });
+    const P = {
+      spezia: L('La Spezia', 'SP', 44.107, 9.828), sarzana: L('Sarzana', 'SP', 44.113, 9.96), lerici: L('Lerici', 'SP', 44.076, 9.911),
+      arcola: L('Arcola', 'SP', 44.114, 9.905), ssm: L('Santo Stefano di Magra', 'SP', 44.162, 9.915), vezzano: L('Vezzano Ligure', 'SP', 44.141, 9.885),
+      porto: L('Portovenere', 'SP', 44.052, 9.837), castel: L('Castelnuovo Magra', 'SP', 44.091, 10.003), luni: L('Luni', 'SP', 44.085, 10.042),
+      follo: L('Follo', 'SP', 44.163, 9.862), carrara: L('Carrara', 'MS', 44.078, 10.097),
+      milano: L('Milano', 'MI', 45.467, 9.191), sesto: L('Sesto San Giovanni', 'MI', 45.534, 9.237), monza: L('Monza', 'MB', 45.584, 9.274),
+    };
+    const HOME = [P.spezia, P.spezia, P.lerici, P.arcola, P.sarzana, P.spezia, P.vezzano, P.spezia, P.ssm, P.spezia, P.porto, P.arcola, P.spezia, P.follo, null, P.lerici];
+    const BORN = [1994, 1991, 1996, 1989, 1998, 1993, 1995, 1990, 1997, 1987, 1985, 1999, 1992, 2000, null, 1996];
+
     // giocatori, con un'autovalutazione un po' generosa
     const players = PEOPLE.map((p, i) => {
       const self = {};
@@ -1436,11 +1485,12 @@ const Demo = (() => {
       return {
         id: ids[i], first: p[0], last: p[1], nick: p[2], icon: p[3], photo: '', role: p[4], role2: p[5],
         self, selfAt: now - 45 * DAY, selfUnlock: false, injury: null, created: now - 45 * DAY, updated: now - 45 * DAY,
+        loc: HOME[i], birthYear: BORN[i],
       };
     });
-    players[5].injury = { level: 'lieve', note: 'Polpaccio indurito', back: ymd(addDays(6)), since: now - 3 * DAY };
-    players[12].injury = { level: 'grave', note: 'Distorsione al ginocchio', back: ymd(addDays(25)), since: now - 9 * DAY };
-    players[14].injury = { level: 'lieve', note: 'Caviglia', back: ymd(addDays(-2)), since: now - 12 * DAY };
+    players[5].injury = { level: 'lieve', zone: 'coscia', note: 'polpaccio indurito', back: ymd(addDays(6)), since: now - 3 * DAY };
+    players[12].injury = { level: 'grave', zone: 'ginocchio', note: 'distorsione', back: ymd(addDays(25)), since: now - 9 * DAY };
+    players[14].injury = { level: 'lieve', zone: 'caviglia', note: '', back: ymd(addDays(-2)), since: now - 12 * DAY };
     players.forEach((p) => { const doc = Object.assign({}, p); delete doc.id; db.put('players/' + p.id, doc); });
 
     // valutazioni degli altri (pubbliche); la Porta solo se l'hanno visto in porta
@@ -1569,21 +1619,21 @@ const Demo = (() => {
     db.put('groups/' + GID, { name: 'Algor Bomber', city: 'La Spezia', by: ME, created: now - 60 * DAY, n: ids.length });
     // iscritti di altri gruppi, per provare "Tutti gli iscritti" e le stats generali. Dave gioca anche a Sarzana.
     const OTHERS = [
-      ['demo-x1', 'Lorenzo', 'Bianchi', 'Lollo', '🍀', 'CEN', 'ATT', [66, 72, 58, 70, 40]],
-      ['demo-x3', 'Michele', 'Serra', 'Miki', '🦈', 'DIF', '', [48, 58, 73, 66, 45]],
-      ['demo-x4', 'Antonio', 'Rossi', 'Tonino', '🐢', 'POR', '', [40, 45, 52, 55, 74]],
-      ['demo-x2', 'Giacomo', 'Villa', 'Jack', '🎸', 'ATT', '', [79, 64, 45, 75, 35]],
-      ['demo-x5', 'Filippo', 'Sala', 'Pippo', '🤖', 'CEN', 'DIF', [60, 70, 66, 64, 42]],
-      ['demo-x6', 'Chiara', 'Galli', 'Chiara', '🦄', 'ATT', 'CEN', [74, 70, 50, 77, 38]],
+      ['demo-x1', 'Lorenzo', 'Bianchi', 'Lollo', '🍀', 'CEN', 'ATT', [66, 72, 58, 70, 40], P.sarzana, 1993],
+      ['demo-x3', 'Michele', 'Serra', 'Miki', '🦈', 'DIF', '', [48, 58, 73, 66, 45], P.castel, 1990],
+      ['demo-x4', 'Antonio', 'Rossi', 'Tonino', '🐢', 'POR', '', [40, 45, 52, 55, 74], P.luni, 1988],
+      ['demo-x2', 'Giacomo', 'Villa', 'Jack', '🎸', 'ATT', '', [79, 64, 45, 75, 35], P.milano, 1995],
+      ['demo-x5', 'Filippo', 'Sala', 'Pippo', '🤖', 'CEN', 'DIF', [60, 70, 66, 64, 42], P.sesto, 1992],
+      ['demo-x6', 'Chiara', 'Galli', 'Chiara', '🦄', 'ATT', 'CEN', [74, 70, 50, 77, 38], P.monza, 1997],
     ];
     const oTruth = {}, oRole = {};
-    OTHERS.forEach(([id, first, last, nick, icon, role, role2, lv]) => {
+    OTHERS.forEach(([id, first, last, nick, icon, role, role2, lv, home, born]) => {
       const t = {};
       Engine.AREAS.forEach((a, ai) => a.voci.forEach((x) => { t[x.k] = cl(lv[ai] + noise(6)); }));
       oTruth[id] = t; oRole[id] = role;
       const self = {};
       Object.keys(t).forEach((k) => { self[k] = cl(t[k] + 2 + noise(5)); });
-      db.put('players/' + id, { first, last, nick, icon, photo: '', role, role2, self, selfAt: now - 20 * DAY, selfUnlock: false, injury: null, created: now - 20 * DAY, updated: now - 20 * DAY });
+      db.put('players/' + id, { first, last, nick, icon, photo: '', role, role2, self, selfAt: now - 20 * DAY, selfUnlock: false, injury: null, created: now - 20 * DAY, updated: now - 20 * DAY, loc: home, birthYear: born });
     });
     oTruth[ids[4]] = Object.fromEntries(Object.entries(truth[4]).map(([k, v]) => [k, cl(v - 7)])); // a Sarzana lo vedono un po' meno forte
     oRole[ids[4]] = PEOPLE[4][4];
@@ -1605,11 +1655,11 @@ const Demo = (() => {
         db.put('g/' + g + '/ratings/' + voter, { r });
       });
     });
-    db.put('groups/g_demo_sarzana', { name: 'Calcetto del Giovedì', city: 'Sarzana', by: 'demo-x1', created: now - 30 * DAY, n: OTHER_GROUPS.g_demo_sarzana.length });
-    db.put('groups/g_demo_milano', { name: 'Milano Nord Five', city: 'Milano', by: 'demo-x2', created: now - 90 * DAY, n: OTHER_GROUPS.g_demo_milano.length });
+    db.put('groups/g_demo_sarzana', { name: 'Calcetto del Giovedì', city: 'Sarzana', loc: P.sarzana, by: 'demo-x1', created: now - 30 * DAY, n: OTHER_GROUPS.g_demo_sarzana.length });
+    db.put('groups/g_demo_milano', { name: 'Milano Nord Five', city: 'Milano', loc: P.milano, by: 'demo-x2', created: now - 90 * DAY, n: OTHER_GROUPS.g_demo_milano.length });
     ids.forEach((id, i) => db.put('members/' + GID + '~' + id, { gid: GID, uid: id, role: i === 0 ? 'admin' : 'member', status: 'active', t: now - (60 - i) * DAY }));
     // una richiesta di ingresso da approvare
-    db.put('players/demo-17', { first: 'Pietro', last: 'Neri', nick: 'Pietrone', icon: '🐺', photo: '', role: 'DIF', role2: '', self: Object.fromEntries(Engine.VOCI.map((x) => [x.k, 58])), selfAt: now - DAY, selfUnlock: false, injury: null, created: now - DAY, updated: now - DAY });
+    db.put('players/demo-17', { first: 'Pietro', last: 'Neri', nick: 'Pietrone', icon: '🐺', photo: '', role: 'DIF', role2: '', self: Object.fromEntries(Engine.VOCI.map((x) => [x.k, 58])), selfAt: now - DAY, selfUnlock: false, injury: null, created: now - DAY, updated: now - DAY, loc: P.carrara, birthYear: 2001 });
     db.put('members/' + GID + '~demo-17', { gid: GID, uid: 'demo-17', role: 'member', status: 'pending', t: now - 5 * HOUR });
     // chat del gruppo
     const chat = [
@@ -1801,6 +1851,7 @@ const ICONS = {
   cross: '<path d="M9.4 3.5h5.2v5.9h5.9v5.2h-5.9v5.9H9.4v-5.9H3.5V9.4h5.9z"/>',
   podium: '<path d="M9 20V9.5h6V20M3 20v-6h6M15 20v-4h6v4M2.5 20h19"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  filter: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
   chevdown: '<path d="m6 9 6 6 6-6"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
@@ -1833,10 +1884,39 @@ function RoleChips({ role, role2 }) {
   return html`<span class="roles"><${RoleChip} role=${role} />${role2 && html`<${RoleChip} role=${role2} ghost />`}</span>`;
 }
 
+/* infortuni: dove ci si è fatti male (si sceglie da un elenco) */
+const INJ_ZONES = [
+  { k: 'ginocchio', l: 'Ginocchio' }, { k: 'caviglia', l: 'Caviglia' }, { k: 'piede', l: 'Piede' },
+  { k: 'coscia', l: 'Coscia / polpaccio' }, { k: 'schiena', l: 'Schiena' }, { k: 'spalla', l: 'Spalla' },
+  { k: 'braccio', l: 'Braccio / mano' }, { k: 'altro', l: 'Altro' },
+];
+const injZoneName = (k) => { const z = INJ_ZONES.find((x) => x.k === k); return z ? z.l : ''; };
+/* riassunto in una riga: "Ginocchio · distorsione · rientro 12 nov" */
+function injSummary(inj) {
+  if (!inj || !inj.level) return '';
+  const bits = [injZoneName(inj.zone) || (inj.level === 'grave' ? 'Infortunio grave' : 'Infortunio lieve')];
+  if (inj.note) bits.push(inj.note);
+  bits.push(inj.back ? 'rientro ' + fmtYmd(inj.back) : 'rientro da definire');
+  return bits.join(' · ');
+}
+/* l'infortunio spiegato per intero: lo vedono tutti nella scheda del giocatore */
+function InjuryCard({ inj, mine }) {
+  if (!inj || !inj.level) return null;
+  const grave = inj.level === 'grave';
+  const zone = injZoneName(inj.zone);
+  const when = inj.back
+    ? (injOverdue(inj) ? 'Il rientro era previsto il ' + fmtYmd(inj.back) + '.' : 'Rientro previsto il ' + fmtYmd(inj.back) + '.')
+    : 'Rientro da definire.';
+  return html`<div class=${'note ' + (grave ? 'bad' : 'warn')}>
+    <${InjuryMark} inj=${inj} s="18" />
+    <span><b>${grave ? 'Infortunio grave' : 'Infortunio lieve'}${zone ? ': ' + zone.toLowerCase() : ''}</b>${inj.note ? ' (' + inj.note + ')' : ''}. ${when}${mine ? '' : ' Per le squadre conta ' + (grave ? CFG.INJ_BAD : CFG.INJ_LIGHT) + ' punti in meno.'}</span>
+  </div>`;
+}
+
 function InjuryMark({ inj, s = 16 }) {
   if (!inj || !inj.level) return null;
   const grave = inj.level === 'grave';
-  const title = (grave ? 'Infortunio grave' : 'Infortunio lieve') + (inj.note ? ': ' + inj.note : '') + (inj.back ? ' · rientro previsto ' + fmtYmd(inj.back) : '');
+  const title = (grave ? 'Infortunio grave: ' : 'Infortunio lieve: ') + injSummary(inj);
   return html`<span class=${'inj ' + (grave ? 'grave' : 'lieve')} title=${title} role="img" aria-label=${title}><${Icon} n=${grave ? 'cross' : 'bandage'} s=${s} fill=${grave} /></span>`;
 }
 
@@ -2129,10 +2209,10 @@ function makeActions(be, notify, dataRef, onDenied, gidRef) {
   const upd = (mid, patch) => { const path = G() + 'matches/' + mid; return run(path, () => doc(path).update(patch)); };
   const updP = (pid, patch) => run('players/' + pid, () => doc('players/' + pid).update(patch));
   const mine = (col) => (dataRef.current[col] || []).find((x) => x.id === be.uid) || {};
-  const rpc = async (fn, args) => {
-    if (!be.db.rpc) { notify('Non disponibile in questa versione.', 'err'); return { ok: false }; }
+  const rpc = async (fn, args, opts) => {
+    if (!be.db.rpc) { if (!(opts && opts.quiet)) notify('Non disponibile in questa versione.', 'err'); return { ok: false }; }
     try { return { ok: true, data: await be.db.rpc(fn, args) }; }
-    catch (e) { notify((e && e.message) || errText(e), 'err'); return { ok: false }; }
+    catch (e) { if (!(opts && opts.quiet)) notify((e && e.message) || errText(e), 'err'); return { ok: false, err: e }; }
   };
   return {
     saveProfile: (p) => run('players/' + be.uid, () => doc('players/' + be.uid).set(p), { probe: true }),
@@ -2179,6 +2259,113 @@ function makeActions(be, notify, dataRef, onDenied, gidRef) {
 
 
 /* ============================================================
+   APP: comuni italiani (elenco ISTAT con le coordinate), distanze, scelta del comune.
+   La posizione delle persone non viene mai chiesta: conta solo il comune che scelgono.
+   ============================================================ */
+let COMUNI = null;
+let comuniP = null;
+const normTxt = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u2019`]/g, '\'').toLowerCase().trim();
+
+function loadComuni() {
+  if (COMUNI) return Promise.resolve(COMUNI);
+  if (!comuniP) {
+    comuniP = fetch('comuni.json')
+      .then((r) => { if (!r.ok) throw new Error('comuni'); return r.json(); })
+      .then((j) => {
+        COMUNI = (j.c || []).map(([name, prov, lat, lng]) => ({ name, prov, lat, lng, k: normTxt(name) }));
+        return COMUNI;
+      })
+      .catch((e) => { comuniP = null; throw e; });
+  }
+  return comuniP;
+}
+function useComuni() {
+  const [list, setList] = useState(COMUNI);
+  const [err, setErr] = useState(false);
+  useEffect(() => { if (!list) loadComuni().then(setList, () => setErr(true)); }, []);
+  return { list, err };
+}
+function searchComuni(list, q, n) {
+  const max = n || 8;
+  const t = normTxt(q);
+  if (!list || t.length < 2) return [];
+  const exact = [], starts = [], inside = [];
+  for (const c of list) {
+    if (c.k === t) exact.push(c);
+    else if (c.k.startsWith(t)) { if (starts.length < max) starts.push(c); }
+    else if (inside.length < max && c.k.includes(t)) inside.push(c);
+  }
+  return exact.concat(starts, inside).slice(0, max);
+}
+/* il comune di un gruppo: quello salvato, oppure (gruppi creati prima) quello col nome della città, se è uno solo */
+function lookupCity(name) {
+  if (!COMUNI || !name) return null;
+  const t = normTxt(name);
+  const m = COMUNI.filter((c) => c.k === t);
+  return m.length === 1 ? { name: m[0].name, prov: m[0].prov, lat: m[0].lat, lng: m[0].lng } : null;
+}
+const groupLoc = (g) => (g && g.loc && isFinite(g.loc.lat) ? g.loc : g ? lookupCity(g.city) : null);
+const placeLabel = (loc) => (loc && loc.name ? loc.name + (loc.prov ? ' (' + loc.prov + ')' : '') : '');
+
+function kmBetween(a, b) {
+  if (!a || !b || !isFinite(a.lat) || !isFinite(a.lng) || !isFinite(b.lat) || !isFinite(b.lng)) return null;
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+const fmtKm = (k) => (k == null ? '' : k < 1 ? 'stesso comune' : k < 10 ? (Math.round(k * 10) / 10).toString().replace('.', ',') + ' km' : Math.round(k) + ' km');
+
+/* età dall'anno di nascita */
+const THIS_YEAR = new Date().getFullYear();
+const BIRTH_MIN = THIS_YEAR - 80, BIRTH_MAX = THIS_YEAR - 10;
+const okBirth = (y) => Number.isInteger(y) && y >= BIRTH_MIN && y <= BIRTH_MAX;
+const ageOf = (p) => (p && okBirth(Number(p.birthYear)) ? THIS_YEAR - Number(p.birthYear) : null);
+
+/* scelta del comune: si scrive il nome e si tocca quello giusto */
+function ComunePicker({ id, value, onChange, placeholder, clearable }) {
+  const { list, err } = useComuni();
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(!value);
+  const res = open ? searchComuni(list, q) : [];
+  const choose = (c) => { onChange({ name: c.name, prov: c.prov, lat: c.lat, lng: c.lng }); setQ(''); setOpen(false); };
+  if (value && !open) {
+    return html`<div class="place-val">
+      <${Icon} n="pin" s="16" />
+      <span class="grow ell">${placeLabel(value)}</span>
+      <button type="button" class="btn sm ghost" onClick=${() => { setQ(''); setOpen(true); }}>Cambia</button>
+      ${clearable !== false && html`<button type="button" class="icon-btn sm" aria-label="Togli il comune" onClick=${() => { onChange(null); setOpen(true); }}><${Icon} n="x" s="14" /></button>`}
+    </div>`;
+  }
+  return html`<div class="place-pick stack-8">
+    <div class="hs" style="gap:8px">
+      <input id=${id} class="input grow" type="search" autocomplete="off" enterkeyhint="search" placeholder=${placeholder || 'Scrivi il nome del comune'} value=${q}
+        onInput=${(e) => setQ(e.target.value)}
+        onKeyDown=${(e) => { if (e.key === 'Enter') { e.preventDefault(); if (res[0]) choose(res[0]); } }} />
+      ${value && html`<button type="button" class="btn sm ghost" onClick=${() => setOpen(false)}>Annulla</button>`}
+    </div>
+    ${err && html`<div class="tiny bad-t">Non riesco a caricare l'elenco dei comuni: controlla la connessione e riprova.</div>`}
+    ${!list && !err && q.trim().length >= 2 && html`<div class="tiny faint">Carico l'elenco dei comuni…</div>`}
+    ${res.length > 0 && html`<div class="card pad0 divided place-list">${res.map((c) => html`<button type="button" key=${c.name + '-' + c.prov} class="row tap" style="padding:10px 14px" onClick=${() => choose(c)}>
+      <span class="grow ell">${c.name}</span><span class="chip">${c.prov}</span>
+    </button>`)}</div>`}
+    ${list && q.trim().length >= 2 && !res.length && html`<div class="tiny faint">Nessun comune con questo nome.</div>`}
+  </div>`;
+}
+
+/* filtro per distanza: ovunque o entro 10, 25, 50 km da un comune (di solito il proprio) */
+const KM_OPTIONS = [{ v: 0, l: 'Ovunque' }, { v: 10, l: '10 km' }, { v: 25, l: '25 km' }, { v: 50, l: '50 km' }];
+function ZoneFilter({ km, setKm, from, setFrom, idp }) {
+  return html`<div class="stack-8">
+    <${Seg} value=${km} onChange=${setKm} options=${KM_OPTIONS} />
+    ${km > 0 && html`<div class="field"><span class="label">Distanza da</span>
+      <${ComunePicker} id=${(idp || 'zf') + '-from'} value=${from} onChange=${setFrom} clearable=${false} placeholder="Da quale comune?" /></div>`}
+    ${km > 0 && !from && html`<div class="tiny faint">Scegli il comune da cui contare la distanza. Per non sceglierlo ogni volta, metti il tuo comune nel profilo.</div>`}
+  </div>`;
+}
+
+
+/* ============================================================
    APP: profilo, autovalutazione, valutazioni, infortuni, giocatori
    ============================================================ */
 const EMOJIS = ['⚽', '🦊', '🦁', '🐯', '🐺', '🦅', '🐻', '🐼', '🦄', '🐲', '🔥', '⚡', '🚀', '🎯', '👑', '🧤', '🥅', '🛡️', '🏆', '🌟', '💪', '😎', '🤠', '🥷', '🧙', '👽', '🤖', '🐙', '🦈', '🐢', '🍀', '🎸'];
@@ -2199,10 +2386,13 @@ function ProfileForm({ initial, onSaved }) {
   const [photo, setPhoto] = useState((initial && initial.photo) || '');
   const [role, setRole] = useState((initial && initial.role) || '');
   const [role2, setRole2] = useState((initial && initial.role2) || '');
+  const [birth, setBirth] = useState(initial && initial.birthYear ? String(initial.birthYear) : '');
+  const [loc, setLoc] = useState((initial && initial.loc) || null);
   const [vals, setVals] = useState(defaultVoci);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
-  const valid = first.trim() && last.trim() && role;
+  const birthOk = !birth.trim() || okBirth(Number(birth));
+  const valid = first.trim() && last.trim() && role && birthOk;
   const ovr = Engine.ovrOf(Engine.areasOf(vals), role);
 
   const pick = async (e) => {
@@ -2214,6 +2404,8 @@ function ProfileForm({ initial, onSaved }) {
   const base = () => ({
     first: first.trim().slice(0, 24), last: last.trim().slice(0, 28), nick: nick.trim().slice(0, 16),
     icon, photo, role, role2: role2 && role2 !== role ? role2 : '',
+    birthYear: birth.trim() && okBirth(Number(birth)) ? Number(birth) : null,
+    loc: loc || null,
   });
   const doSave = async () => {
     setBusy(true);
@@ -2261,6 +2453,15 @@ function ProfileForm({ initial, onSaved }) {
       <input id="pf-nick" class="input" value=${nick} maxlength="16" placeholder="Come ti chiamano in campo" onInput=${(e) => setNick(e.target.value)} />
     </div>
     <div class="field">
+      <label class="label" for="pf-birth">Anno di nascita <span class="faint">(facoltativo: gli altri vedono la tua età)</span></label>
+      <input id="pf-birth" class="input" type="number" inputmode="numeric" min=${BIRTH_MIN} max=${BIRTH_MAX} placeholder=${'Es. ' + (THIS_YEAR - 28)} value=${birth} onInput=${(e) => setBirth(e.target.value.slice(0, 4))} />
+      ${!birthOk && html`<span class="tiny bad-t">Scrivi un anno tra ${BIRTH_MIN} e ${BIRTH_MAX}.</span>`}
+    </div>
+    <div class="field">
+      <label class="label" for="pf-loc">Dove giochi <span class="faint">(facoltativo: il tuo comune, per chi cerca giocatori in zona)</span></label>
+      <${ComunePicker} id="pf-loc" value=${loc} onChange=${setLoc} />
+    </div>
+    <div class="field">
       <span class="label">Ruolo preferito</span>
       <${RolePills} value=${role} onChange=${(r) => { setRole(r); if (r === role2) setRole2(''); }} />
     </div>
@@ -2275,7 +2476,7 @@ function ProfileForm({ initial, onSaved }) {
       <${RatingEditor} idp="pf" vals=${vals} setVals=${setVals} role=${role} />
     </div>`}
     <button class="btn primary block" type="submit" disabled=${!valid || busy || !C.canWrite}>${busy ? 'Salvo…' : create ? 'Salva e continua' : 'Salva modifiche'}</button>
-    ${!valid && html`<div class="tiny faint" style="text-align:center">Servono nome, cognome e ruolo preferito.</div>`}
+    ${!valid && html`<div class="tiny faint" style="text-align:center">${birthOk ? 'Servono nome, cognome e ruolo preferito.' : 'Controlla l\'anno di nascita.'}</div>`}
   </form>`;
 }
 
@@ -2383,13 +2584,14 @@ function InjuryEditor() {
   const inj = C.me && C.me.injury;
   const [open, setOpen] = useState(false);
   const [level, setLevel] = useState((inj && inj.level) || 'lieve');
+  const [zone, setZone] = useState((inj && inj.zone) || '');
   const [note, setNote] = useState((inj && inj.note) || '');
   const [back, setBack] = useState((inj && inj.back) || '');
   const [busy, setBusy] = useState(false);
-  const start = () => { setLevel((inj && inj.level) || 'lieve'); setNote((inj && inj.note) || ''); setBack((inj && inj.back) || ''); setOpen(true); };
+  const start = () => { setLevel((inj && inj.level) || 'lieve'); setZone((inj && inj.zone) || ''); setNote((inj && inj.note) || ''); setBack((inj && inj.back) || ''); setOpen(true); };
   const save = async () => {
     setBusy(true);
-    const ok = await C.act.setInjury({ level, note: note.trim().slice(0, 60), back: back || '', since: (inj && inj.since) || Date.now() });
+    const ok = await C.act.setInjury({ level, zone: zone || '', note: note.trim().slice(0, 60), back: back || '', since: (inj && inj.since) || Date.now() });
     setBusy(false);
     if (ok) { setOpen(false); C.flash(level === 'grave' ? 'Infortunio grave segnato' : 'Infortunio lieve segnato'); }
   };
@@ -2406,9 +2608,12 @@ function InjuryEditor() {
         { v: 'lieve', l: html`<span class="hs" style="justify-content:center"><span class="inj lieve"><${Icon} n="bandage" s="16" /></span> Lieve</span>` },
         { v: 'grave', l: html`<span class="hs" style="justify-content:center"><span class="inj grave"><${Icon} n="cross" s="16" fill /></span> Grave</span>` },
       ]} />
-      <div class="field"><label class="label" for="inj-note">Nota <span class="faint">(facoltativa)</span></label><input id="inj-note" class="input" maxlength="60" placeholder="Es. caviglia, stiramento" value=${note} onInput=${(e) => setNote(e.target.value)} /></div>
+      <div class="field"><span class="label">Dove?</span>
+        <div class="chips-row" role="group" aria-label="Dove ti sei fatto male">${INJ_ZONES.map((z) => html`<button key=${z.k} type="button" class=${'pick-chip' + (zone === z.k ? ' on' : '')} aria-pressed=${zone === z.k} onClick=${() => setZone(zone === z.k ? '' : z.k)}>${z.l}</button>`)}</div>
+      </div>
+      <div class="field"><label class="label" for="inj-note">Nota <span class="faint">(facoltativa)</span></label><input id="inj-note" class="input" maxlength="60" placeholder="Es. distorsione, stiramento" value=${note} onInput=${(e) => setNote(e.target.value)} /></div>
       <div class="field"><label class="label" for="inj-back">Rientro previsto <span class="faint">(facoltativo)</span></label><input id="inj-back" class="input" type="date" value=${back} onInput=${(e) => setBack(e.target.value)} /></div>
-      <div class="tiny faint">L'infortunio resta finché non lo togli tu. Quando la data di rientro passa, l'app te lo ricorda. Per fare le squadre conti ${level === 'grave' ? CFG.INJ_BAD : CFG.INJ_LIGHT} punti in meno.</div>
+      <div class="tiny faint">Tutti gli iscritti vedono dove ti sei fatto male, la nota e la data di rientro. L'infortunio resta finché non lo togli tu; quando la data di rientro passa, l'app te lo ricorda. Per fare le squadre conti ${level === 'grave' ? CFG.INJ_BAD : CFG.INJ_LIGHT} punti in meno.</div>
       <div class="hs" style="gap:10px">
         <button class="btn ghost grow" type="button" onClick=${() => setOpen(false)}>Annulla</button>
         <button class="btn primary grow" type="button" disabled=${busy || !C.canWrite} onClick=${save}>${busy ? 'Salvo…' : 'Salva'}</button>
@@ -2427,7 +2632,7 @@ function InjuryEditor() {
       <${InjuryMark} inj=${inj} s="22" />
       <div class="grow">
         <div class="row-t">${inj.level === 'grave' ? 'Infortunio grave' : 'Infortunio lieve'}</div>
-        <div class="small muted">${[inj.note, inj.back ? 'rientro previsto ' + fmtYmd(inj.back) : 'senza data di rientro'].filter(Boolean).join(' · ')}</div>
+        <div class="small muted">${injSummary(inj)}</div>
       </div>
     </div>
     ${C.canWrite && html`<div class="hs wrap"><button class="btn sm accent" disabled=${busy} onClick=${clear}>Sono guarito</button><button class="btn sm" onClick=${start}>Modifica</button></div>`}
@@ -2539,6 +2744,17 @@ function GeneralNote({ r, mine }) {
     : `Stats generali: per ora c'è solo l'autovalutazione, perché ${mine ? 'nessuno ti ha ancora valutato' : 'non ha ancora ricevuto valutazioni'}.`}</span></div>`;
 }
 
+/* comune, distanza ed età sotto la card */
+function PlaceAge({ p, from }) {
+  const age = ageOf(p);
+  const km = from && p.loc ? kmBetween(from, p.loc) : null;
+  if (!p.loc && !age) return null;
+  return html`<div class="pmeta">
+    ${p.loc && html`<span class="meta-i"><${Icon} n="pin" s="14" />${placeLabel(p.loc)}${km != null && km >= 1 ? html`<em>${fmtKm(km)} da te</em>` : ''}</span>`}
+    ${age && html`<span class="meta-i">${age} anni</span>`}
+  </div>`;
+}
+
 function PlayerScreen({ id, scope }) {
   const C = useContext(Ctx);
   const member = !!C.gid && C.isInGroup(id);
@@ -2569,6 +2785,8 @@ function PlayerScreen({ id, scope }) {
   return html`<${Page} title=${dispName(p)} sub=${sub} onBack=${C.back}>
     ${member && html`<${Seg} value=${mode} onChange=${setMode} options=${STATS_SCOPE} />`}
     <${PlayerCard} p=${p} r=${r} />
+    <${PlaceAge} p=${p} from=${isMe ? null : C.me && C.me.loc} />
+    <${InjuryCard} inj=${p.injury} mine=${isMe} />
     ${all && html`<${GeneralNote} r=${r} mine=${isMe} />`}
     ${isMe
       ? html`<button class="btn block" onClick=${() => C.goTab('me')}><${Icon} n="user" s="16" /> Vai al tuo profilo</button>`
@@ -2609,8 +2827,10 @@ function MeScreen() {
         <button class="btn ghost block" onClick=${() => setEdit(false)}>Annulla</button>` : html`
         ${member && html`<${Seg} value=${mode} onChange=${setMode} options=${STATS_SCOPE} />`}
         <${PlayerCard} p=${me} r=${r} />
+        <${PlaceAge} p=${me} />
         ${all && html`<${GeneralNote} r=${r} mine />`}
-        ${C.canWrite && html`<button class="btn block" onClick=${() => setEdit(true)}><${Icon} n="edit" s="16" /> Modifica nome, foto e ruoli</button>`}
+        ${C.canWrite && !me.loc && html`<div class="note hs-12"><${Icon} n="pin" s="16" /><span class="grow">Aggiungi il tuo comune: così ti trova chi cerca giocatori nella tua zona.</span><button class="btn sm" onClick=${() => setEdit(true)}>Aggiungi</button></div>`}
+        ${C.canWrite && html`<button class="btn block" onClick=${() => setEdit(true)}><${Icon} n="edit" s="16" /> Modifica profilo</button>`}
         <section class="sec"><h2 class="h3">Stato fisico</h2><${InjuryEditor} key=${(me.injury && me.injury.since) || 'ok'} /></section>
         ${me.selfUnlock || C.isAdmin
           ? html`<div class="card todo hs-12"><${Icon} n="unlock" /><div class="grow"><div class="h3">${C.isAdmin ? 'Modifica la tua autovalutazione' : 'Puoi rifare l\'autovalutazione'}</div><div class="small muted">${C.isAdmin ? 'Come amministratore puoi cambiarla quando vuoi.' : 'L\'amministratore l\'ha sbloccata, una volta sola.'}</div></div><button class="btn primary sm" onClick=${() => C.go({ t: 'self' })}>${C.isAdmin ? 'Modifica' : 'Rifalla'}</button></div>`
@@ -2629,35 +2849,96 @@ function MeScreen() {
   </div>`;
 }
 
-/* ---------- giocatori: del gruppo o tutti gli iscritti all'app ---------- */
+/* ---------- giocatori: del gruppo o tutti gli iscritti all'app, con i filtri ---------- */
+const numOrNull = (v) => { const t = String(v == null ? '' : v).trim(); if (!t) return null; const n = Number(t); return isFinite(n) ? n : null; };
 function PlayersScreen() {
   const C = useContext(Ctx);
+  const myLoc = (C.me && C.me.loc) || null;
   const [q, setQ] = useState('');
   const [sort, setSort] = useState('lvl');
   const [scope, setScope] = useState(C.gid ? 'group' : 'all');
+  const [showF, setShowF] = useState(false);
+  const [km, setKm] = useState(0);
+  const [from, setFrom] = useState(myLoc);
+  const [roles, setRoles] = useState([]);
+  const [ovrMin, setOvrMin] = useState('');
+  const [ovrMax, setOvrMax] = useState('');
+  const [ageMin, setAgeMin] = useState('');
+  const [ageMax, setAgeMax] = useState('');
+  const [healthy, setHealthy] = useState(false);
   const all = !C.gid || scope === 'all';
   useEffect(() => { if (all) C.loadGlobal(); }, [all]);
   const R = all ? C.ratedAll : C.rated;
   const base = all ? C.allPlayers : C.players;
   const t = q.trim().toLowerCase();
-  const list = base
-    .filter((p) => !t || (fullName(p) + ' ' + (p.nick || '')).toLowerCase().includes(t))
-    .sort(sort === 'lvl' ? (a, b) => R[b.id].ovr - R[a.id].ovr : (a, b) => dispName(a).localeCompare(dispName(b), 'it'));
+  const oMin = numOrNull(ovrMin), oMax = numOrNull(ovrMax), aMin = numOrNull(ageMin), aMax = numOrNull(ageMax);
+  const zoneOn = km > 0 && !!from;
+  const nActive = (zoneOn ? 1 : 0) + (roles.length ? 1 : 0) + (oMin != null || oMax != null ? 1 : 0) + (aMin != null || aMax != null ? 1 : 0) + (healthy ? 1 : 0);
+  const dist = (p) => (from && p.loc ? kmBetween(from, p.loc) : null);
+  const far = (p) => { const d = dist(p); return d == null ? 1e9 : d; };
+  const list = base.filter((p) => {
+    if (t && !(fullName(p) + ' ' + (p.nick || '')).toLowerCase().includes(t)) return false;
+    if (zoneOn) { const d = dist(p); if (d == null || d > km) return false; }
+    if (roles.length && !roles.includes(p.role) && !roles.includes(p.role2)) return false;
+    const o = r0(R[p.id].ovr);
+    if (oMin != null && o < oMin) return false;
+    if (oMax != null && o > oMax) return false;
+    const a = ageOf(p);
+    if ((aMin != null || aMax != null) && a == null) return false;
+    if (aMin != null && a < aMin) return false;
+    if (aMax != null && a > aMax) return false;
+    if (healthy && p.injury && p.injury.level) return false;
+    return true;
+  }).sort(sort === 'lvl' ? (a, b) => R[b.id].ovr - R[a.id].ovr
+    : sort === 'km' ? (a, b) => far(a) - far(b) || R[b.id].ovr - R[a.id].ovr
+      : (a, b) => dispName(a).localeCompare(dispName(b), 'it'));
   const injured = base.filter((p) => p.injury && p.injury.level).length;
+  const toggleRole = (r) => setRoles(roles.includes(r) ? roles.filter((x) => x !== r) : roles.concat(r));
+  const reset = () => { setKm(0); setFrom(myLoc); setRoles([]); setOvrMin(''); setOvrMax(''); setAgeMin(''); setAgeMax(''); setHealthy(false); };
+  const sub = (p) => {
+    if (p.injury && p.injury.level) return injSummary(p.injury);
+    const bits = [fullName(p)];
+    const d = dist(p);
+    if (p.loc) bits.push(zoneOn && d != null ? fmtKm(d) : p.loc.name);
+    const a = ageOf(p);
+    if (a) bits.push(a + ' anni');
+    return bits.join(' · ');
+  };
+  const SORTS = [{ v: 'lvl', l: 'Per punteggio' }, { v: 'name', l: 'Per nome' }].concat(from ? [{ v: 'km', l: 'Più vicini' }] : []);
   return html`<div class="page">
     <${MainHead} title="Giocatori" />
     ${C.gid && html`<${Seg} value=${scope} onChange=${setScope} options=${[{ v: 'group', l: 'Del gruppo' }, { v: 'all', l: 'Tutti gli iscritti' }]} />`}
     <div class="small muted">${all ? plural(base.length, 'iscritto', 'iscritti') + ' all\'app · stats generali' : plural(base.length, 'membro', 'membri') + ' nel gruppo'}${injured ? ' · ' + plural(injured, 'infortunato', 'infortunati') : ''}</div>
     <div class="stack-8">
-      <input id="player-search" class="input" type="search" placeholder="Cerca per nome o soprannome" value=${q} onInput=${(e) => setQ(e.target.value)} />
-      <${Seg} value=${sort} onChange=${setSort} options=${[{ v: 'lvl', l: 'Per punteggio' }, { v: 'name', l: 'Per nome' }]} />
+      <div class="hs" style="gap:8px">
+        <input id="player-search" class="input grow" type="search" placeholder="Cerca per nome o soprannome" value=${q} onInput=${(e) => setQ(e.target.value)} />
+        <button class=${'btn' + (nActive ? ' primary' : '')} aria-expanded=${showF} onClick=${() => setShowF(!showF)}><${Icon} n="filter" s="16" /> Filtri${nActive ? ' · ' + nActive : ''}</button>
+      </div>
+      ${showF && html`<div class="card stack filters">
+        <div class="field"><span class="label">Zona</span><${ZoneFilter} km=${km} setKm=${setKm} from=${from} setFrom=${setFrom} idp="pl" /></div>
+        <div class="field"><span class="label">Ruolo <span class="faint">(preferito o secondo)</span></span>
+          <div class="chips-row">${ROLES.map((r) => html`<button key=${r} type="button" class=${'pick-chip' + (roles.includes(r) ? ' on' : '')} aria-pressed=${roles.includes(r)} onClick=${() => toggleRole(r)}>${ROLE_NAME[r]}</button>`)}</div>
+        </div>
+        <div class="grid2 keep">
+          <div class="field"><span class="label">Punteggio</span>
+            <div class="range2"><input id="f-omin" class="input" type="number" inputmode="numeric" min="1" max="99" placeholder="da" aria-label="Punteggio minimo" value=${ovrMin} onInput=${(e) => setOvrMin(e.target.value)} /><span>–</span><input id="f-omax" class="input" type="number" inputmode="numeric" min="1" max="99" placeholder="a" aria-label="Punteggio massimo" value=${ovrMax} onInput=${(e) => setOvrMax(e.target.value)} /></div>
+          </div>
+          <div class="field"><span class="label">Età</span>
+            <div class="range2"><input id="f-amin" class="input" type="number" inputmode="numeric" min="10" max="80" placeholder="da" aria-label="Età minima" value=${ageMin} onInput=${(e) => setAgeMin(e.target.value)} /><span>–</span><input id="f-amax" class="input" type="number" inputmode="numeric" min="10" max="80" placeholder="a" aria-label="Età massima" value=${ageMax} onInput=${(e) => setAgeMax(e.target.value)} /></div>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" checked=${healthy} onChange=${(e) => setHealthy(e.target.checked)} /><span>Senza infortunati</span></label>
+        ${(aMin != null || aMax != null) && html`<div class="tiny faint">Con il filtro per età compare solo chi ha messo l'anno di nascita.</div>`}
+        ${nActive > 0 && html`<button class="btn ghost sm" onClick=${reset}>Togli tutti i filtri</button>`}
+      </div>`}
+      <${Seg} value=${sort} onChange=${setSort} options=${SORTS} />
     </div>
     ${list.length ? html`<div class="card pad0 divided">${list.map((p) => html`<button key=${p.id} class="row tap" style="padding:10px 14px" onClick=${() => C.go({ t: 'player', id: p.id, scope: all ? 'all' : 'group' })}>
       <${Avatar} p=${p} size=${40} />
-      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} />${p.id === C.uid && html`<span class="chip ok">Tu</span>`}</span><span class="row-s ell" style="display:block">${fullName(p)}</span></span>
+      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} />${p.id === C.uid && html`<span class="chip ok">Tu</span>`}</span><span class=${'row-s ell' + (p.injury && p.injury.level ? ' inj-t' : '')} style="display:block">${sub(p)}</span></span>
       <${RoleChips} role=${p.role} role2=${p.role2} />
       <${Ovr} v=${R[p.id].ovr} />
-    </button>`)}</div>` : html`<div class="card empty"><div class="h3">${base.length ? 'Nessun risultato' : 'Ancora nessun giocatore'}</div><div>${base.length ? 'Prova con un altro nome.' : 'Quando gli amici creano il profilo compaiono qui.'}</div></div>`}
+    </button>`)}</div>` : html`<div class="card empty"><div class="h3">${base.length ? 'Nessun risultato' : 'Ancora nessun giocatore'}</div><div>${base.length ? (nActive ? 'Prova ad allargare i filtri.' : 'Prova con un altro nome.') : 'Quando gli amici creano il profilo compaiono qui.'}</div>${nActive > 0 && html`<button class="btn" onClick=${reset}>Togli i filtri</button>`}</div>`}
   </div>`;
 }
 
@@ -2788,7 +3069,7 @@ function MemberRow({ x, pos, onTap }) {
     <${Avatar} p=${x.guest ? { name: x.name } : x.p} guest=${x.guest} size=${36} />
     <span class="row-main">
       <span class="row-t"><span class="ell">${x.name}</span><${InjuryMark} inj=${x.inj} />${x.guest && html`<span class="chip">Ospite</span>`}</span>
-      <span class="row-s ell" style="display:block">${x.full}</span>
+      <span class=${'row-s ell' + (x.inj && x.inj.level ? ' inj-t' : '')} style="display:block">${x.inj && x.inj.level ? injSummary(x.inj) : x.full}</span>
     </span>
     <${RoleChips} role=${x.role} role2=${x.role2} />
     <${Ovr} v=${x.ovr} size="sm" />
@@ -3396,10 +3677,7 @@ function MatchRateScreen({ id }) {
 /* ============================================================
    APP: gruppi, menu, messaggi, help, sviluppatori, impostazioni, amministrazione
    ============================================================ */
-const DEVELOPERS = [
-  { name: 'Orlando Reginato', email: 'reginatoorlando@gmail.com', phone: '370 352 4400' },
-  { name: 'Luca Tortorelli', email: 'lgmtortorelli@gmail.com', phone: '347 181 8221' },
-];
+const DEVELOPERS = [{ name: 'Orlando Reginato' }, { name: 'Luca Tortorelli' }];
 const HELP_TOPICS = ['Eliminare il mio account', 'Eliminare una partita', 'Eliminare un gruppo', 'Problema con l\'app', 'Altro'];
 
 function readLS(k, d) { try { const v = window.localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
@@ -3496,24 +3774,40 @@ function NoGroupScreen({ tab }) {
 /* ---------- gruppi: i miei, cerca, crea ---------- */
 function GroupsScreen({ main }) {
   const C = useContext(Ctx);
+  const { list: comuni } = useComuni();
+  const myLoc = (C.me && C.me.loc) || null;
   const [q, setQ] = useState('');
   const [name, setName] = useState('');
-  const [city, setCity] = useState('');
+  const [place, setPlace] = useState(myLoc);
+  const [km, setKm] = useState(0);
+  const [from, setFrom] = useState(myLoc);
   const [busy, setBusy] = useState(false);
   const status = (gid) => { const m = C.memberById[memberKey(gid, C.uid)]; return m ? m.status : null; };
   const t = q.trim().toLowerCase();
-  const all = C.groups.slice().sort((a, b) => (a.city || '').localeCompare(b.city || '', 'it') || (a.name || '').localeCompare(b.name || '', 'it'));
-  const found = all.filter((g) => !t || ((g.name || '') + ' ' + (g.city || '')).toLowerCase().includes(t));
+  const zoneOn = km > 0 && !!from;
+  const dist = (g) => (from ? kmBetween(from, groupLoc(g)) : null);
+  const far = (g) => { const d = dist(g); return d == null ? 1e9 : d; };
+  const all = C.groups.slice().sort(from
+    ? (a, b) => far(a) - far(b) || (a.name || '').localeCompare(b.name || '', 'it')
+    : (a, b) => (a.city || '').localeCompare(b.city || '', 'it') || (a.name || '').localeCompare(b.name || '', 'it'));
+  const found = all.filter((g) => {
+    if (t && !((g.name || '') + ' ' + (g.city || '')).toLowerCase().includes(t)) return false;
+    if (zoneOn) { const d = dist(g); if (d == null || d > km) return false; }
+    return true;
+  });
+  const where = (g) => { const d = dist(g); return (g.city || '') + (d != null ? ' · ' + fmtKm(d) : ''); };
   const pending = all.filter((g) => status(g.id) === 'pending');
   const ask = async (g) => { setBusy(true); const r = await C.act.rpc('request_join', { p_gid: g.id }); setBusy(false); if (r.ok) C.flash(r.data === 'active' ? 'Sei già nel gruppo' : 'Richiesta inviata agli amministratori di ' + g.name); };
   const cancel = (g) => C.openSheet({ k: 'confirm', title: 'Annullare la richiesta?', text: `La richiesta per entrare in ${g.name} viene ritirata.`, label: 'Annulla richiesta', danger: true, onYes: async () => { if ((await C.act.rpc('leave_group', { p_gid: g.id })).ok) C.flash('Richiesta annullata'); } });
   const create = async (e) => {
     e.preventDefault();
-    if (busy || name.trim().length < 2 || city.trim().length < 2) return;
+    if (busy || name.trim().length < 2 || !place) return;
     setBusy(true);
-    const r = await C.act.rpc('create_group', { p_name: name.trim(), p_city: city.trim() });
+    let r = await C.act.rpc('create_group', { p_name: name.trim(), p_city: place.name, p_loc: place }, { quiet: true });
+    /* database non ancora aggiornato: crea il gruppo con la sola città */
+    if (!r.ok) r = await C.act.rpc('create_group', { p_name: name.trim(), p_city: place.name });
     setBusy(false);
-    if (r.ok) { setName(''); setCity(''); C.flash('Gruppo creato: ora sei il suo amministratore'); C.switchGroup(r.data, true); }
+    if (r.ok) { setName(''); C.flash('Gruppo creato: ora sei il suo amministratore'); C.switchGroup(r.data, true); }
   };
   const body = html`
     ${main && html`<div class="note ok"><${Icon} n="info" s="16" /><span>Per giocare entra in un gruppo della tua città: chiedi di entrare e un amministratore del gruppo ti accetta. Oppure crea un gruppo nuovo, e ne sarai tu l'amministratore.</span></div>`}
@@ -3531,21 +3825,21 @@ function GroupsScreen({ main }) {
       </div>`)}</div></section>`}
     <section class="sec"><h2 class="h3">Cerca un gruppo</h2>
       <input id="group-search" class="input" type="search" placeholder="Nome del gruppo o città" value=${q} onInput=${(e) => setQ(e.target.value)} />
+      <${ZoneFilter} km=${km} setKm=${setKm} from=${from} setFrom=${setFrom} idp="gs" />
+      ${!comuni && from && html`<div class="tiny faint">Calcolo le distanze…</div>`}
       ${found.length ? html`<div class="card pad0 divided">${found.map((g) => { const st = status(g.id); return html`<div key=${g.id} class="row" style="padding:12px 14px">
         <span class="g-ic"><${Icon} n="pin" s="18" /></span>
-        <span class="row-main"><span class="row-t ell">${g.name}</span><span class="row-s">${g.city} · ${plural(numOr(g.n, 0), 'membro', 'membri')}</span></span>
+        <span class="row-main"><span class="row-t ell">${g.name}</span><span class="row-s">${where(g)} · ${plural(numOr(g.n, 0), 'membro', 'membri')}</span></span>
         ${st === 'active' ? html`<span class="chip ok">Ci sei</span>` : st === 'pending' ? html`<span class="chip warn">In attesa</span>`
           : C.canWrite && C.me && html`<button class="btn sm primary" disabled=${busy} onClick=${() => ask(g)}>Chiedi di entrare</button>`}
-      </div>`; })}</div>` : html`<div class="card empty small">${C.groups.length ? 'Nessun gruppo con questo nome o città.' : 'Ancora nessun gruppo: crea il primo.'}</div>`}
+      </div>`; })}</div>` : html`<div class="card empty small">${!C.groups.length ? 'Ancora nessun gruppo: crea il primo.' : zoneOn ? 'Nessun gruppo entro ' + km + ' km: prova ad allargare la distanza.' : 'Nessun gruppo con questo nome o città.'}</div>`}
     </section>
     ${C.canWrite && C.me && html`<section class="sec"><h2 class="h3">Crea un gruppo</h2>
       <form class="card stack" onSubmit=${create}>
-        <div class="grid2 keep">
-          <div class="field"><label class="label" for="ng-name">Nome</label><input id="ng-name" class="input" maxlength="40" placeholder="Es. Calcetto del martedì" value=${name} onInput=${(e) => setName(e.target.value)} /></div>
-          <div class="field"><label class="label" for="ng-city">Città</label><input id="ng-city" class="input" maxlength="40" placeholder="Es. La Spezia" value=${city} onInput=${(e) => setCity(e.target.value)} /></div>
-        </div>
+        <div class="field"><label class="label" for="ng-name">Nome</label><input id="ng-name" class="input" maxlength="40" placeholder="Es. Calcetto del martedì" value=${name} onInput=${(e) => setName(e.target.value)} /></div>
+        <div class="field"><label class="label" for="ng-city">Città</label><${ComunePicker} id="ng-city" value=${place} onChange=${setPlace} placeholder="Es. La Spezia" /></div>
         <div class="tiny faint">Chi crea il gruppo ne è l'amministratore: accetta le richieste di ingresso e può nominare altri amministratori.</div>
-        <button class="btn primary" type="submit" disabled=${busy || name.trim().length < 2 || city.trim().length < 2}>Crea il gruppo</button>
+        <button class="btn primary" type="submit" disabled=${busy || name.trim().length < 2 || !place}>Crea il gruppo</button>
       </form>
     </section>`}`;
   if (main) {
@@ -3560,8 +3854,33 @@ function GroupsScreen({ main }) {
 }
 
 /* ---------- il gruppo attuale: membri, richieste, ruoli ---------- */
+function GroupEditCard({ g, onDone }) {
+  const C = useContext(Ctx);
+  const [name, setName] = useState(g.name || '');
+  const [place, setPlace] = useState(() => groupLoc(g));
+  const [busy, setBusy] = useState(false);
+  const save = async (e) => {
+    e.preventDefault();
+    if (busy || name.trim().length < 2 || !place) return;
+    setBusy(true);
+    const r = await C.act.rpc('update_group', { p_gid: g.id, p_name: name.trim(), p_city: place.name, p_loc: place });
+    setBusy(false);
+    if (r.ok) { C.flash('Gruppo aggiornato'); onDone(); }
+  };
+  return html`<form class="card stack" onSubmit=${save}>
+    <div class="field"><label class="label" for="eg-name">Nome del gruppo</label><input id="eg-name" class="input" maxlength="40" value=${name} onInput=${(e) => setName(e.target.value)} /></div>
+    <div class="field"><label class="label" for="eg-city">Città</label><${ComunePicker} id="eg-city" value=${place} onChange=${setPlace} /></div>
+    <div class="hs" style="gap:10px">
+      <button class="btn ghost grow" type="button" onClick=${onDone}>Annulla</button>
+      <button class="btn primary grow" type="submit" disabled=${busy || name.trim().length < 2 || !place}>${busy ? 'Salvo…' : 'Salva'}</button>
+    </div>
+  </form>`;
+}
+
 function GroupScreen() {
   const C = useContext(Ctx);
+  const [editing, setEditing] = useState(false);
+  useComuni();
   const g = C.group;
   if (!g) return html`<${Page} title="Gruppo" onBack=${C.back}><div class="card empty">Nessun gruppo selezionato.</div><//>`;
   const manage = C.isGroupAdmin || C.isAdmin;
@@ -3582,7 +3901,10 @@ function GroupScreen() {
     text: `Vengono cancellati per sempre partite, chat, valutazioni e membri di ${g.name}. I profili delle persone restano.`,
     onYes: async () => { if ((await C.act.rpc('delete_group', { p_gid: g.id })).ok) { C.flash('Gruppo eliminato'); C.goTab('matches'); } },
   });
-  return html`<${Page} title=${g.name} sub=${g.city + ' · ' + plural(active.length, 'membro', 'membri')} onBack=${C.back}>
+  const gl = groupLoc(g);
+  return html`<${Page} title=${g.name} sub=${(gl ? placeLabel(gl) : g.city) + ' · ' + plural(active.length, 'membro', 'membri')} onBack=${C.back}
+    right=${manage && C.canWrite && !editing && html`<button class="icon-btn" aria-label="Modifica nome e città del gruppo" onClick=${() => setEditing(true)}><${Icon} n="edit" /></button>`}>
+    ${editing && html`<${GroupEditCard} g=${g} onDone=${() => setEditing(false)} />`}
     ${manage && pending.length > 0 && html`<section class="sec">
       <div class="sec-h"><h2 class="h3">Richieste per entrare</h2><span class="chip warn num">${pending.length}</span></div>
       <div class="card pad0 divided">${pending.map((m) => { const p = C.playersById[m.uid]; return html`<div key=${m.uid} class="req-row">
@@ -3614,14 +3936,18 @@ function AddMembersScreen() {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(null);
   useEffect(() => { C.loadGlobal(); }, []);
+  useComuni();
   const g = C.group;
   if (!g) return html`<${Page} title="Aggiungi giocatori" onBack=${C.back}><div class="card empty">Nessun gruppo selezionato.</div><//>`;
   const st = (uid) => { const m = C.memberById[memberKey(g.id, uid)]; return m ? m.status : null; };
+  const gl = groupLoc(g);
+  const far = (p) => { const d = gl && p.loc ? kmBetween(gl, p.loc) : null; return d == null ? 1e9 : d; };
   const t = q.trim().toLowerCase();
   const cands = C.allPlayers
     .filter((p) => st(p.id) !== 'active')
     .filter((p) => !t || (fullName(p) + ' ' + (p.nick || '')).toLowerCase().includes(t))
-    .sort((a, b) => (st(b.id) === 'pending') - (st(a.id) === 'pending') || dispName(a).localeCompare(dispName(b), 'it'));
+    .sort((a, b) => (st(b.id) === 'pending') - (st(a.id) === 'pending') || far(a) - far(b) || dispName(a).localeCompare(dispName(b), 'it'));
+  const whereP = (p) => { const d = gl && p.loc ? kmBetween(gl, p.loc) : null; return p.loc ? (d != null ? p.loc.name + ' · ' + fmtKm(d) : p.loc.name) : ''; };
   const add = async (p) => {
     setBusy(p.id);
     const r = await C.act.rpc('add_member', { p_gid: g.id, p_uid: p.id });
@@ -3629,11 +3955,11 @@ function AddMembersScreen() {
     if (r.ok) C.flash(r.data === 'active' ? dispName(p) + ' era già nel gruppo' : dispName(p) + ' ora è in ' + g.name);
   };
   return html`<${Page} title="Aggiungi giocatori" sub=${g.name + ' · ' + g.city} onBack=${C.back}>
-    <div class="note"><${Icon} n="info" s="16" /><span>Cerca tra tutti gli iscritti all'app. Chi aggiungi entra subito nel gruppo e, se vuole, può uscirne quando vuole.</span></div>
+    <div class="note"><${Icon} n="info" s="16" /><span>Cerca tra tutti gli iscritti all'app${gl ? ': i più vicini a ' + gl.name + ' sono in cima' : ''}. Chi aggiungi entra subito nel gruppo e, se vuole, può uscirne quando vuole.</span></div>
     <input id="add-search" class="input" type="search" placeholder="Cerca per nome o soprannome" value=${q} onInput=${(e) => setQ(e.target.value)} />
     ${cands.length ? html`<div class="card pad0 divided">${cands.map((p) => { const pend = st(p.id) === 'pending'; return html`<div key=${p.id} class="row" style="padding:10px 14px">
       <${Avatar} p=${p} size=${40} />
-      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} /></span><span class="row-s ell" style="display:block">${pend ? 'Ha chiesto di entrare' : fullName(p) + ' · ' + p.role + (p.role2 ? '/' + p.role2 : '')}</span></span>
+      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} /></span><span class="row-s ell" style="display:block">${pend ? 'Ha chiesto di entrare' : [fullName(p), p.role + (p.role2 ? '/' + p.role2 : ''), whereP(p)].filter(Boolean).join(' · ')}</span></span>
       <${Ovr} v=${C.ratedAll[p.id].ovr} size="sm" />
       <button class="btn sm primary" disabled=${busy === p.id} onClick=${() => add(p)}>${pend ? 'Accetta' : 'Aggiungi'}</button>
     </div>`; })}</div>` : html`<div class="card empty small">${t ? 'Nessun iscritto con questo nome fuori dal gruppo.' : 'Tutti gli iscritti all\'app sono già nel gruppo.'}</div>`}
@@ -3740,7 +4066,7 @@ function HelpScreen() {
     ${mine.length > 0 && html`<section class="sec"><h2 class="h3">I tuoi messaggi</h2>
       ${mine.map((h) => html`<${HelpCard} key=${h.id} h=${h} />`)}
     </section>`}
-    <button class="btn ghost block" onClick=${() => C.go({ t: 'devs' })}>Contatti degli sviluppatori</button>
+    <button class="btn ghost block" onClick=${() => C.go({ t: 'devs' })}>Chi sono gli sviluppatori</button>
   <//>`;
 }
 
@@ -3778,16 +4104,13 @@ function HelpCard({ h, admin }) {
 
 function DevelopersScreen() {
   const C = useContext(Ctx);
-  const copy = async (v) => { try { await navigator.clipboard.writeText(v); C.flash('Copiato: ' + v); } catch (e) { C.flash(v); } };
   return html`<${Page} title="Sviluppatori" sub="Chi ha fatto Algor Bomber" onBack=${C.back}>
-    ${DEVELOPERS.map((d) => html`<div key=${d.email} class="card stack-8">
-      <div class="h3">${d.name}</div>
-      <div class="dev-row"><${Icon} n="mail" s="16" /><span class="grow sel dev-mail">${d.email}</span>
-        <a class="btn sm" href=${'mailto:' + d.email}>Scrivi</a><button class="btn sm ghost" onClick=${() => copy(d.email)}>Copia</button></div>
-      <div class="dev-row"><${Icon} n="phone" s="16" /><span class="grow sel num">${d.phone}</span>
-        <a class="btn sm" href=${'tel:+39' + d.phone.replace(/\s/g, '')}>Chiama</a><button class="btn sm ghost" onClick=${() => copy(d.phone)}>Copia</button></div>
-    </div>`)}
-    <button class="btn block" onClick=${() => C.go({ t: 'help' })}><${Icon} n="help" s="16" /> Scrivi dall'app</button>
+    <div class="card pad0 divided">${DEVELOPERS.map((d) => html`<div key=${d.name} class="row" style="padding:12px 14px">
+      <${Avatar} p=${{ id: d.name, name: d.name, first: d.name.split(' ')[0], last: d.name.split(' ')[1] }} size=${40} />
+      <span class="row-main"><span class="row-t ell">${d.name}</span><span class="row-s">Sviluppatore</span></span>
+    </div>`)}</div>
+    <div class="note"><${Icon} n="help" s="16" /><span>Per domande, problemi o richieste (per esempio eliminare un account o una partita) scrivici dall'app: ti rispondiamo qui, nella sezione Help.</span></div>
+    <button class="btn primary block" onClick=${() => C.go({ t: 'help' })}><${Icon} n="help" s="16" /> Scrivi agli sviluppatori</button>
   <//>`;
 }
 
@@ -4088,7 +4411,7 @@ function MemberSheet({ mid, id, onClose }) {
       <div class="small faint">${AREAS.map((ar) => ar.code + ' ' + r0(a[ar.k])).join(' · ')}</div></div>
       <${Ovr} v=${x.ovr} /></div>
     <div class="hs"><span class="label">Ruoli</span><${RoleChips} role=${x.role} role2=${x.role2} /></div>
-    ${x.inj && x.inj.level && html`<div class=${'note ' + (x.inj.level === 'grave' ? 'bad' : 'warn')}><${InjuryMark} inj=${x.inj} /><span>${x.inj.level === 'grave' ? 'Infortunio grave' : 'Infortunio lieve'}${x.inj.note ? ': ' + x.inj.note : ''}${x.inj.back ? ' · rientro previsto ' + fmtYmd(x.inj.back) : ''}. Per le squadre conta ${x.inj.level === 'grave' ? CFG.INJ_BAD : CFG.INJ_LIGHT} punti in meno.</span></div>`}
+    <${InjuryCard} inj=${x.inj} />
     ${!x.guest && canAct && html`<div class="field"><span class="label">Presenza</span>
       <${Seg} cls="rsvp" value=${x.s} onChange=${(s) => C.act.setRsvp(mid, id, s)} options=${[{ v: 'in', l: 'Ci sono', cls: 'in' }, { v: 'maybe', l: 'Forse', cls: 'maybe' }, { v: 'out', l: 'Non viene', cls: 'out' }]} /></div>`}
     ${!x.guest && html`<button class="btn block" onClick=${() => { onClose(); C.go({ t: 'player', id }); }}>Vedi scheda giocatore</button>`}
