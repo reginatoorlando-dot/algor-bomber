@@ -616,6 +616,7 @@ a.btn { text-decoration: none; }
 .page-head .icon-btn { position: relative; }
 .dot-badge { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 2px var(--surface); }
 .group-chip { appearance: none; border: 0; background: var(--surface-2); color: var(--ink-2); border-radius: 999px; padding: 5px 10px 5px 12px; margin-top: 6px; font: 600 13px/1.2 var(--f-body); display: inline-flex; align-items: center; gap: 6px; max-width: 100%; cursor: pointer; }
+.group-chip.none { background: var(--accent-soft); color: var(--accent); }
 .menu-list { display: flex; flex-direction: column; gap: 6px; }
 .menu-item { appearance: none; border: 0; background: var(--surface-2); color: var(--ink); border-radius: 14px; padding: 13px 14px; display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: 600 15px/1.25 var(--f-body); cursor: pointer; }
 .menu-item .ic:last-child { color: var(--ink-3); }
@@ -1317,6 +1318,30 @@ const Demo = (() => {
           if (a.p_role === 'member' && m.role === 'admin' && admins <= 1) fail('Il gruppo deve avere almeno un amministratore: nominane prima un altro.');
           setD(p, Object.assign({}, m, { role: a.p_role })); return null;
         }
+        case 'add_member': {
+          if (!canManage(a.p_gid)) fail('Solo gli amministratori del gruppo possono aggiungere persone.');
+          if (!docs.has('groups/' + a.p_gid)) fail('Questo gruppo non esiste più.');
+          if (!docs.has('players/' + a.p_uid)) fail('Questa persona non ha ancora creato il profilo.');
+          const p = mp(a.p_gid, a.p_uid), m = docs.get(p);
+          if (m && m.status === 'active') return 'active';
+          setD(p, Object.assign({ gid: a.p_gid, uid: a.p_uid, role: 'member' }, m || {}, { status: 'active', t: Date.now(), by: db.me }));
+          refresh(a.p_gid); return 'added';
+        }
+        case 'global_votes': {
+          /* voti di tutti i gruppi, senza chi li ha dati; per ogni coppia conta il più recente */
+          const best = new Map();
+          for (const [p, d] of docs) {
+            if (!p.startsWith('g/') || colOf(p).split('/').pop() !== 'ratings') continue;
+            const rater = idOf(p), r = (d && d.r) || {};
+            for (const target of Object.keys(r)) {
+              const e = r[target];
+              if (target === rater || !e || typeof e !== 'object') continue;
+              const k = rater + '|' + target, t = Number(e.t) || 0, cur = best.get(k);
+              if (!cur || t > cur.t) best.set(k, { t, target, vote: clone(e) });
+            }
+          }
+          return [...best.values()].map((x) => ({ target: x.target, vote: x.vote }));
+        }
         case 'leave_group': { delD(mp(a.p_gid, db.me)); refresh(a.p_gid); return null; }
         case 'delete_group': {
           if (!db.admin) fail('Solo gli amministratori dell\'app possono eliminare un gruppo.');
@@ -1542,8 +1567,46 @@ const Demo = (() => {
     });
     // gruppi: il nostro (Luca è l'amministratore) e due di altre città, per provare la ricerca
     db.put('groups/' + GID, { name: 'Algor Bomber', city: 'La Spezia', by: ME, created: now - 60 * DAY, n: ids.length });
-    db.put('groups/g_demo_sarzana', { name: 'Calcetto del Giovedì', city: 'Sarzana', by: 'demo-x1', created: now - 30 * DAY, n: 9 });
-    db.put('groups/g_demo_milano', { name: 'Milano Nord Five', city: 'Milano', by: 'demo-x2', created: now - 90 * DAY, n: 12 });
+    // iscritti di altri gruppi, per provare "Tutti gli iscritti" e le stats generali. Dave gioca anche a Sarzana.
+    const OTHERS = [
+      ['demo-x1', 'Lorenzo', 'Bianchi', 'Lollo', '🍀', 'CEN', 'ATT', [66, 72, 58, 70, 40]],
+      ['demo-x3', 'Michele', 'Serra', 'Miki', '🦈', 'DIF', '', [48, 58, 73, 66, 45]],
+      ['demo-x4', 'Antonio', 'Rossi', 'Tonino', '🐢', 'POR', '', [40, 45, 52, 55, 74]],
+      ['demo-x2', 'Giacomo', 'Villa', 'Jack', '🎸', 'ATT', '', [79, 64, 45, 75, 35]],
+      ['demo-x5', 'Filippo', 'Sala', 'Pippo', '🤖', 'CEN', 'DIF', [60, 70, 66, 64, 42]],
+      ['demo-x6', 'Chiara', 'Galli', 'Chiara', '🦄', 'ATT', 'CEN', [74, 70, 50, 77, 38]],
+    ];
+    const oTruth = {}, oRole = {};
+    OTHERS.forEach(([id, first, last, nick, icon, role, role2, lv]) => {
+      const t = {};
+      Engine.AREAS.forEach((a, ai) => a.voci.forEach((x) => { t[x.k] = cl(lv[ai] + noise(6)); }));
+      oTruth[id] = t; oRole[id] = role;
+      const self = {};
+      Object.keys(t).forEach((k) => { self[k] = cl(t[k] + 2 + noise(5)); });
+      db.put('players/' + id, { first, last, nick, icon, photo: '', role, role2, self, selfAt: now - 20 * DAY, selfUnlock: false, injury: null, created: now - 20 * DAY, updated: now - 20 * DAY });
+    });
+    oTruth[ids[4]] = Object.fromEntries(Object.entries(truth[4]).map(([k, v]) => [k, cl(v - 7)])); // a Sarzana lo vedono un po' meno forte
+    oRole[ids[4]] = PEOPLE[4][4];
+    const OTHER_GROUPS = { g_demo_sarzana: ['demo-x1', 'demo-x3', 'demo-x4', ids[4]], g_demo_milano: ['demo-x2', 'demo-x5', 'demo-x6'] };
+    Object.keys(OTHER_GROUPS).forEach((g) => {
+      const mem = OTHER_GROUPS[g];
+      mem.forEach((uid, i) => db.put('members/' + g + '~' + uid, { gid: g, uid, role: i === 0 ? 'admin' : 'member', status: 'active', t: now - (30 - i) * DAY }));
+      mem.forEach((voter) => {
+        const r = {};
+        mem.forEach((target) => {
+          if (target === voter) return;
+          const v = {};
+          Engine.AREAS.forEach((a) => {
+            if (a.k === 'por' && oRole[target] !== 'POR') return;
+            a.voci.forEach((x) => { v[x.k] = cl(oTruth[target][x.k] + noise(7)); });
+          });
+          r[target] = { v, t: now - Math.floor(1 + rng() * 20) * DAY };
+        });
+        db.put('g/' + g + '/ratings/' + voter, { r });
+      });
+    });
+    db.put('groups/g_demo_sarzana', { name: 'Calcetto del Giovedì', city: 'Sarzana', by: 'demo-x1', created: now - 30 * DAY, n: OTHER_GROUPS.g_demo_sarzana.length });
+    db.put('groups/g_demo_milano', { name: 'Milano Nord Five', city: 'Milano', by: 'demo-x2', created: now - 90 * DAY, n: OTHER_GROUPS.g_demo_milano.length });
     ids.forEach((id, i) => db.put('members/' + GID + '~' + id, { gid: GID, uid: id, role: i === 0 ? 'admin' : 'member', status: 'active', t: now - (60 - i) * DAY }));
     // una richiesta di ingresso da approvare
     db.put('players/demo-17', { first: 'Pietro', last: 'Neri', nick: 'Pietrone', icon: '🐺', photo: '', role: 'DIF', role2: '', self: Object.fromEntries(Engine.VOCI.map((x) => [x.k, 58])), selfAt: now - DAY, selfUnlock: false, injury: null, created: now - DAY, updated: now - DAY });
@@ -2468,12 +2531,30 @@ function PlayerSections({ p, r, s }) {
     <section class="sec"><h2 class="h3">Ultime partite</h2><${RecentGames} s=${s} /></section>`;
 }
 
-function PlayerScreen({ id }) {
+/* stats generali: la media di tutte le valutazioni ricevute in tutti i gruppi */
+const STATS_SCOPE = [{ v: 'group', l: 'Nel gruppo' }, { v: 'all', l: 'Generali' }];
+function GeneralNote({ r, mine }) {
+  return html`<div class="note"><${Icon} n="info" s="16" /><span>${r.nPeers
+    ? `Stats generali: la media di ${plural(r.nPeers, 'valutazione', 'valutazioni')} ${mine ? 'che hai ricevuto in tutti i tuoi' : 'ricevute in tutti i suoi'} gruppi, autovalutazione compresa. Chi ha dato i singoli voti si vede solo dentro ciascun gruppo.`
+    : `Stats generali: per ora c'è solo l'autovalutazione, perché ${mine ? 'nessuno ti ha ancora valutato' : 'non ha ancora ricevuto valutazioni'}.`}</span></div>`;
+}
+
+function PlayerScreen({ id, scope }) {
   const C = useContext(Ctx);
-  const p = C.playersById[id], r = C.rated[id], s = C.stats.byPlayer[id];
+  const member = !!C.gid && C.isInGroup(id);
+  const [mode, setMode] = useState(member && scope !== 'all' ? 'group' : 'all');
+  const all = !member || mode === 'all';
+  useEffect(() => { if (all) C.loadGlobal(); }, [all]);
+  const p = C.playersById[id], r = (all ? C.ratedAll : C.rated)[id], s = C.stats.byPlayer[id];
   if (!p || !r) return html`<${Page} title="Giocatore" onBack=${C.back}><div class="card empty">Giocatore non trovato.</div><//>`;
   const isMe = id === C.uid;
   const mineVote = ((C.ratings.find((x) => x.id === C.uid) || {}).r || {})[id];
+  const pendHere = !!C.gid && (C.memberById[memberKey(C.gid, id)] || {}).status === 'pending';
+  const canAdd = !!C.gid && !member && !isMe && (C.isGroupAdmin || C.isAdmin) && C.canWrite;
+  const add = async () => {
+    const r2 = await C.act.rpc('add_member', { p_gid: C.gid, p_uid: id });
+    if (r2.ok) { C.flash(dispName(p) + ' ora è in ' + C.group.name); setMode('group'); }
+  };
   const unlock = () => C.openSheet({
     k: 'confirm', title: 'Sbloccare l\'autovalutazione?',
     text: `${dispName(p)} potrà rifare la sua autovalutazione una volta. Le valutazioni degli altri restano com'erano.`,
@@ -2484,36 +2565,51 @@ function PlayerScreen({ id }) {
     text: `Spariscono l'accesso, il profilo e le valutazioni date e ricevute da ${fullName(p) || dispName(p)}, in tutti i gruppi. Nelle partite già giocate resta come "Ex giocatore", così risultati e classifiche non cambiano.`,
     onYes: async () => { const r2 = await C.act.rpc('delete_account', { p_uid: id }); if (r2.ok) { C.flash(r2.data === 'profilo' ? 'Profilo eliminato. L\'accesso va tolto da Supabase, Authentication.' : 'Account eliminato'); C.back(); } },
   });
-  return html`<${Page} title=${dispName(p)} onBack=${C.back}>
+  const sub = !isMe && C.group && !member ? 'Non è in ' + C.group.name : null;
+  return html`<${Page} title=${dispName(p)} sub=${sub} onBack=${C.back}>
+    ${member && html`<${Seg} value=${mode} onChange=${setMode} options=${STATS_SCOPE} />`}
     <${PlayerCard} p=${p} r=${r} />
+    ${all && html`<${GeneralNote} r=${r} mine=${isMe} />`}
     ${isMe
       ? html`<button class="btn block" onClick=${() => C.goTab('me')}><${Icon} n="user" s="16" /> Vai al tuo profilo</button>`
-      : C.canWrite && C.me && html`<div class="stack-8">
+      : member && C.canWrite && C.me && html`<div class="stack-8">
         <button class="btn primary block" onClick=${() => C.go({ t: 'rate', id })}><${Icon} n="star" s="16" /> ${mineVote ? 'Aggiorna la tua valutazione' : 'Valuta ' + dispName(p)}</button>
         ${mineVote && html`<div class="tiny faint" style="text-align:center">La tua ultima valutazione è del ${fmtTs(numOr(mineVote.t, Date.now()))}.</div>`}
       </div>`}
+    ${canAdd && html`<div class="stack-8">
+      <button class="btn primary block" onClick=${add}><${Icon} n="plus" s="16" /> ${pendHere ? 'Accetta in ' : 'Aggiungi a '}${C.group.name}</button>
+      <div class="tiny faint" style="text-align:center">${pendHere ? 'Ha chiesto di entrare nel gruppo.' : 'Entra subito nel gruppo; se vuole, può uscirne quando vuole.'}</div>
+    </div>`}
     ${C.isAdmin && !isMe && html`<div class="card hs-12">
       <span class="admin-ic"><${Icon} n="shield" s="16" /></span>
       <div class="grow"><div class="row-t">Autovalutazione</div><div class="small muted">${p.selfUnlock ? 'Sbloccata: può rifarla una volta.' : p.selfAt ? 'Bloccata dal ' + fmtTs(p.selfAt) + '.' : 'Non ancora fatta.'}</div></div>
       ${!p.selfUnlock && p.selfAt && C.canWrite && html`<button class="btn sm" onClick=${unlock}><${Icon} n="unlock" s="16" /> Sblocca</button>`}
     </div>`}
     ${C.isAdmin && !isMe && html`<button class="btn danger block" onClick=${delAccount}><${Icon} n="x" s="16" /> Elimina l'account di ${dispName(p)}</button>`}
-    <${PlayerSections} p=${p} r=${r} s=${s} />
+    ${all
+      ? html`<section class="sec"><h2 class="h3">Stats generali</h2><${AreaDetail} p=${p} r=${r} /></section>`
+      : html`<${PlayerSections} p=${p} r=${r} s=${s} />`}
   <//>`;
 }
 
 function MeScreen() {
   const C = useContext(Ctx);
   const [edit, setEdit] = useState(false);
+  const member = !!C.gid;
+  const [mode, setMode] = useState('group');
+  const all = !member || mode === 'all';
+  useEffect(() => { if (all) C.loadGlobal(); }, [all]);
   const me = C.me;
-  const r = me && C.rated[C.uid], s = me && C.stats.byPlayer[C.uid];
+  const r = me && (all ? C.ratedAll : C.rated)[C.uid], s = me && C.stats.byPlayer[C.uid];
   return html`<div class="page">
     <${MainHead} title="Profilo" right=${html`<button class="icon-btn" aria-label="Come funziona" onClick=${() => C.openSheet({ k: 'help' })}><${Icon} n="info" /></button>`} />
     ${me && r ? html`
       <${OverdueNote} />
       ${edit ? html`<div class="card"><${ProfileForm} initial=${me} onSaved=${() => setEdit(false)} /></div>
         <button class="btn ghost block" onClick=${() => setEdit(false)}>Annulla</button>` : html`
+        ${member && html`<${Seg} value=${mode} onChange=${setMode} options=${STATS_SCOPE} />`}
         <${PlayerCard} p=${me} r=${r} />
+        ${all && html`<${GeneralNote} r=${r} mine />`}
         ${C.canWrite && html`<button class="btn block" onClick=${() => setEdit(true)}><${Icon} n="edit" s="16" /> Modifica nome, foto e ruoli</button>`}
         <section class="sec"><h2 class="h3">Stato fisico</h2><${InjuryEditor} key=${(me.injury && me.injury.since) || 'ok'} /></section>
         ${me.selfUnlock || C.isAdmin
@@ -2522,7 +2618,9 @@ function MeScreen() {
             ? `Il punteggio (${r0(r.ovr)}) è la media tra lei e ${plural(r.nPeers, 'valutazione', 'valutazioni')} degli altri.`
             : `Nessuno ti ha ancora valutato: per ora il punteggio (${r0(r.ovr)}) è la tua autovalutazione.`}</span></div>`}
         ${C.isAdmin && html`<div class="note ok"><${Icon} n="shield" s="16" /><span>Sei l'amministratore: puoi correggere anche le partite vecchie e sbloccare un'autovalutazione dalla scheda di ogni giocatore.</span></div>`}
-        <${PlayerSections} p=${me} r=${r} s=${s} />
+        ${all
+          ? html`<section class="sec"><h2 class="h3">Stats generali</h2><${AreaDetail} p=${me} r=${r} /></section>`
+          : html`<${PlayerSections} p=${me} r=${r} s=${s} />`}
       `}
     ` : html`<div class="card empty"><div class="h3">Nessun profilo</div><div>${C.canWrite ? 'Crea il tuo profilo per rispondere alle partite.' : 'Hai accesso in sola lettura.'}</div></div>`}
     <button class="btn ghost block" onClick=${() => C.openSheet({ k: 'help' })}>Come funzionano stats e squadre</button>
@@ -2531,29 +2629,35 @@ function MeScreen() {
   </div>`;
 }
 
-/* ---------- giocatori ---------- */
+/* ---------- giocatori: del gruppo o tutti gli iscritti all'app ---------- */
 function PlayersScreen() {
   const C = useContext(Ctx);
   const [q, setQ] = useState('');
   const [sort, setSort] = useState('lvl');
+  const [scope, setScope] = useState(C.gid ? 'group' : 'all');
+  const all = !C.gid || scope === 'all';
+  useEffect(() => { if (all) C.loadGlobal(); }, [all]);
+  const R = all ? C.ratedAll : C.rated;
+  const base = all ? C.allPlayers : C.players;
   const t = q.trim().toLowerCase();
-  const list = C.players
+  const list = base
     .filter((p) => !t || (fullName(p) + ' ' + (p.nick || '')).toLowerCase().includes(t))
-    .sort(sort === 'lvl' ? (a, b) => C.rated[b.id].ovr - C.rated[a.id].ovr : (a, b) => dispName(a).localeCompare(dispName(b), 'it'));
-  const injured = C.players.filter((p) => p.injury && p.injury.level).length;
+    .sort(sort === 'lvl' ? (a, b) => R[b.id].ovr - R[a.id].ovr : (a, b) => dispName(a).localeCompare(dispName(b), 'it'));
+  const injured = base.filter((p) => p.injury && p.injury.level).length;
   return html`<div class="page">
     <${MainHead} title="Giocatori" />
-    <div class="small muted">${plural(C.players.length, 'membro', 'membri')} nel gruppo${injured ? ' · ' + plural(injured, 'infortunato', 'infortunati') : ''}</div>
+    ${C.gid && html`<${Seg} value=${scope} onChange=${setScope} options=${[{ v: 'group', l: 'Del gruppo' }, { v: 'all', l: 'Tutti gli iscritti' }]} />`}
+    <div class="small muted">${all ? plural(base.length, 'iscritto', 'iscritti') + ' all\'app · stats generali' : plural(base.length, 'membro', 'membri') + ' nel gruppo'}${injured ? ' · ' + plural(injured, 'infortunato', 'infortunati') : ''}</div>
     <div class="stack-8">
       <input id="player-search" class="input" type="search" placeholder="Cerca per nome o soprannome" value=${q} onInput=${(e) => setQ(e.target.value)} />
       <${Seg} value=${sort} onChange=${setSort} options=${[{ v: 'lvl', l: 'Per punteggio' }, { v: 'name', l: 'Per nome' }]} />
     </div>
-    ${list.length ? html`<div class="card pad0 divided">${list.map((p) => html`<button key=${p.id} class="row tap" style="padding:10px 14px" onClick=${() => C.go({ t: 'player', id: p.id })}>
+    ${list.length ? html`<div class="card pad0 divided">${list.map((p) => html`<button key=${p.id} class="row tap" style="padding:10px 14px" onClick=${() => C.go({ t: 'player', id: p.id, scope: all ? 'all' : 'group' })}>
       <${Avatar} p=${p} size=${40} />
       <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} />${p.id === C.uid && html`<span class="chip ok">Tu</span>`}</span><span class="row-s ell" style="display:block">${fullName(p)}</span></span>
       <${RoleChips} role=${p.role} role2=${p.role2} />
-      <${Ovr} v=${C.rated[p.id].ovr} />
-    </button>`)}</div>` : html`<div class="card empty"><div class="h3">${C.players.length ? 'Nessun risultato' : 'Ancora nessun giocatore'}</div><div>${C.players.length ? 'Prova con un altro nome.' : 'Quando gli amici creano il profilo compaiono qui.'}</div></div>`}
+      <${Ovr} v=${R[p.id].ovr} />
+    </button>`)}</div>` : html`<div class="card empty"><div class="h3">${base.length ? 'Nessun risultato' : 'Ancora nessun giocatore'}</div><div>${base.length ? 'Prova con un altro nome.' : 'Quando gli amici creano il profilo compaiono qui.'}</div></div>`}
   </div>`;
 }
 
@@ -3322,8 +3426,10 @@ function MainHead({ title, right }) {
     <button class="icon-btn" aria-label="Menu" onClick=${() => C.openSheet({ k: 'menu' })}><${Icon} n="menu" />${C.badges.menu > 0 && html`<span class="dot-badge" aria-hidden="true"></span>`}</button>
     <div class="ttl">
       <h1 class="h1">${title}</h1>
-      ${C.group && html`<button class="group-chip" onClick=${() => C.openSheet({ k: 'groupSwitch' })} aria-label=${'Gruppo: ' + C.group.name + '. Cambia gruppo'}>
+      ${C.group ? html`<button class="group-chip" onClick=${() => C.openSheet({ k: 'groupSwitch' })} aria-label=${'Gruppo: ' + C.group.name + '. Cambia gruppo'}>
         <span class="ell">${C.group.name} · ${C.group.city}</span><${Icon} n="chevdown" s="14" />
+      </button>` : C.me && html`<button class="group-chip none" onClick=${() => C.go({ t: 'groups' })}>
+        <span class="ell">Nessun gruppo · entra o creane uno</span><${Icon} n="chev" s="14" />
       </button>`}
     </div>
     ${right}
@@ -3358,6 +3464,33 @@ function GroupSwitchSheet({ onClose }) {
     </button>`)}</div>
     <button class="btn block" onClick=${() => { onClose(); C.go({ t: 'groups' }); }}><${Icon} n="search" s="16" /> Cerca o crea un gruppo</button>
   <//>`;
+}
+
+/* ---------- senza gruppo: le schede del gruppo invitano a entrare ---------- */
+const NO_GROUP_TEXT = {
+  matches: ['Partite', 'Le partite si organizzano dentro un gruppo: entra in quello dei tuoi amici o creane uno nuovo.'],
+  history: ['Storico', 'Storico, classifiche e MVP sono quelli del tuo gruppo: entra in un gruppo per vederli.'],
+  chat: ['Messaggi', 'I messaggi sono la chat del tuo gruppo: entra in un gruppo per scrivere agli altri.'],
+};
+function NoGroupCard({ text }) {
+  const C = useContext(Ctx);
+  const pending = C.groups.filter((g) => { const m = C.memberById[memberKey(g.id, C.uid)]; return m && m.status === 'pending'; });
+  return html`<div class="card empty">
+    <div class="h3">Non sei ancora in un gruppo</div>
+    <div>${text}</div>
+    ${pending.length > 0 && html`<div class="small muted">Hai chiesto di entrare in ${pending.map((g) => g.name).join(', ')}: aspetta che un amministratore ti accetti.</div>`}
+    ${C.canWrite && C.me && html`<button class="btn primary" onClick=${() => C.go({ t: 'groups' })}><${Icon} n="search" s="16" /> Cerca o crea un gruppo</button>`}
+  </div>`;
+}
+function NoGroupScreen({ tab }) {
+  const C = useContext(Ctx);
+  const [title, text] = NO_GROUP_TEXT[tab] || NO_GROUP_TEXT.matches;
+  return html`<div class="page">
+    <${MainHead} title=${title} />
+    ${tab === 'matches' && html`<${OverdueNote} />`}
+    <${NoGroupCard} text=${text} />
+    ${tab === 'matches' && C.me && html`<div class="note"><${Icon} n="info" s="16" /><span>Intanto puoi guardare tutti gli iscritti all'app nella scheda Giocatori e sistemare il tuo profilo.</span></div>`}
+  </div>`;
 }
 
 /* ---------- gruppi: i miei, cerca, crea ---------- */
@@ -3461,7 +3594,7 @@ function GroupScreen() {
     </section>`}
     ${!manage && pending.length > 0 && html`<div class="note"><${Icon} n="clock" s="16" /><span>${plural(pending.length, 'persona aspetta', 'persone aspettano')} che un amministratore del gruppo le accetti.</span></div>`}
     <section class="sec">
-      <h2 class="h3">Membri</h2>
+      <div class="sec-h"><h2 class="h3">Membri</h2>${manage && C.canWrite && html`<button class="btn sm" onClick=${() => C.go({ t: 'addMembers' })}><${Icon} n="plus" s="16" /> Aggiungi</button>`}</div>
       <div class="card pad0 divided">${active.map((m) => { const p = C.playersById[m.uid]; return html`<button key=${m.uid} class="row tap" style="padding:10px 14px" onClick=${() => (manage && m.uid !== C.uid ? C.openSheet({ k: 'member2', uid: m.uid }) : p && C.go({ t: 'player', id: m.uid }))}>
         <${Avatar} p=${p || { id: m.uid }} size=${36} />
         <span class="row-main"><span class="row-t"><span class="ell">${p ? dispName(p) : 'Giocatore'}</span>${m.uid === C.uid && html`<span class="chip ok">Tu</span>`}</span><span class="row-s ell" style="display:block">${p ? fullName(p) : ''}</span></span>
@@ -3472,6 +3605,39 @@ function GroupScreen() {
     </section>
     <button class="btn ghost block" onClick=${leave}>Esci dal gruppo</button>
     ${C.isAdmin && html`<button class="btn danger block" onClick=${del}><${Icon} n="x" s="16" /> Elimina il gruppo (amministrazione)</button>`}
+  <//>`;
+}
+
+/* ---------- aggiungere iscritti al gruppo (amministratori) ---------- */
+function AddMembersScreen() {
+  const C = useContext(Ctx);
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState(null);
+  useEffect(() => { C.loadGlobal(); }, []);
+  const g = C.group;
+  if (!g) return html`<${Page} title="Aggiungi giocatori" onBack=${C.back}><div class="card empty">Nessun gruppo selezionato.</div><//>`;
+  const st = (uid) => { const m = C.memberById[memberKey(g.id, uid)]; return m ? m.status : null; };
+  const t = q.trim().toLowerCase();
+  const cands = C.allPlayers
+    .filter((p) => st(p.id) !== 'active')
+    .filter((p) => !t || (fullName(p) + ' ' + (p.nick || '')).toLowerCase().includes(t))
+    .sort((a, b) => (st(b.id) === 'pending') - (st(a.id) === 'pending') || dispName(a).localeCompare(dispName(b), 'it'));
+  const add = async (p) => {
+    setBusy(p.id);
+    const r = await C.act.rpc('add_member', { p_gid: g.id, p_uid: p.id });
+    setBusy(null);
+    if (r.ok) C.flash(r.data === 'active' ? dispName(p) + ' era già nel gruppo' : dispName(p) + ' ora è in ' + g.name);
+  };
+  return html`<${Page} title="Aggiungi giocatori" sub=${g.name + ' · ' + g.city} onBack=${C.back}>
+    <div class="note"><${Icon} n="info" s="16" /><span>Cerca tra tutti gli iscritti all'app. Chi aggiungi entra subito nel gruppo e, se vuole, può uscirne quando vuole.</span></div>
+    <input id="add-search" class="input" type="search" placeholder="Cerca per nome o soprannome" value=${q} onInput=${(e) => setQ(e.target.value)} />
+    ${cands.length ? html`<div class="card pad0 divided">${cands.map((p) => { const pend = st(p.id) === 'pending'; return html`<div key=${p.id} class="row" style="padding:10px 14px">
+      <${Avatar} p=${p} size=${40} />
+      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} /></span><span class="row-s ell" style="display:block">${pend ? 'Ha chiesto di entrare' : fullName(p) + ' · ' + p.role + (p.role2 ? '/' + p.role2 : '')}</span></span>
+      <${Ovr} v=${C.ratedAll[p.id].ovr} size="sm" />
+      <button class="btn sm primary" disabled=${busy === p.id} onClick=${() => add(p)}>${pend ? 'Accetta' : 'Aggiungi'}</button>
+    </div>`; })}</div>` : html`<div class="card empty small">${t ? 'Nessun iscritto con questo nome fuori dal gruppo.' : 'Tutti gli iscritti all\'app sono già nel gruppo.'}</div>`}
+    <div class="tiny faint">Il numero è il punteggio generale: la media di tutte le valutazioni ricevute nei suoi gruppi.</div>
   <//>`;
 }
 
@@ -3998,8 +4164,9 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Da dove vengono i numeri</h3><p class="muted">Ogni voce è la media di tutte le valutazioni ricevute, autovalutazione compresa: la tua conta come quella di chiunque altro. Ogni area è la media delle sue voci. L'autovalutazione si fa una volta sola, all'iscrizione; le valutazioni agli altri invece le dai e le cambi quando vuoi, e conta l'ultima. Se un'area non la sai giudicare, la salti.</p></div>
       <div><h3 class="h3">Il punteggio</h3><p class="muted">Per chi gioca fuori dai pali è la media di Attacco, Centrocampo, Difesa e Generale: la Porta non conta. Per i portieri conta solo la Porta. Il colore della card segue il punteggio: bronzo sotto 65, argento da 65 a 74, oro da 75.</p></div>
       <div><h3 class="h3">Squadre e ruoli</h3><p class="muted">I ruoli li assegna l'app, insieme alle squadre. Prova tutte le divisioni possibili e per ogni squadra sceglie il modulo che le va meglio (a 5: 1-1-2-1, 1-2-1-1, 1-2-2; a 7: 1-2-3-1, 1-3-1-2, 1-3-2-1, dove 1-2-1-2-1 conta come 1-2-3-1; a 8: 1-3-3-1, 1-2-3-2, 1-3-2-2, 1-2-4-1). Nel tuo ruolo o nel secondo vali il tuo punteggio. In un ruolo vicino (difesa e centrocampo, centrocampo e attacco) vali ${CFG.MALUS_NEAR} punti in meno, in un ruolo lontano (difesa e attacco) ${CFG.MALUS_FAR} in meno. Se vai in porta senza essere portiere conta la tua Porta; un portiere fuori dai pali vale la media delle sue aree di movimento. Con il cerotto conti ${CFG.INJ_LIGHT} punti in meno, con la croce rossa ${CFG.INJ_BAD}. L'app cerca le squadre più vicine nel valore medio e area per area, tenendo fuori ruolo meno gente possibile. Puoi sempre cambiare ruoli e giocatori a mano.</p></div>
-      <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo l'amministratore. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. Poi l'app ti propone di aggiornare le valutazioni dei compagni, anche più tardi.</p></div>
-      <div><h3 class="h3">Voti pubblici</h3><p class="muted">Valutazioni e voti MVP non sono anonimi: tutti vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude.</p></div>
+      <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. Poi l'app ti propone di aggiornare le valutazioni dei compagni, anche più tardi.</p></div>
+      <div><h3 class="h3">Gruppi e stats generali</h3><p class="muted">Partite, storico, messaggi e valutazioni sono di ogni gruppo. Puoi stare in più gruppi: cambi gruppo toccando il suo nome in alto. Nella scheda Giocatori vedi i membri del gruppo oppure tutti gli iscritti all'app. Le stats nel gruppo sono la media delle valutazioni date in quel gruppo; le stats generali sono la media di tutte le valutazioni ricevute in tutti i gruppi, autovalutazione compresa.</p></div>
+      <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti.</p></div>
     </div>
   <//>`;
 }
@@ -4071,6 +4238,8 @@ function App() {
   const [tick, setTick] = useState(0);
   const [theme, setThemeS] = useState(() => readLS('sc-theme', 'auto'));
   const [readMark, setReadMark] = useState(0);
+  const [gvotes, setGvotes] = useState(null);
+  const gvotesAt = useRef(0);
   const dataRef = useRef(data);
   dataRef.current = data;
   const gidRef = useRef(gid);
@@ -4131,6 +4300,8 @@ function App() {
   useEffect(() => {
     if (!be) return;
     setGdata(EMPTY_GLOBAL);
+    setGvotes(null);
+    gvotesAt.current = 0;
     setGid(be.demo ? Demo.GID : readLS('sc-group-' + be.uid, null));
     const unsubs = [];
     GLOBAL_COLS.forEach((key) => {
@@ -4179,6 +4350,21 @@ function App() {
   const playersById = useMemo(() => Object.fromEntries(allPlayers.map((p) => [p.id, p])), [gdata.players]);
   const matchesById = useMemo(() => Object.fromEntries(matches.map((m) => [m.id, m])), [data.matches]);
   const rated = useMemo(() => Engine.computeRatings(allPlayers, data.ratings || []), [gdata.players, data.ratings]);
+
+  /* stats generali: i voti di tutti i gruppi, senza chi li ha dati (finché non arrivano, quelli del gruppo attuale) */
+  const loadGlobal = async (force) => {
+    if (!be || !be.db || typeof be.db.rpc !== 'function') return;
+    if (!force && Date.now() - gvotesAt.current < 20000) return;
+    gvotesAt.current = Date.now();
+    const db0 = be.db;
+    try {
+      const rows = await db0.rpc('global_votes');
+      if (be && be.db === db0) setGvotes(Array.isArray(rows) ? rows : []);
+    } catch (e) { /* funzione non ancora nel database: restano le stats del gruppo */ }
+  };
+  useEffect(() => { if (be && globalsLoaded) loadGlobal(true); }, [be, globalsLoaded, data.ratings]);
+  const globalDocs = useMemo(() => (gvotes ? gvotes.map((x, i) => ({ id: '~' + i, r: { [x.target]: x.vote } })) : (data.ratings || [])), [gvotes, data.ratings]);
+  const ratedAll = useMemo(() => Engine.computeRatings(allPlayers, globalDocs), [gdata.players, globalDocs]);
   const stats = useMemo(() => Engine.matchStats(players, matches, data.mvp || [], Date.now()), [players, data.matches, data.mvp, tick]);
   const me = uid ? playersById[uid] : null;
   const group = validGid ? groupsById[validGid] : null;
@@ -4212,7 +4398,7 @@ function App() {
 
   const ctx = {
     uid, me, canWrite, isAdmin, isGroupAdmin, demo: !!(be && be.demo), act,
-    players, allPlayers, playersById, rated, stats,
+    players, allPlayers, playersById, rated, ratedAll, loadGlobal, isInGroup: (id) => inGroup.has(id), stats,
     matches, matchesById, allFields, fieldOf: (m) => fieldOfMatch(m, allFields), ratings: data.ratings || [], mvp: data.mvp || [],
     gid: validGid, group, groups: gdata.groups || [], groupsById, members, memberById, myGroups, switchGroup,
     chat, markRead, help, markHelpSeen, badges, theme, setTheme,
@@ -4222,7 +4408,7 @@ function App() {
   const needsProfile = status === 'ready' && loaded && ctx.canWrite && !me;
   /* chi era iscritto col vecchio sistema rifà l'autovalutazione una volta, nel nuovo formato */
   const needsSelf = status === 'ready' && loaded && ctx.canWrite && !!me && !Engine.hasNewSelf(me);
-  const noGroup = status === 'ready' && loaded && !!me && !validGid;
+  const noGroup = status === 'ready' && loaded && !validGid;
   const top = stack[stack.length - 1];
   let view;
   if (status === 'loading') view = html`<${Skeleton} />`;
@@ -4235,23 +4421,25 @@ function App() {
   else if (top && top.t === 'help') view = html`<${HelpScreen} key="help" />`;
   else if (top && top.t === 'devs') view = html`<${DevelopersScreen} key="devs" />`;
   else if (top && top.t === 'admin') view = html`<${AdminScreen} key="admin" />`;
-  else if (top && top.t === 'player') view = html`<${PlayerScreen} key=${'p' + top.id} id=${top.id} />`;
-  else if (noGroup) view = html`<${GroupsScreen} key="nogroup" main />`;
-  else if (top && top.t === 'group') view = html`<${GroupScreen} key="group" />`;
-  else if (top && top.t === 'match') view = html`<${MatchScreen} key=${'m' + top.id} id=${top.id} />`;
-  else if (top && top.t === 'mvp') view = html`<${MvpScreen} key=${'v' + top.id} id=${top.id} />`;
-  else if (top && top.t === 'result') view = html`<${ResultScreen} key=${'r' + top.id} id=${top.id} />`;
-  else if (top && top.t === 'rateMatch') view = html`<${MatchRateScreen} key=${'rm' + top.id} id=${top.id} />`;
-  else if (top && top.t === 'rate') view = html`<${RateScreen} key=${'rt' + top.id} id=${top.id} />`;
+  else if (top && top.t === 'player') view = html`<${PlayerScreen} key=${'p' + top.id + (top.scope || '')} id=${top.id} scope=${top.scope} />`;
   else if (top && top.t === 'self') view = html`<${SelfRateScreen} key="self" />`;
+  /* le schermate dei gruppi si aprono solo dentro un gruppo */
+  else if (!noGroup && top && top.t === 'group') view = html`<${GroupScreen} key="group" />`;
+  else if (!noGroup && top && top.t === 'addMembers') view = html`<${AddMembersScreen} key="addm" />`;
+  else if (!noGroup && top && top.t === 'match') view = html`<${MatchScreen} key=${'m' + top.id} id=${top.id} />`;
+  else if (!noGroup && top && top.t === 'mvp') view = html`<${MvpScreen} key=${'v' + top.id} id=${top.id} />`;
+  else if (!noGroup && top && top.t === 'result') view = html`<${ResultScreen} key=${'r' + top.id} id=${top.id} />`;
+  else if (!noGroup && top && top.t === 'rateMatch') view = html`<${MatchRateScreen} key=${'rm' + top.id} id=${top.id} />`;
+  else if (!noGroup && top && top.t === 'rate') view = html`<${RateScreen} key=${'rt' + top.id} id=${top.id} />`;
+  else if (tab === 'players') view = html`<${PlayersScreen} key=${'pl' + (validGid || '')} />`;
+  else if (tab === 'me') view = html`<${MeScreen} key=${'me' + (validGid || '')} />`;
+  else if (noGroup) view = html`<${NoGroupScreen} key=${'ng' + tab} tab=${tab} />`;
   else if (tab === 'history') view = html`<${StoricoScreen} />`;
   else if (tab === 'chat') view = html`<${ChatScreen} key=${'c' + validGid} />`;
-  else if (tab === 'players') view = html`<${PlayersScreen} />`;
-  else if (tab === 'me') view = html`<${MeScreen} />`;
   else view = html`<${HomeScreen} />`;
 
-  const showNav = status === 'ready' && loaded && !needsProfile && !needsSelf && !noGroup;
-  const showFab = showNav && tab === 'matches' && stack.length === 0 && ctx.canWrite && ctx.me;
+  const showNav = status === 'ready' && loaded && !needsProfile && !needsSelf;
+  const showFab = showNav && !noGroup && tab === 'matches' && stack.length === 0 && ctx.canWrite && ctx.me;
   const NAV = [
     { t: 'matches', i: 'calendar', l: 'Partite' },
     { t: 'history', i: 'history', l: 'Storico' },
@@ -4261,7 +4449,7 @@ function App() {
   ];
 
   return html`<${Ctx.Provider} value=${ctx}>
-    <div class=${'shell' + (tab === 'chat' && !top && showNav ? ' chat-shell' : '')}>
+    <div class=${'shell' + (tab === 'chat' && !top && showNav && !noGroup ? ' chat-shell' : '')}>
       ${be && be.demo && html`<div class="banner"><${Icon} n="info" s="16" /><span class="grow">Demo: dati di esempio, non vengono salvati. Sei Luca "Lucky", amministratore dell'app e del gruppo.</span><button class="btn sm" onClick=${exitDemo}>Esci</button></div>`}
       ${be && !be.demo && !canWrite && html`<div class="banner"><${Icon} n="info" s="16" /><span class="grow">Hai accesso in sola lettura: puoi guardare, ma non rispondere alle partite né votare. Chiedi a chi ha creato l'app di darti il permesso di modificare.</span></div>`}
       ${view}
@@ -4297,6 +4485,9 @@ function parsePath(path) {
   const id = segs[segs.length - 1];
   return { id, cpath: segs.slice(0, -1).join('/'), col: segs[segs.length - 2], gid: segs[0] === 'g' ? segs[1] : null };
 }
+
+/* funzioni che leggono soltanto: dopo non serve ricaricare niente */
+const READ_ONLY_FN = new Set(['is_app_admin', 'global_votes']);
 
 function makeSupaDb(sb) {
   const cols = new Map();
@@ -4391,7 +4582,7 @@ function makeSupaDb(sb) {
       const { data, error } = await sb.rpc(fn, args || {});
       if (error) throw scErr(error);
       /* le funzioni cambiano gruppi, iscrizioni e profili: ricarico subito senza aspettare il tempo reale */
-      if (fn !== 'is_app_admin') await refresh();
+      if (!READ_ONLY_FN.has(fn)) await refresh();
       return data;
     },
   };

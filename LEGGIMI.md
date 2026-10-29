@@ -5,7 +5,7 @@ Il sito è la cartella `web` (questa). Il resto dello zip (`sorgenti`) serve sol
 
 ## 1. Il database (Supabase)
 1. Vai su supabase.com → **New project**. Scegli un nome (es. `algor-bomber`), una password per il database (salvala) e una regione europea.
-2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, in una nuova query, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione).
+2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) e con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi).
 3. **Authentication → Providers → Email**: lascia attivo l'accesso con email e **disattiva "Confirm email"** (così gli amici entrano subito senza aspettare la mail).
 4. **Project Settings → API**: copia **Project URL** e la chiave **anon public**.
 5. Apri il file `config.js` di questa cartella e incolla i due valori al posto delle scritte `INCOLLA_QUI_…`. (La chiave anon può stare nel sito: la sicurezza la fanno le regole del database.)
@@ -38,6 +38,10 @@ Va fatto **una volta sola, prima** di pubblicare il nuovo `index.html`:
 
 Lo script per prima cosa salva una copia completa dei dati nella tabella `backup.docs_20261029` (visibile in Table Editor, schema `backup`). Poi crea il gruppo "Algor Bomber" (La Spezia) con tutti gli iscritti di oggi, sposta dentro il gruppo partite, valutazioni e voti MVP, e aggiunge le regole per gruppi, chat, help e amministrazione. Si può rilanciare senza danni.
 Gli amministratori dell'app sono nella tabella `app_admins` (per aggiungerne uno: `insert into app_admins (email) values ('nome@esempio.it');`).
+
+## Aggiornamento di ottobre 2026 (seconda parte): iscritti e aggiunta ai gruppi
+Una volta sola: Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-iscritti.sql` e premi **Run**; deve comparire "Aggiornamento completato" con il numero di iscritti e di gruppi. Non sposta e non cancella dati.
+Da qui in poi tutti gli iscritti vedono i profili di tutti, le stats generali sono la media dei voti di tutti i gruppi (senza dire chi li ha dati) e gli amministratori di un gruppo possono aggiungere direttamente un iscritto.
 
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
