@@ -5,7 +5,7 @@ Il sito è la cartella `web` (questa). Il resto dello zip (`sorgenti`) serve sol
 
 ## 1. Il database (Supabase)
 1. Vai su supabase.com → **New project**. Scegli un nome (es. `algor-bomber`), una password per il database (salvala) e una regione europea.
-2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) e con `supabase/aggiornamento-zone.sql` (comune dei gruppi, modifica del gruppo).
+2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) e con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno).
 3. **Authentication → Providers → Email**: lascia attivo l'accesso con email e **disattiva "Confirm email"** (così gli amici entrano subito senza aspettare la mail).
 4. **Project Settings → API**: copia **Project URL** e la chiave **anon public**.
 5. Apri il file `config.js` di questa cartella e incolla i due valori al posto delle scritte `INCOLLA_QUI_…`. (La chiave anon può stare nel sito: la sicurezza la fanno le regole del database.)
@@ -46,6 +46,10 @@ Da qui in poi tutti gli iscritti vedono i profili di tutti, le stats generali so
 ## Aggiornamento di ottobre 2026 (terza parte): zone
 Una volta sola: Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-zone.sql` e premi **Run**; deve comparire "Aggiornamento completato". Non sposta e non cancella dati.
 I gruppi salvano il comune scelto dall'elenco (`comuni.json`, dati ISTAT) con le sue coordinate, così si cercano per distanza; gli amministratori del gruppo possono cambiarne nome e città. La posizione delle persone non viene mai chiesta: conta solo il comune che scelgono nel profilo.
+
+## Aggiornamento di ottobre 2026 (quarta parte): partite
+Una volta sola: Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-partite.sql` e premi **Run**; deve comparire "Aggiornamento completato". Contiene anche le funzioni di `aggiornamento-zone.sql`, quindi basta questo. Non sposta e non cancella dati.
+Aggiunge il sondaggio sul giorno: ognuno segna i giorni in cui è libero e, appena un giorno arriva al numero per due squadre piene, la partita nasce da sola con chi l'ha votato (il voto e la chiusura li fa il database, così due voti nello stesso momento non creano due partite).
 
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.

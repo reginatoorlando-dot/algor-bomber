@@ -668,6 +668,79 @@ select.input { appearance: auto; }
 .row-s.inj-t { color: var(--warn); }
 .bad-t { color: var(--bad); }
 
+/* ---- partita: schede, squadre con i colori, confronto, campo ---- */
+.seg.mtabs button { padding: 10px 6px; font-weight: 700; }
+.team-tag { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font: 700 13.5px/1.2 var(--f-body); color: var(--ink); }
+.team-tag.big { flex-direction: column; gap: 4px; font-size: 15px; text-align: center; }
+.team-tag .ic { flex: none; }
+.shirt { flex: none; display: block; }
+.side-dot { flex: none; width: 22px; display: inline-flex; align-items: center; justify-content: center; font: 700 12px/1 var(--f-body); color: var(--warn); }
+.swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.swatch { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 8px 2px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; font: 600 11px/1.1 var(--f-body); color: var(--ink-2); cursor: pointer; min-width: 0; }
+.swatch span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.swatch.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); color: var(--ink); }
+.vs { display: flex; flex-direction: column; gap: 14px; }
+.vs-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.vs-head .team-tag.big { justify-self: center; }
+.vs-x { font: 800 15px/1 var(--f-display); color: var(--ink-3); letter-spacing: 0.06em; }
+.duel { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 8px; }
+.duel-v { font: 800 20px/1 var(--f-display); font-variant-numeric: tabular-nums; text-align: center; }
+.duel-bar { position: relative; height: 12px; border-radius: 12px; background: var(--surface-2); overflow: hidden; }
+.duel-bar i { position: absolute; top: 0; bottom: 0; }
+.duel-bar i.l { right: 50%; background: var(--ta); border-radius: 12px 0 0 12px; }
+.duel-bar i.r { left: 50%; background: var(--tb); border-radius: 0 12px 12px 0; }
+.duel-bar::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--surface); }
+.vs-sub { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.vs-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.vs-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vs-ch { display: flex; justify-content: space-between; font: 600 12px/1 var(--f-body); color: var(--ink-3); padding: 0 4px; }
+.vs-p { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 10px 8px 9px; display: grid; grid-template-columns: 1fr auto; grid-template-areas: "av av" "n n" "r r" "bar v"; justify-items: center; align-items: center; gap: 3px 6px; text-align: center; color: var(--ink); cursor: pointer; min-width: 0; }
+.vs-av { grid-area: av; position: relative; }
+.vs-inj { position: absolute; right: -4px; bottom: -2px; background: var(--surface); border-radius: 50%; padding: 1px; }
+.vs-n { grid-area: n; font: 700 13.5px/1.2 var(--f-body); max-width: 100%; }
+.vs-r { grid-area: r; font-size: 12px; color: var(--ink-2); }
+.vs-r em { font-style: normal; color: var(--warn); font-weight: 700; }
+.vs-bar { grid-area: bar; justify-self: stretch; height: 5px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.vs-bar i { display: block; height: 100%; background: var(--accent); border-radius: 5px; }
+.vs-v { grid-area: v; font: 800 14px/1 var(--f-display); color: var(--accent); }
+.pitch-wrap { border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); max-width: 460px; width: 100%; margin: 0 auto; }
+.pitch { display: block; width: 100%; height: auto; }
+.pt-bg { fill: #2e8b4e; }
+.pt-stripe { fill: #33955a; }
+.pt-l { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 0.5; }
+.pt-dot { fill: rgba(255, 255, 255, 0.85); }
+.pd { cursor: pointer; }
+.pd-i { font: 700 4.2px/1 var(--f-body); }
+.pd-n { font: 700 3.5px/1 var(--f-body); fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 0.8px; stroke-linejoin: round; }
+.pitch-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; max-width: 460px; width: 100%; margin: 0 auto; }
+.pick-side { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; color: var(--ink); cursor: pointer; width: 100%; }
+.pick-side.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.pick-side[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* ---- sondaggio sul giorno ---- */
+.card.poll { border-style: dashed; }
+.poll-mini { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+.pm-row { display: grid; grid-template-columns: 86px 1fr auto; align-items: center; gap: 10px; }
+.pm-d { font: 600 13px/1.2 var(--f-body); color: var(--ink); white-space: nowrap; }
+.pm-row .bar, .poll-day .bar { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
+.pm-row .bar i, .poll-day .bar i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
+.pm-row .cnt { font: 600 12.5px/1 var(--f-body); color: var(--ink-2); }
+.poll-day { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.poll-day.past { opacity: 0.5; }
+.poll-day.on { background: var(--accent-soft); }
+.pd-check { appearance: none; flex: none; width: 30px; height: 30px; border-radius: 9px; border: 2px solid var(--line); background: var(--surface); color: var(--on-accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.poll-day.on .pd-check { background: var(--accent); border-color: var(--accent); }
+.pd-check[disabled] { cursor: not-allowed; }
+.stack-4 { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.daygrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.dayc { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: 11px; padding: 6px 0; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--ink); cursor: pointer; min-width: 0; }
+.dayc .dw, .dayc .dm { font: 600 10px/1 var(--f-body); color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.dayc b { font: 800 16px/1.1 var(--f-display); }
+.dayc.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.dayc.on .dw, .dayc.on .dm { color: var(--on-accent); opacity: 0.85; }
+
 </style>
 </head>
 <body>
@@ -772,7 +845,8 @@ const Engine = (() => {
 
   function matchTime(m) {
     if (!m) return 0;
-    const t = new Date((m.date || '1970-01-01') + 'T' + (m.time || '00:00')).getTime();
+    /* senza ora (partita nata da un sondaggio) si conta la sera, alle 21 */
+    const t = new Date((m.date || '1970-01-01') + 'T' + (m.time || '21:00')).getTime();
     return isFinite(t) ? t : 0;
   }
 
@@ -1284,6 +1358,7 @@ const Demo = (() => {
       },
     };
     /* --- funzioni del database simulate (stesse regole dell'SQL) --- */
+    const toYmdLocal = (dt) => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
     const cleanLoc = (l) => (l && typeof l.lat === 'number' && typeof l.lng === 'number' && l.lat > 35 && l.lat < 48 && l.lng > 6 && l.lng < 19.5 && l.name
       ? { name: String(l.name).slice(0, 60), prov: String(l.prov || '').toUpperCase().slice(0, 3), lat: l.lat, lng: l.lng } : null);
     const mp = (g, u) => 'members/' + g + '~' + u;
@@ -1378,6 +1453,40 @@ const Demo = (() => {
             }
           }
           return [...best.values()].map((x) => ({ target: x.target, vote: x.vote }));
+        }
+        case 'poll_vote':
+        case 'poll_close': {
+          const path = 'g/' + a.p_gid + '/matches/' + a.p_mid, d = docs.get(path);
+          if (!d) fail('Il sondaggio non esiste più.');
+          if (d.status !== 'poll') { if (fn === 'poll_close') fail('Il sondaggio è già chiuso.'); return { status: d.status, day: d.date }; }
+          const today = toYmdLocal(new Date());
+          const days = (d.poll && d.poll.days) || [];
+          const need = Math.max(2, Number(d.poll && d.poll.need) || 10);
+          const votes = clone((d.poll && d.poll.votes) || {});
+          let win = null, how = 'auto';
+          if (fn === 'poll_vote') {
+            const old = votes[db.me] || {}, mine = {};
+            (a.p_days || []).forEach((x) => { if (days.includes(x) && x >= today) mine[x] = old[x] || Date.now(); });
+            if (Object.keys(mine).length) votes[db.me] = mine; else delete votes[db.me];
+            for (const x of days.slice().sort()) {
+              if (x < today) continue;
+              if (Object.keys(votes).filter((u) => votes[u] && votes[u][x]).length >= need) { win = x; break; }
+            }
+          } else {
+            if (!(d.by === db.me || canManage(a.p_gid))) fail('Il sondaggio lo chiude chi l\'ha creato o un amministratore del gruppo.');
+            if (!days.includes(a.p_day)) fail('Questo giorno non è nel sondaggio.');
+            if (a.p_day < today) fail('Questo giorno è già passato.');
+            win = a.p_day; how = 'manual';
+          }
+          const nd = clone(d);
+          nd.poll.votes = votes;
+          if (win) {
+            nd.status = 'open'; nd.date = win; nd.poll.closed = { day: win, t: Date.now(), how };
+            nd.rsvp = nd.rsvp || {};
+            Object.keys(votes).forEach((u) => { if (votes[u] && votes[u][win]) nd.rsvp[u] = { s: 'in', t: votes[u][win] }; });
+          }
+          setD(path, nd);
+          return win ? { status: 'open', day: win } : { status: 'poll' };
         }
         case 'leave_group': { delD(mp(a.p_gid, db.me)); refresh(a.p_gid); return null; }
         case 'delete_group': {
@@ -1590,6 +1699,7 @@ const Demo = (() => {
     }
 
     const p1 = played({ mid: 'm_demo_p1', daysAgo: 8, time: '21:00', field: 'Centro Sportivo Le Giraffe', fid: 'le-giraffe', format: 7, who: [...Array(14).keys()], score: [7, 6], og: 1, resBy: 6 });
+    db.put(GP + 'matches/m_demo_p1', Object.assign({}, p1.m, { colors: { a: 'bianco', b: 'nero' }, teamMode: 'auto' }));
     voteWeighted('m_demo_p1', p1.ids.filter((_, k) => k % 4 !== 3), p1.ids, p1.m.result.ev);
 
     // ieri sera: MVP ancora aperto e risultato da inserire
@@ -1603,17 +1713,32 @@ const Demo = (() => {
       date: ymd(next), time: '21:00', field: 'Centro Sportivo Le Giraffe', fid: 'le-giraffe', format: 7, note: 'Portate maglia chiara e scura.',
       status: 'open', by: ME, created: now - 4 * DAY,
       rsvp: rsvpFor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15], now - 3 * DAY),
-      guests: {}, teams: { a: [], b: [], roles: {} },
+      guests: {}, teams: { a: [], b: [], roles: {} }, teamMode: 'auto', colors: { a: 'bianco', b: 'nero' },
     };
     m1.rsvp[ME] = { s: 'maybe', t: now - 2 * DAY };
     m1.guests.g_demo1 = { name: 'Cugino di Nico', role: 'CEN', v: { att: 62, cen: 66, dif: 55, gen: 70, por: 40 }, t: now - 2.9 * DAY, by: ids[11] };
     db.put(GP + 'matches/m_demo_next', m1);
 
     // domani sera, a 5: pochi iscritti
-    db.put(GP + 'matches/m_demo_tomorrow', {
-      date: ymd(addDays(1)), time: '20:30', field: 'Centro Sportivo A. Montagna', fid: 'montagna', format: 5, note: '',
+    const mt = {
+      date: ymd(addDays(1)), time: '20:30', field: 'Centro Sportivo A. Montagna', fid: 'montagna', format: 5, note: 'Squadre scelte da noi: chi arriva sceglie dove giocare.',
       status: 'open', by: ids[2], created: now - 2 * DAY,
-      rsvp: rsvpFor([2, 4, 6, 8, 11], now - DAY), guests: {}, teams: { a: [], b: [], roles: {} },
+      rsvp: rsvpFor([2, 4, 6, 8, 11, 13, 7], now - DAY), guests: {}, teams: { a: [], b: [], roles: {} }, teamMode: 'pick', colors: { a: 'rosso', b: 'blu' },
+    };
+    [[2, 'a'], [4, 'b'], [6, 'a'], [8, 'b'], [13, 'a'], [7, 'b']].forEach(([i, sd]) => { mt.rsvp[ids[i]].side = sd; });
+    db.put(GP + 'matches/m_demo_tomorrow', mt);
+
+    // sondaggio sul giorno, a 5: il primo giorno manca di un voto (quello di Luca chiude il sondaggio)
+    const pd = [addDays(3), addDays(4), addDays(6)].map(ymd);
+    const pv = {};
+    const dayVote = (i, dayIdx, hAgo) => { const u = ids[i]; (pv[u] = pv[u] || {})[pd[dayIdx]] = now - hAgo * HOUR; };
+    [1, 2, 3, 4, 6, 8, 9, 10, 11].forEach((i, k) => dayVote(i, 0, 30 - k));
+    [5, 7, 12, 13, 15].forEach((i, k) => dayVote(i, 1, 20 - k));
+    [1, 4, 14].forEach((i, k) => dayVote(i, 2, 10 - k));
+    db.put(GP + 'matches/m_demo_poll', {
+      status: 'poll', format: 5, time: '21:00', field: '', note: '', by: ids[1], created: now - 2 * DAY,
+      teamMode: 'auto', colors: { a: 'bianco', b: 'nero' },
+      poll: { days: pd, need: 10, votes: pv }, rsvp: {}, guests: {}, teams: { a: [], b: [], roles: {} },
     });
     // gruppi: il nostro (Luca è l'amministratore) e due di altre città, per provare la ricerca
     db.put('groups/' + GID, { name: 'Algor Bomber', city: 'La Spezia', by: ME, created: now - 60 * DAY, n: ids.length });
@@ -1783,6 +1908,7 @@ function fmtLeft(ms) {
 const mStart = (m) => Engine.matchTime(m);
 const mEnd = (m) => mStart(m) + 2 * HOUR;
 function phaseOf(m) {
+  if (m.status === 'poll') return 'poll';
   if (m.status === 'cancelled') return 'cancelled';
   if (m.status === 'played') return 'played';
   return mEnd(m) < Date.now() ? 'toclose' : 'upcoming';
@@ -1805,7 +1931,7 @@ function nextMatchOf(m, matches) {
   const t = mStart(m);
   let best = null;
   for (const x of matches) {
-    if (x.id === m.id || x.status === 'cancelled') continue;
+    if (x.id === m.id || x.status === 'cancelled' || x.status === 'poll') continue;
     const s = mStart(x);
     if (s > t && (!best || s < mStart(best))) best = x;
   }
@@ -2127,7 +2253,7 @@ function buildRoster(m, C) {
     const p = C.playersById[pid], rt = C.rated[pid];
     const part = playerPart(pid, C);
     members.push({
-      id: pid, guest: false, s: r.s, t: numOr(r.t, 0), role: part.pref, role2: part.sec, p,
+      id: pid, guest: false, s: r.s, t: numOr(r.t, 0), side: r.side === 'a' || r.side === 'b' ? r.side : '', role: part.pref, role2: part.sec, p,
       name: p ? dispName(p) : 'Ex giocatore', full: fullName(p), ovr: rt ? rt.ovr : Engine.VDEF, inj: p && p.injury, part,
     });
   }
@@ -2136,7 +2262,7 @@ function buildRoster(m, C) {
     if (!g || g.gone) continue;
     const part = guestPart(gid, g);
     members.push({
-      id: gid, guest: true, s: 'in', t: numOr(g.t, 0), role: part.pref, role2: '', g, name: g.name || 'Ospite', full: 'Ospite',
+      id: gid, guest: true, s: 'in', t: numOr(g.t, 0), side: g.side === 'a' || g.side === 'b' ? g.side : '', role: part.pref, role2: '', g, name: g.name || 'Ospite', full: 'Ospite',
       ovr: part.pref === 'POR' ? part.porta : part.outfield, inj: null, part,
     });
   }
@@ -2159,9 +2285,10 @@ function buildRoster(m, C) {
 /* le squadre definitive al momento della chiusura, con ruoli e previsione dell'app */
 function snapshotFinal(m, R) {
   const inIds = new Set(R.confirmed.map((x) => x.id));
-  const A = ((m.teams && m.teams.a) || []).filter((i) => inIds.has(i));
-  const B = ((m.teams && m.teams.b) || []).filter((i) => inIds.has(i));
-  const roles = Object.assign({}, (m.teams && m.teams.roles) || {});
+  const T = m.teamMode ? teamsOf(m, R) : null;
+  const A = T ? T.a : ((m.teams && m.teams.a) || []).filter((i) => inIds.has(i));
+  const B = T ? T.b : ((m.teams && m.teams.b) || []).filter((i) => inIds.has(i));
+  const roles = Object.assign({}, (m.teams && m.teams.roles) || {}, T ? T.roles : {});
   const pa = A.map((i) => R.byId[i].part), pb = B.map((i) => R.byId[i].part);
   if (A.some((i) => !ROLES.includes(roles[i]))) Object.assign(roles, Engine.bestLineup(pa, m.format).roles);
   if (B.some((i) => !ROLES.includes(roles[i]))) Object.assign(roles, Engine.bestLineup(pb, m.format).roles);
@@ -2224,10 +2351,14 @@ function makeActions(be, notify, dataRef, onDenied, gidRef) {
     createMatch: (m, id) => { const path = G() + 'matches/' + id; return run(path, () => doc(path).set(m)); },
     updateMatch: upd,
     deleteMatch: (mid) => { const path = G() + 'matches/' + mid; return run(path, () => doc(path).delete()); },
-    setRsvp: (mid, pid, s) => upd(mid, { rsvp: { [pid]: { s, t: Date.now() } } }),
+    setRsvp: (mid, pid, s, side) => upd(mid, { rsvp: { [pid]: Object.assign({ s, t: Date.now() }, side !== undefined ? { side } : {}) } }),
+    /* cambiare squadra non fa perdere il posto in lista */
+    setSide: (mid, pid, side) => upd(mid, { rsvp: { [pid]: { side } } }),
+    setGuestSide: (mid, gsid, side) => upd(mid, { guests: { [gsid]: { side } } }),
     addGuest: (mid, gsid, g) => upd(mid, { guests: { [gsid]: g } }),
     removeGuest: (mid, gsid) => upd(mid, { guests: { [gsid]: { gone: true } } }),
-    saveTeams: (mid, a, b, roles) => upd(mid, { teams: { a, b, roles, t: Date.now(), by: be.uid } }),
+    saveTeams: (mid, a, b, roles, extra) => upd(mid, { teams: Object.assign({ a, b, roles, t: Date.now(), by: be.uid }, extra || {}) }),
+    saveRoles: (mid, roles) => upd(mid, { teams: { roles, t: Date.now(), by: be.uid } }),
     markPlayed: (mid, fin) => upd(mid, { status: 'played', playedAt: Date.now(), final: fin }),
     saveResult: (mid, result, finPatch) => upd(mid, finPatch ? { result, final: finPatch } : { result }),
     setStatus: (mid, status) => upd(mid, { status }),
@@ -2252,6 +2383,9 @@ function makeActions(be, notify, dataRef, onDenied, gidRef) {
       return run('help/' + id, () => doc('help/' + id).set({ by: be.uid, topic, text, t: Date.now(), status: 'open', replies: [] }));
     },
     answerHelp: (id, replies, status) => run('help/' + id, () => doc('help/' + id).update({ replies, status })),
+    /* sondaggio sul giorno (funzioni del database: il voto che fa arrivare al numero crea la partita) */
+    pollVote: (mid, days) => rpc('poll_vote', { p_gid: gidRef.current, p_mid: mid, p_days: days }),
+    pollClose: (mid, day) => rpc('poll_close', { p_gid: gidRef.current, p_mid: mid, p_day: day }),
     /* gruppi ed eliminazioni (funzioni del database) */
     rpc,
   };
@@ -2361,6 +2495,414 @@ function ZoneFilter({ km, setKm, from, setFrom, idp }) {
     ${km > 0 && html`<div class="field"><span class="label">Distanza da</span>
       <${ComunePicker} id=${(idp || 'zf') + '-from'} value=${from} onChange=${setFrom} clearable=${false} placeholder="Da quale comune?" /></div>`}
     ${km > 0 && !from && html`<div class="tiny faint">Scegli il comune da cui contare la distanza. Per non sceglierlo ogni volta, metti il tuo comune nel profilo.</div>`}
+  </div>`;
+}
+
+
+/* ============================================================
+   APP: squadre (colori, automatiche o scelte dai partecipanti), confronto, campo,
+   sondaggio sul giorno
+   ============================================================ */
+
+/* ---------- colori delle squadre: il nome segue il colore ---------- */
+const TEAM_COLORS = [
+  { k: 'bianco', name: 'Bianchi', hex: '#f4f4f1', ink: '#1d2420' },
+  { k: 'nero', name: 'Neri', hex: '#202422', ink: '#ffffff' },
+  { k: 'rosso', name: 'Rossi', hex: '#d13a3a', ink: '#ffffff' },
+  { k: 'blu', name: 'Blu', hex: '#2b53c4', ink: '#ffffff' },
+  { k: 'azzurro', name: 'Azzurri', hex: '#46a6e5', ink: '#0d2333' },
+  { k: 'giallo', name: 'Gialli', hex: '#f1c22f', ink: '#2b2205' },
+  { k: 'verde', name: 'Verdi', hex: '#2e9b57', ink: '#ffffff' },
+  { k: 'arancione', name: 'Arancioni', hex: '#ef7b22', ink: '#2b1403' },
+  { k: 'viola', name: 'Viola', hex: '#7b4ec1', ink: '#ffffff' },
+  { k: 'grigio', name: 'Grigi', hex: '#8a8f8c', ink: '#ffffff' },
+];
+const DEFAULT_COLORS = { a: 'bianco', b: 'nero' };
+const colorOf = (k) => TEAM_COLORS.find((c) => c.k === k) || null;
+const teamColor = (m, side) => colorOf(m && m.colors && m.colors[side]);
+/* le partite di prima dei colori restano "Squadra A" e "Squadra B" */
+const teamName = (m, side) => { const c = teamColor(m, side); return c ? c.name : 'Squadra ' + side.toUpperCase(); };
+const canOrganize = (m, C) => !!(C.canWrite && m && (m.by === C.uid || C.isGroupAdmin || C.isAdmin));
+
+function Shirt({ c, s }) {
+  const size = s || 20;
+  return html`<svg class="shirt" width=${size} height=${size} viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 3 3.6 5.6 1.8 10.2l3.2 1.6V21h14v-9.2l3.2-1.6-1.8-4.6L15.8 3c-.7 1.7-2.1 2.7-3.8 2.7S8.9 4.7 8.2 3Z" fill=${c ? c.hex : 'var(--surface-2)'} stroke="var(--ink-3)" stroke-width="1.1" stroke-linejoin="round" /></svg>`;
+}
+function TeamTag({ m, side, big }) {
+  const c = teamColor(m, side);
+  return html`<span class=${'team-tag ' + side + (big ? ' big' : '')}>${c ? html`<${Shirt} c=${c} s=${big ? 26 : 16} />` : html`<span class=${'chip ' + (side === 'a' ? 'ta' : 'tb')}>${side.toUpperCase()}</span>`}<span class="ell">${teamName(m, side)}</span></span>`;
+}
+
+function ColorSheet({ mid, onClose }) {
+  const C = useContext(Ctx);
+  const m = C.matchesById[mid];
+  if (!m) return null;
+  const cur = Object.assign({}, DEFAULT_COLORS, m.colors || {});
+  const set = (side, k) => {
+    const other = side === 'a' ? 'b' : 'a';
+    const next = Object.assign({}, cur, { [side]: k });
+    if (cur[other] === k) next[other] = cur[side];
+    C.act.updateMatch(mid, { colors: next });
+  };
+  return html`<${Sheet} title="Colori delle squadre" onClose=${onClose}>
+    ${['a', 'b'].map((side) => html`<div key=${side} class="field">
+      <span class="label">${side === 'a' ? 'Prima squadra' : 'Seconda squadra'}: <b>${colorOf(cur[side]).name}</b></span>
+      <div class="swatches">${TEAM_COLORS.map((c) => html`<button key=${c.k} type="button" class=${'swatch' + (cur[side] === c.k ? ' on' : '')} aria-pressed=${cur[side] === c.k} onClick=${() => set(side, c.k)}><${Shirt} c=${c} s=${28} /><span>${c.name}</span></button>`)}</div>
+    </div>`)}
+    <div class="tiny faint">Il nome della squadra segue il colore della maglia. Se scegli il colore dell'altra squadra, le due si scambiano.</div>
+    <button class="btn primary block" onClick=${onClose}>Fatto</button>
+  <//>`;
+}
+
+/* ---------- squadre automatiche: sempre le stesse a parità di iscritti ---------- */
+function seededRng(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  let a = h >>> 0;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rosterSig = (R) => R.confirmed.map((x) => x.id).sort().join(',');
+
+/* le squadre da mostrare: scelte dai partecipanti, automatiche (solo a partita piena) o fatte a mano */
+function teamsOf(m, R) {
+  const t = m.teams || {};
+  const inConf = (i) => !!R.confirmedById[i];
+  let a, b, source;
+  if (m.teamMode === 'pick') {
+    a = R.confirmed.filter((x) => x.side === 'a').map((x) => x.id);
+    b = R.confirmed.filter((x) => x.side === 'b').map((x) => x.id);
+    source = 'pick';
+  } else if (m.teamMode === 'auto' && !t.manual) {
+    const fresh = t.auto && t.sig === rosterSig(R) && R.confirmed.length >= R.cap;
+    if (!fresh) return { a: [], b: [], roles: {}, free: [], source: 'waiting', missing: Math.max(0, R.cap - R.confirmed.length) };
+    a = (t.a || []).filter(inConf); b = (t.b || []).filter(inConf);
+    source = 'auto';
+  } else {
+    a = (t.a || []).filter(inConf); b = (t.b || []).filter(inConf);
+    source = m.teamMode === 'auto' ? 'manual' : 'saved';
+  }
+  const placed = new Set([...a, ...b]);
+  const free = R.confirmed.filter((x) => !placed.has(x.id)).map((x) => x.id);
+  const saved = t.roles || {};
+  const roles = {};
+  const fill = (ids) => {
+    if (!ids.length) return;
+    const best = ids.some((i) => !ROLES.includes(saved[i])) ? Engine.bestLineup(ids.map((i) => R.byId[i].part), m.format).roles : {};
+    ids.forEach((i) => { roles[i] = ROLES.includes(saved[i]) ? saved[i] : best[i]; });
+  };
+  fill(a); fill(b);
+  return { a, b, roles, free, source, missing: 0 };
+}
+
+/* partite a squadre automatiche piene ma senza squadre aggiornate: le fa l'app */
+function autoTeamsTodo(C) {
+  const out = [];
+  for (const m of C.matches) {
+    if (m.teamMode !== 'auto' || phaseOf(m) !== 'upcoming' || (m.teams && m.teams.manual)) continue;
+    const R = buildRoster(m, C);
+    if (R.confirmed.length < R.cap) continue;
+    const sig = rosterSig(R);
+    if (m.teams && m.teams.auto && m.teams.sig === sig) continue;
+    const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'exact', format: m.format, rng: seededRng(m.id + '|' + sig) });
+    if (r) out.push({ mid: m.id, a: r.a, b: r.b, roles: r.roles, sig });
+  }
+  return out;
+}
+
+/* pronostico dell'app dalla differenza di valore medio (3 punti di differenza = circa 73%) */
+const winProb = (ma, mb) => 1 / (1 + Math.exp(-(ma - mb) / 3));
+
+/* dati per confronto e campo: partita da giocare (dalle squadre attuali) o giocata (dalle definitive) */
+function lineupData(m, C, R) {
+  if (m.status === 'played') {
+    const fin = m.final || {};
+    const A = fin.a || [], B = fin.b || [], roles = fin.roles || {};
+    const info = (id) => {
+      const p = C.playersById[id];
+      const part = m.guests && m.guests[id] ? guestPart(id, m.guests[id]) : playerPart(id, C);
+      return { id, p, guest: !p, name: nameFor(id, m, C), part, inj: p && p.injury };
+    };
+    return { A, B, roles, info, final: true };
+  }
+  const T = teamsOf(m, R);
+  return { A: T.a, B: T.b, roles: T.roles, info: (id) => R.byId[id], T, final: false };
+}
+
+/* ---------- scheda "Squadre": il confronto come nell'app di calcetto ---------- */
+function TeamsVersus({ m, D }) {
+  const C = useContext(Ctx);
+  const { A, B, roles, info } = D;
+  if (!A.length && !B.length) return null;
+  const pa = A.map((i) => info(i).part), pb = B.map((i) => info(i).part);
+  const ev = Engine.evaluate(pa, pb, roles);
+  const pA = A.length && B.length ? Math.round(winProb(ev.a.mean, ev.b.mean) * 100) : null;
+  const rows = [
+    ...OUT_AREAS.map((k) => ({ l: Engine.AREA_BY[k].name, a: ev.a.areas[k], b: ev.b.areas[k] })),
+    { l: 'In porta', a: ev.a.gkVal || 0, b: ev.b.gkVal || 0 },
+  ];
+  const share = (r) => (r.a + r.b > 0 ? (r.a / (r.a + r.b)) * 100 : 50);
+  const sortIds = (ids) => ids.slice().sort((x, y) => numOr(ROLE_ORDER[roles[x]], 9) - numOr(ROLE_ORDER[roles[y]], 9));
+  const Player = (id) => {
+    const x = info(id), r = roles[id];
+    const v = r ? Engine.valueIn(x.part, r) : natOf(x.part);
+    const mal = r && r !== 'POR' ? Engine.roleMalus(x.part, r) : 0;
+    return html`<button key=${id} type="button" class="vs-p" onClick=${() => x.p && C.go({ t: 'player', id })}>
+      <span class="vs-av"><${Avatar} p=${x.guest ? { name: x.name } : x.p} guest=${x.guest} size=${46} />${x.inj && x.inj.level && html`<span class="vs-inj"><${InjuryMark} inj=${x.inj} s="14" /></span>`}</span>
+      <span class="vs-n ell">${x.name}</span>
+      <span class="vs-r">${r ? ROLE_NAME[r] : '–'}${mal ? html` <em>−${mal}</em>` : ''}</span>
+      <span class="vs-bar"><i style=${'width:' + Math.max(2, Math.min(100, v)) + '%'}></i></span>
+      <b class="vs-v num">${r0(v)}</b>
+    </button>`;
+  };
+  return html`<div class="stack">
+    <div class="card vs">
+      <div class="vs-head">
+        <${TeamTag} m=${m} side="a" big />
+        <span class="vs-x">VS</span>
+        <${TeamTag} m=${m} side="b" big />
+      </div>
+      <div class="duel">
+        <span class="duel-v num">${r0(ev.a.mean)}</span>
+        <div class="duel-bar"><i class="l" style=${'width:' + Math.min(100, ev.a.mean) / 2 + '%'}></i><i class="r" style=${'width:' + Math.min(100, ev.b.mean) / 2 + '%'}></i></div>
+        <span class="duel-v num">${r0(ev.b.mean)}</span>
+      </div>
+      ${pA != null && html`<div class="vs-sub small"><span>Pronostico dell'app: <b>${teamName(m, 'a')} ${pA}%</b> · <b>${teamName(m, 'b')} ${100 - pA}%</b></span><span class="muted">Equilibrio ${ev.balance}% · ${ev.label.toLowerCase()}</span></div>`}
+      <div class="tug">
+        ${rows.map((r) => html`<div key=${r.l} class="tug-row">
+          <span class="tl">${r.l}</span>
+          <span class="tug-v a num">${r0(r.a)}</span>
+          <div class="tug-bar"><i style=${'width:' + share(r) + '%'}></i></div>
+          <span class="tug-v b num">${r0(r.b)}</span>
+        </div>`)}
+      </div>
+      <div class="tiny faint">Valore medio di ogni squadra con i ruoli assegnati, compresi malus fuori ruolo e infortuni.${D.final ? ' Calcolato con le stats di oggi.' : ''}</div>
+    </div>
+    <div class="vs-cols">
+      <div class="vs-col">
+        <div class="vs-ch"><span>${ev.a.label || ''}</span><span class="num">${A.length}</span></div>
+        ${sortIds(A).map(Player)}
+      </div>
+      <div class="vs-col">
+        <div class="vs-ch"><span>${ev.b.label || ''}</span><span class="num">${B.length}</span></div>
+        ${sortIds(B).map(Player)}
+      </div>
+    </div>
+  </div>`;
+}
+const natOf = (part) => Engine.valueIn(part, part.pref);
+
+/* ---------- scheda "Campo": lo schieramento disegnato ---------- */
+const PITCH_ROWS = { POR: 0, DIF: 1, CEN: 2, ATT: 3 };
+function PitchView({ m, D }) {
+  const C = useContext(Ctx);
+  const { A, B, roles, info } = D;
+  if (!A.length && !B.length) return null;
+  const ca = teamColor(m, 'a') || { hex: 'var(--ta)', ink: '#fff' };
+  const cb = teamColor(m, 'b') || { hex: 'var(--tb)', ink: '#fff' };
+  /* righe dal portiere all'attacco: la prima squadra in basso, la seconda in alto */
+  const yA = [151, 131, 111, 93], yB = [9, 29, 49, 67];
+  const place = (ids, ys) => {
+    const byRow = [[], [], [], []];
+    ids.forEach((id) => { const r = PITCH_ROWS[roles[id]]; byRow[r == null ? 2 : r].push(id); });
+    const out = [];
+    byRow.forEach((row, ri) => {
+      const n = row.length, gap = Math.min(23, 86 / Math.max(1, n));
+      row.forEach((id, k) => out.push({ id, x: 50 + (k - (n - 1) / 2) * gap, y: ys[ri] }));
+    });
+    return out;
+  };
+  const dot = (pt, c, side) => {
+    const x = info(pt.id);
+    const photo = x.p && typeof x.p.photo === 'string' && x.p.photo.startsWith('data:image/') ? x.p.photo : null;
+    const cid = 'pc-' + side + '-' + String(pt.id).replace(/[^a-zA-Z0-9]/g, '');
+    const label = x.name.length > 11 ? x.name.slice(0, 10) + '…' : x.name;
+    const ini = x.guest ? (x.name || '?').slice(0, 1).toUpperCase() : (x.p && x.p.icon) || initialsOf(x.p);
+    return html`<g key=${pt.id} class="pd" onClick=${() => x.p && C.go({ t: 'player', id: pt.id })}>
+      ${photo ? html`<defs><clipPath id=${cid}><circle cx=${pt.x} cy=${pt.y} r="5.4" /></clipPath></defs>
+        <circle cx=${pt.x} cy=${pt.y} r="6.3" fill=${c.hex} stroke="rgba(0,0,0,.35)" stroke-width="0.4" />
+        <image href=${photo} x=${pt.x - 5.4} y=${pt.y - 5.4} width="10.8" height="10.8" clip-path=${'url(#' + cid + ')'} preserveAspectRatio="xMidYMid slice" />`
+      : html`<circle cx=${pt.x} cy=${pt.y} r="6" fill=${c.hex} stroke="rgba(0,0,0,.35)" stroke-width="0.4" />
+        <text x=${pt.x} y=${pt.y + 1.5} text-anchor="middle" class="pd-i" fill=${c.ink}>${ini}</text>`}
+      <text x=${pt.x} y=${pt.y + 10.4} text-anchor="middle" class="pd-n">${label}</text>
+    </g>`;
+  };
+  const ptsA = place(A, yA), ptsB = place(B, yB);
+  const pa = A.map((i) => info(i).part), pb = B.map((i) => info(i).part);
+  const ev = Engine.evaluate(pa, pb, roles);
+  return html`<div class="stack">
+    <div class="pitch-h"><${TeamTag} m=${m} side="b" /><span class="small muted">${ev.b.label || ''} · ${r0(ev.b.mean)}</span></div>
+    <div class="pitch-wrap">
+      <svg class="pitch" viewBox="0 0 100 160" role="img" aria-label=${'Schieramento: ' + teamName(m, 'a') + ' contro ' + teamName(m, 'b')}>
+        <rect x="0" y="0" width="100" height="160" class="pt-bg" />
+        ${[0, 1, 2, 3, 4, 5, 6, 7].map((k) => html`<rect key=${k} x="0" y=${k * 20} width="100" height="10" class="pt-stripe" />`)}
+        <g class="pt-l">
+          <rect x="3" y="3" width="94" height="154" rx="1" />
+          <line x1="3" y1="80" x2="97" y2="80" />
+          <circle cx="50" cy="80" r="11" />
+          <circle cx="50" cy="80" r="0.8" class="pt-dot" />
+          <rect x="24" y="3" width="52" height="19" />
+          <rect x="37" y="3" width="26" height="7" />
+          <rect x="24" y="138" width="52" height="19" />
+          <rect x="37" y="150" width="26" height="7" />
+        </g>
+        ${ptsB.map((pt) => dot(pt, cb, 'b'))}
+        ${ptsA.map((pt) => dot(pt, ca, 'a'))}
+      </svg>
+    </div>
+    <div class="pitch-h"><${TeamTag} m=${m} side="a" /><span class="small muted">${ev.a.label || ''} · ${r0(ev.a.mean)}</span></div>
+    <div class="tiny faint">Portiere vicino alla porta, poi difesa, centrocampo e attacco, con il modulo scelto dall'app${m.status === 'played' ? ' per la partita' : ''}. Tocca un giocatore per vedere la sua scheda.</div>
+  </div>`;
+}
+
+/* ---------- sondaggio sul giorno ---------- */
+const pollDays = (m) => ((m.poll && m.poll.days) || []).slice().sort();
+const pollVotes = (m) => (m.poll && m.poll.votes) || {};
+const pollNeed = (m) => numOr(m.poll && m.poll.need, (FORMATS[m.format] || FORMATS[5]).cap);
+const pollVoters = (m, day) => { const v = pollVotes(m); return Object.keys(v).filter((u) => v[u] && v[u][day]).sort((x, y) => v[x][day] - v[y][day]); };
+const todayYmd = () => toYmd(new Date());
+const pollOpenDays = (m) => pollDays(m).filter((d) => d >= todayYmd());
+const myPollDays = (m, uid) => Object.keys((pollVotes(m)[uid]) || {});
+const ymdLabel = (s, long) => {
+  const d = new Date(s + 'T12:00:00');
+  return long ? `${cap1(DOW_FULL[d.getDay()])} ${d.getDate()} ${MON_FULL[d.getMonth()]}` : `${cap1(DOW[d.getDay()])} ${d.getDate()} ${MON[d.getMonth()]}`;
+};
+/* i sondaggi restano in vista fino al giorno dopo l'ultimo giorno proposto */
+const pollVisible = (m) => { const y = new Date(); y.setDate(y.getDate() - 1); return m.status === 'poll' && pollDays(m).some((d) => d >= toYmd(y)); };
+const pollLeader = (m) => {
+  let best = null;
+  pollOpenDays(m).forEach((d) => { const n = pollVoters(m, d).length; if (!best || n > best.n) best = { d, n }; });
+  return best;
+};
+
+/* scelta dei giorni possibili: le prossime 3 settimane */
+function PollDaysPicker({ days, setDays }) {
+  const list = [];
+  for (let k = 0; k < 21; k++) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + k); list.push(toYmd(d)); }
+  const toggle = (d) => setDays(days.includes(d) ? days.filter((x) => x !== d) : days.concat(d).sort());
+  const weeks = [list.slice(0, 7), list.slice(7, 14), list.slice(14, 21)];
+  return html`<div class="stack-8">
+    ${weeks.map((w, i) => html`<div key=${i} class="daygrid">${w.map((d) => {
+      const dt = new Date(d + 'T12:00:00');
+      return html`<button key=${d} type="button" class=${'dayc' + (days.includes(d) ? ' on' : '')} aria-pressed=${days.includes(d)} aria-label=${ymdLabel(d, true)} onClick=${() => toggle(d)}>
+        <span class="dw">${DOW[dt.getDay()]}</span><b class="num">${dt.getDate()}</b><span class="dm">${MON[dt.getMonth()]}</span>
+      </button>`;
+    })}</div>`)}
+  </div>`;
+}
+
+function PollCard({ m }) {
+  const C = useContext(Ctx);
+  const need = pollNeed(m);
+  const open = pollOpenDays(m);
+  const mine = myPollDays(m, C.uid);
+  const top = open.map((d) => ({ d, n: pollVoters(m, d).length })).sort((x, y) => y.n - x.n || (x.d < y.d ? -1 : 1)).slice(0, 3);
+  return html`<button class="card match poll" onClick=${() => C.go({ t: 'match', id: m.id })}>
+    <div class="m-top">
+      <div class="m-when"><span class="m-day">Quando giochiamo?</span><span class="m-time">${m.time || 'ora da definire'}</span></div>
+      <span class="m-fmt">${m.format} vs ${m.format}</span>
+    </div>
+    <div class="small muted">Sondaggio: si gioca il primo giorno che arriva a ${need}.</div>
+    ${open.length ? html`<div class="poll-mini">${top.map((x) => html`<div key=${x.d} class="pm-row"><span class="pm-d">${ymdLabel(x.d)}</span><div class="bar"><i style=${'width:' + Math.min(100, (x.n / need) * 100) + '%'}></i></div><span class="cnt num">${x.n}/${need}</span></div>`)}</div>`
+      : html`<div class="small muted">Tutti i giorni proposti sono passati.</div>`}
+    <div class="m-foot">${mine.length ? html`<span class="chip ok"><${Icon} n="check" s="14" /> ${mine.length === 1 ? 'Hai segnato 1 giorno' : 'Hai segnato ' + mine.length + ' giorni'}</span>` : open.length ? html`<span class="chip warn">Segna i giorni in cui sei libero</span>` : html`<span class="chip">Scaduto</span>`}</div>
+  </button>`;
+}
+
+function PollScreen({ m }) {
+  const C = useContext(Ctx);
+  const [busy, setBusy] = useState(null);
+  const need = pollNeed(m);
+  const days = pollDays(m);
+  const today = todayYmd();
+  const mine = myPollDays(m, C.uid);
+  const org = canOrganize(m, C);
+  const canVote = C.canWrite && !!C.me;
+  const toggle = async (d) => {
+    if (!canVote || busy) return;
+    const next = mine.includes(d) ? mine.filter((x) => x !== d) : mine.concat(d);
+    setBusy(d);
+    const r = await C.act.pollVote(m.id, next);
+    setBusy(null);
+    if (r.ok && r.data && r.data.status === 'open' && r.data.day) C.flash('Si gioca ' + ymdLabel(r.data.day, true).toLowerCase() + '! La partita è pronta.');
+  };
+  const closeNow = () => C.openSheet({ k: 'pollClose', mid: m.id });
+  const cancel = () => C.openSheet({ k: 'confirm', title: 'Annullare il sondaggio?', text: 'Il sondaggio sparisce dalle Partite e nessuno potrà più votare.', label: 'Annulla sondaggio', danger: true, onYes: async () => { if (await C.act.setStatus(m.id, 'cancelled')) { C.flash('Sondaggio annullato'); C.back(); } } });
+  const by = m.by && C.playersById[m.by];
+  return html`<${Page} title="Quando giochiamo?" sub=${fmtOf(m).name + ' · ' + (m.time ? 'ore ' + m.time : 'ora da definire') + (m.field ? ' · ' + m.field : '')} onBack=${C.back}>
+    <div class="note ok"><${Icon} n="calendar" s="16" /><span>Segna tutti i giorni in cui sei libero. Appena un giorno arriva a <b>${need}</b> la partita nasce da sola, con chi l'ha votato; ${m.teamMode === 'pick' ? 'poi ognuno sceglie la sua squadra.' : 'le squadre le fa l\'app.'}</span></div>
+    <div class="card pad0 divided">${days.map((d) => {
+      const vs = pollVoters(m, d), past = d < today, on = mine.includes(d);
+      return html`<div key=${d} class=${'poll-day' + (past ? ' past' : '') + (on ? ' on' : '')}>
+        <button type="button" class="pd-check" disabled=${past || !canVote || !!busy} aria-pressed=${on} aria-label=${(on ? 'Togli ' : 'Segna ') + ymdLabel(d, true)} onClick=${() => toggle(d)}>${busy === d ? html`<span class="spin"></span>` : on ? html`<${Icon} n="check" s="18" />` : ''}</button>
+        <div class="grow stack-4">
+          <div class="hs" style="justify-content:space-between"><b>${ymdLabel(d, true)}</b><span class=${'chip num' + (vs.length >= need ? ' ok' : '')}>${vs.length}/${need}</span></div>
+          <div class="bar"><i style=${'width:' + Math.min(100, (vs.length / need) * 100) + '%'}></i></div>
+          <div class="tiny muted ell">${past ? 'Giorno passato' : vs.length ? vs.map((u) => (C.playersById[u] ? dispName(C.playersById[u]) : 'Ex giocatore')).join(', ') : 'Ancora nessuno'}</div>
+        </div>
+      </div>`;
+    })}</div>
+    ${!canVote && html`<div class="note">${C.me ? 'Hai accesso in sola lettura.' : 'Crea prima il tuo profilo per votare.'}</div>`}
+    ${by && html`<div class="tiny faint">Sondaggio di ${dispName(by)}. ${m.teamMode === 'pick' ? 'Squadre scelte dai partecipanti.' : 'Squadre automatiche.'}</div>`}
+    ${org && html`<div class="stack-8">
+      <button class="btn block" disabled=${!pollOpenDays(m).length} onClick=${closeNow}><${Icon} n="check" s="16" /> Chiudi ora e scegli il giorno</button>
+      <button class="btn ghost block" onClick=${cancel}>Annulla il sondaggio</button>
+    </div>`}
+  <//>`;
+}
+
+function PollCloseSheet({ mid, onClose }) {
+  const C = useContext(Ctx);
+  const m = C.matchesById[mid];
+  const lead = m && pollLeader(m);
+  const [day, setDay] = useState(lead ? lead.d : null);
+  const [busy, setBusy] = useState(false);
+  if (!m || m.status !== 'poll') return null;
+  const need = pollNeed(m);
+  const go = async () => {
+    if (!day || busy) return;
+    setBusy(true);
+    const r = await C.act.pollClose(mid, day);
+    setBusy(false);
+    if (r.ok) { onClose(); C.flash('Si gioca ' + ymdLabel(day, true).toLowerCase()); }
+  };
+  return html`<${Sheet} title="Chiudi il sondaggio" onClose=${onClose}>
+    <div class="small muted">La partita nasce sul giorno che scegli, con chi l'ha votato. Gli altri possono iscriversi dopo.</div>
+    <div class="card pad0 divided">${pollOpenDays(m).map((d) => { const n = pollVoters(m, d).length; return html`<label key=${d} class="row tap" style="padding:12px 14px;cursor:pointer">
+      <input type="radio" name="pc-day" checked=${day === d} onChange=${() => setDay(d)} style="width:18px;height:18px;accent-color:var(--accent)" />
+      <span class="row-main"><span class="row-t">${ymdLabel(d, true)}</span><span class="row-s">${n >= need ? 'Squadre piene' : 'Mancano ' + plural(need - n, 'giocatore', 'giocatori')}</span></span>
+      <span class="chip num">${n}/${need}</span>
+    </label>`; })}</div>
+    <button class="btn primary block" disabled=${!day || busy} onClick=${go}>${busy ? 'Chiudo…' : 'Si gioca questo giorno'}</button>
+  <//>`;
+}
+
+/* ---------- squadre scelte dai partecipanti: la risposta è la squadra ---------- */
+function PickRsvp({ m, R, onIn }) {
+  const C = useContext(Ctx);
+  const mine = m.rsvp && m.rsvp[C.uid];
+  const meIn = mine && mine.s === 'in';
+  const mySide = meIn ? mine.side || '' : '';
+  const cnt = (side) => R.confirmed.filter((x) => x.side === side).length;
+  const full = (side) => cnt(side) >= m.format && mySide !== side;
+  const choose = (side) => {
+    if (!C.canWrite || !C.me) { C.flash(C.me ? 'Hai accesso in sola lettura' : 'Crea prima il tuo profilo', 'err'); return; }
+    if (mySide === side) return;
+    if (meIn) C.act.setSide(m.id, C.uid, side);
+    else onIn(side);
+  };
+  const btn = (side) => html`<button type="button" class=${'pick-side ' + side + (mySide === side ? ' on' : '')} disabled=${full(side)} aria-pressed=${mySide === side} onClick=${() => choose(side)}>
+    <${Shirt} c=${teamColor(m, side)} s=${22} />
+    <span class="grow" style="text-align:left"><b>${mySide === side ? 'Giochi con i ' : 'Gioco con i '}${teamName(m, side)}</b><span class="tiny muted" style="display:block">${full(side) ? 'Al completo' : cnt(side) + '/' + m.format}</span></span>
+    ${mySide === side && html`<${Icon} n="check" s="18" />`}
+  </button>`;
+  return html`<div class="stack-8">
+    ${btn('a')}${btn('b')}
+    ${meIn && !mySide && html`<div class="note warn"><${Icon} n="info" s="16" /><span>Ci sei: ora scegli la tua squadra.</span></div>`}
   </div>`;
 }
 
@@ -2999,7 +3541,7 @@ function MatchCard({ m }) {
   const cnt = phase === 'played' ? plural(((m.final && m.final.ids) || []).length, 'giocatore', 'giocatori') : R.confirmed.length + '/' + R.cap;
   return html`<button class=${'card match' + (phase === 'cancelled' ? ' cancelled' : '')} onClick=${() => C.go({ t: 'match', id: m.id })}>
     <div class="m-top">
-      <div class="m-when"><span class="m-day">${dayShort(m)}</span><span class="m-time">${m.time}</span></div>
+      <div class="m-when"><span class="m-day">${dayShort(m)}</span><span class="m-time">${m.time || 'ora da definire'}</span></div>
       ${hasRes ? html`<span class="m-score num"><span class="ta-c">${m.result.a}</span><span class="x">–</span><span class="tb-c">${m.result.b}</span></span>` : html`<span class="m-fmt">${m.format} vs ${m.format}</span>`}
     </div>
     <div class="m-field"><${Icon} n="pin" s="16" /><span class="ell">${m.field || 'Campo da definire'}</span></div>
@@ -3026,19 +3568,27 @@ function HomeScreen() {
   const mvpTodo = played.filter((m) => { const mv = C.stats.mvps[m.id]; return mv && !mv.closed && iPlayed(m) && !myV[m.id]; }).slice(0, 3);
   const resTodo = played.filter((m) => !Engine.hasResult(m) && (iPlayed(m) || C.isAdmin) && canEditPlayed(m, C)).slice(0, 3);
   const recent = played.slice(0, 2);
+  const polls = ms.filter(pollVisible).sort((a, b) => numOr(b.created, 0) - numOr(a.created, 0));
+  const pollTodo = C.me ? polls.filter((m) => pollOpenDays(m).length && !myPollDays(m, C.uid).length).slice(0, 2) : [];
 
   return html`<div class="page">
     <${MainHead} title="Partite" right=${C.me && html`<button class="icon-btn" style="border:0;background:none" aria-label="Il mio profilo" onClick=${() => C.goTab('me')}><${Avatar} p=${C.me} size=${38} /></button>`} />
 
     <${OverdueNote} />
 
-    ${(mvpTodo.length > 0 || resTodo.length > 0 || C.badges.requests > 0) && html`<section class="sec">
+    ${(mvpTodo.length > 0 || resTodo.length > 0 || pollTodo.length > 0 || C.badges.requests > 0) && html`<section class="sec">
       <h2 class="h3">Da fare</h2>
       <div class="cards">
+        ${pollTodo.map((m) => html`<${TodoCard} key=${'p' + m.id} icon="calendar" title=${'Quando giochiamo? Partita a ' + m.format} text=${'Segna i giorni in cui sei libero: si gioca il primo che arriva a ' + pollNeed(m)} onClick=${() => C.go({ t: 'match', id: m.id })} />`)}
         ${C.badges.requests > 0 && html`<${TodoCard} icon="users" title=${plural(C.badges.requests, 'richiesta', 'richieste') + ' per entrare nel gruppo'} text="Accetta o rifiuta chi vuole giocare con voi" onClick=${() => C.go({ t: 'group' })} />`}
         ${mvpTodo.map((m) => { const mv = C.stats.mvps[m.id]; return html`<${TodoCard} key=${'v' + m.id} icon="trophy" title=${'Vota l\'MVP di ' + dayShort(m).toLowerCase()} text=${'Si chiude tra ' + fmtLeft(mv.closesAt - Date.now()) + ' · hanno votato ' + mv.nVoted + ' su ' + mv.nEligible} onClick=${() => C.go({ t: 'mvp', id: m.id })} />`; })}
         ${resTodo.map((m) => html`<${TodoCard} key=${'r' + m.id} icon="ball" title=${'Risultato di ' + dayShort(m).toLowerCase()} text="Scrivi il punteggio e, se te li ricordi, marcatori e assist" onClick=${() => C.go({ t: 'result', id: m.id })} />`)}
       </div>
+    </section>`}
+
+    ${polls.length > 0 && html`<section class="sec">
+      <h2 class="h3">Sondaggi</h2>
+      <div class="cards">${polls.map((m) => html`<${PollCard} key=${m.id} m=${m} />`)}</div>
     </section>`}
 
     <section class="sec">
@@ -3063,9 +3613,10 @@ function HomeScreen() {
 }
 
 /* ---------- partita ---------- */
-function MemberRow({ x, pos, onTap }) {
+function MemberRow({ x, pos, onTap, side, m }) {
   return html`<button class="row tap" style="padding:10px 14px" onClick=${onTap}>
     ${pos != null && html`<span class="pos">${pos}</span>`}
+    ${side && html`<span class="side-dot" title=${side === '?' ? 'Squadra da scegliere' : teamName(m, side)}>${side === '?' ? '?' : html`<${Shirt} c=${teamColor(m, side)} s=${18} />`}</span>`}
     <${Avatar} p=${x.guest ? { name: x.name } : x.p} guest=${x.guest} size=${36} />
     <span class="row-main">
       <span class="row-t"><span class="ell">${x.name}</span><${InjuryMark} inj=${x.inj} />${x.guest && html`<span class="chip">Ospite</span>`}</span>
@@ -3091,40 +3642,48 @@ function FieldLinks({ m }) {
   </div>`;
 }
 
+const MATCH_TABS = [{ v: 'info', l: 'Dettagli' }, { v: 'teams', l: 'Squadre' }, { v: 'pitch', l: 'Campo' }];
+const TEAM_MODE_TEXT = {
+  auto: 'Squadre automatiche: le fa l\'app appena la partita è piena',
+  pick: 'Squadre scelte dai partecipanti',
+};
+
 function MatchScreen({ id }) {
   const C = useContext(Ctx);
   const m = C.matchesById[id];
-  const R = useMemo(() => (m ? buildRoster(m, C) : null), [m, C.playersById, C.rated, C.players]);
+  const [tab, setTab] = useState('info');
+  const R = useMemo(() => (m && m.status !== 'poll' ? buildRoster(m, C) : null), [m, C.playersById, C.rated, C.players]);
   if (!m) {
     return html`<${Page} title="Partita" onBack=${C.back}><div class="card empty"><div class="h3">Partita non trovata</div><div>Potrebbe essere stata eliminata.</div></div><//>`;
   }
+  if (m.status === 'poll') return html`<${PollScreen} m=${m} />`;
+  if (!m.date) return html`<${Page} title="Sondaggio" onBack=${C.back}><div class="card empty"><div class="h3">Sondaggio annullato</div><div>Non si gioca.</div></div><//>`;
   const phase = phaseOf(m);
   const open = phase === 'upcoming';
   const mine = m.rsvp && m.rsvp[C.uid];
   const mineS = mine && mine.s;
   const canAct = C.canWrite && !!C.me;
   const waitPos = R.waitlist.findIndex((x) => x.id === C.uid);
-  const hasTeams = m.teams && ((m.teams.a || []).length + (m.teams.b || []).length > 0);
   const fmt = fmtOf(m);
+  const pick = m.teamMode === 'pick';
+  const D = lineupData(m, C, R);
+  const hasLineup = D.A.length + D.B.length > 0;
 
-  const respond = (s) => {
+  const respond = (s, side) => {
     if (!C.canWrite) { C.flash('Hai accesso in sola lettura'); return; }
     if (!C.me) { C.flash('Crea prima il tuo profilo', 'err'); return; }
-    if (mineS === s) return;
+    if (mineS === s && side === undefined) return;
     const inj = C.me.injury;
+    const doIt = () => C.act.setRsvp(m.id, C.uid, s, side);
     if (s === 'in' && inj && inj.level) {
       C.openSheet({
         k: 'confirm', title: 'Sei segnato come infortunato',
-        text: `Hai un infortunio ${inj.level === 'grave' ? 'grave' : 'lieve'}${inj.note ? ' (' + inj.note + ')' : ''}. Ti iscrivi lo stesso? Per fare le squadre conterai ${inj.level === 'grave' ? CFG.INJ_BAD : CFG.INJ_LIGHT} punti in meno.`,
-        label: 'Sì, ci sono', onYes: () => C.act.setRsvp(m.id, C.uid, 'in'),
+        text: `Hai un infortunio ${inj.level === 'grave' ? 'grave' : 'lieve'} (${injSummary(inj)}). Ti iscrivi lo stesso? Per fare le squadre conterai ${inj.level === 'grave' ? CFG.INJ_BAD : CFG.INJ_LIGHT} punti in meno.`,
+        label: 'Sì, ci sono', onYes: doIt,
       });
       return;
     }
-    C.act.setRsvp(m.id, C.uid, s);
-  };
-  const makeTeams = () => {
-    const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'bal', format: m.format });
-    if (r) C.act.saveTeams(m.id, r.a, r.b, r.roles);
+    doIt();
   };
   const closeMatch = async () => {
     const fin = snapshotFinal(m, R);
@@ -3138,27 +3697,39 @@ function MatchScreen({ id }) {
     else if (R.gk === 1 && R.confirmed.length >= 4) notes.push({ c: '', t: 'C\'è un solo portiere: nell\'altra squadra andrà in porta un giocatore di movimento.' });
     if (R.confirmed.length < R.cap) notes.push({ c: '', t: `Mancano ${plural(R.cap - R.confirmed.length, 'giocatore', 'giocatori')} per completare la partita.` });
   }
+  const tabs = phase === 'cancelled' ? null : html`<${Seg} cls="mtabs" value=${tab} onChange=${setTab} options=${MATCH_TABS} />`;
+  const colorsRow = m.colors && html`<div class="hs wrap" style="gap:10px">
+    <${TeamTag} m=${m} side="a" /><span class="faint">contro</span><${TeamTag} m=${m} side="b" />
+    ${canOrganize(m, C) && phase !== 'cancelled' && html`<button class="link" onClick=${() => C.openSheet({ k: 'colors', mid: m.id })}>Cambia colori</button>`}
+  </div>`;
 
-  return html`<${Page} title=${dayLong(m)} sub=${m.time + ' · ' + (m.field || 'Campo da definire')} onBack=${C.back}
-      right=${canAct && html`<button class="icon-btn" aria-label="Altre azioni" onClick=${() => C.openSheet({ k: 'matchMenu', id: m.id })}><${Icon} n="dots" fill /></button>`}>
-
-    ${phase === 'cancelled' && html`<div class="note bad"><${Icon} n="warn" s="16" /><span>Questa partita è stata annullata.</span></div>`}
-    ${phase === 'toclose' && html`<div class="note warn"><${Icon} n="clock" s="16" /><span>La partita è passata. Chiudila per scrivere il risultato e aprire il voto MVP, oppure annullala dal menu.</span></div>`}
-
-    ${phase === 'played' ? html`<${PlayedSections} m=${m} />` : html`
+  let body;
+  if (tab === 'teams' && phase !== 'cancelled') {
+    body = html`<${TeamsTab} m=${m} R=${R} D=${D} />`;
+  } else if (tab === 'pitch' && phase !== 'cancelled') {
+    body = hasLineup ? html`<${PitchView} m=${m} D=${D} />` : html`<div class="card empty"><div class="h3">Ancora nessuno schieramento</div><div>${D.T && D.T.source === 'waiting' ? `Lo schieramento compare appena l'app fa le squadre: mancano ${plural(D.T.missing, 'giocatore', 'giocatori')}.` : pick ? 'Compare appena i giocatori scelgono la loro squadra.' : 'Compare quando ci sono le squadre.'}</div></div>`;
+  } else if (phase === 'played') {
+    body = html`<${PlayedSections} m=${m} />`;
+  } else {
+    body = html`
       <div class="card stack-8">
-        <div class="hs"><${Icon} n="clock" s="16" /><b class="num">${m.time}</b><span class="muted">· ${fmt.name}, ${m.format} vs ${m.format}</span></div>
+        <div class="hs"><${Icon} n="clock" s="16" /><b class="num">${m.time || 'Ora da definire'}</b><span class="muted">· ${fmt.name}, ${m.format} vs ${m.format}</span></div>
         <div class="hs"><${Icon} n="pin" s="16" /><span>${m.field || 'Campo da definire'}</span></div>
         <${FieldLinks} m=${m} />
         ${m.note && html`<div class="small muted">${m.note}</div>`}
+        ${m.teamMode && html`<div class="hs"><${Icon} n="users" s="16" /><span class="small">${TEAM_MODE_TEXT[m.teamMode]}</span></div>`}
+        ${colorsRow}
+        ${m.poll && m.poll.closed && html`<div class="tiny faint">Giorno scelto con il sondaggio${m.poll.closed.how === 'auto' ? ': ha raggiunto per primo ' + plural(pollNeed(m), 'giocatore', 'giocatori') : ''}.</div>`}
         ${m.by && C.playersById[m.by] && html`<div class="tiny faint">Organizza ${dispName(C.playersById[m.by])}</div>`}
       </div>
 
       ${open && html`<section class="card">
         <div class="label" style="margin-bottom:8px">La tua risposta</div>
-        <${Seg} cls="rsvp" value=${mineS} onChange=${respond} options=${[{ v: 'in', l: 'Ci sono', cls: 'in' }, { v: 'maybe', l: 'Forse', cls: 'maybe' }, { v: 'out', l: 'Non ci sono', cls: 'out' }]} />
+        ${pick ? html`<${PickRsvp} m=${m} R=${R} onIn=${(side) => respond('in', side)} />
+          <div style="margin-top:8px"><${Seg} cls="rsvp" value=${mineS === 'maybe' || mineS === 'out' ? mineS : null} onChange=${(s) => respond(s)} options=${[{ v: 'maybe', l: 'Forse', cls: 'maybe' }, { v: 'out', l: 'Non ci sono', cls: 'out' }]} /></div>`
+        : html`<${Seg} cls="rsvp" value=${mineS} onChange=${(s) => respond(s)} options=${[{ v: 'in', l: 'Ci sono', cls: 'in' }, { v: 'maybe', l: 'Forse', cls: 'maybe' }, { v: 'out', l: 'Non ci sono', cls: 'out' }]} />`}
         ${mineS === 'in' && waitPos >= 0 && html`<div class="note warn" style="margin-top:12px"><${Icon} n="clock" s="16" /><span>Sei in lista d'attesa al n° ${waitPos + 1}: se qualcuno si ritira entri tu.</span></div>`}
-        ${mineS === 'in' && waitPos < 0 && html`<div class="tiny faint" style="margin-top:10px">Il ruolo te lo assegna l'app quando fa le squadre, partendo dai tuoi ruoli preferiti.</div>`}
+        ${mineS === 'in' && waitPos < 0 && html`<div class="tiny faint" style="margin-top:10px">Il ruolo te lo assegna l'app${pick ? ' dentro la tua squadra' : ' quando fa le squadre'}, partendo dai tuoi ruoli preferiti.</div>`}
         ${!C.me && C.canWrite && html`<div class="note" style="margin-top:12px">Crea prima il tuo profilo dalla scheda Profilo per rispondere.</div>`}
       </section>`}
 
@@ -3166,7 +3737,7 @@ function MatchScreen({ id }) {
         <div class="sec-h"><h2 class="h3">Giocatori</h2><span class=${'chip num ' + (R.confirmed.length >= R.cap ? 'ok' : '')}>${R.confirmed.length}/${R.cap}</span></div>
         ${notes.map((n) => html`<div class=${'note ' + n.c}><${Icon} n=${n.c === 'warn' ? 'warn' : 'info'} s="16" /><span>${n.t}</span></div>`)}
         <div class="card pad0 divided">
-          ${R.confirmed.length ? R.confirmed.map((x) => html`<${MemberRow} key=${x.id} x=${x} onTap=${() => C.openSheet({ k: 'member', mid: m.id, id: x.id })} />`) : html`<div class="empty small">Nessuno si è ancora iscritto.</div>`}
+          ${R.confirmed.length ? R.confirmed.map((x) => html`<${MemberRow} key=${x.id} x=${x} side=${pick ? x.side || '?' : null} m=${m} onTap=${() => C.openSheet({ k: 'member', mid: m.id, id: x.id })} />`) : html`<div class="empty small">Nessuno si è ancora iscritto.</div>`}
         </div>
         ${R.waitlist.length > 0 && html`<div class="stack-8">
           <div class="sec-h"><h3 class="h3" style="font-size:15px">Lista d'attesa</h3><span class="chip warn num">${R.waitlist.length}</span></div>
@@ -3186,21 +3757,72 @@ function MatchScreen({ id }) {
         </div>`}
       </section>`}
 
-      ${(open || phase === 'toclose') && html`<section class="sec">
-        <h2 class="h3">Squadre e ruoli</h2>
-        ${hasTeams ? html`<${TeamBoard} m=${m} R=${R} />` : html`<div class="card stack">
-          <div class="muted">L'app divide i ${R.confirmed.length} giocatori confermati in due squadre il più possibile alla pari e assegna i ruoli, scegliendo per ogni squadra il modulo che le va meglio. Poi potrai rimescolare, scambiare giocatori o cambiare ruoli a mano.</div>
-          <button class="btn primary" disabled=${R.confirmed.length < 4 || !C.canWrite} onClick=${makeTeams}><${Icon} n="shuffle" s="16" /> Crea squadre equilibrate</button>
-          ${R.confirmed.length < 4 && html`<div class="tiny faint">Servono almeno 4 giocatori confermati.</div>`}
-        </div>`}
-      </section>`}
+      ${(open || phase === 'toclose') && html`<button class="card" style="text-align:left" onClick=${() => setTab('teams')}>
+        <div class="hs-12"><${Icon} n="shuffle" /><div class="grow"><div class="h3">Squadre e ruoli</div><div class="small muted">${hasLineup ? `${teamName(m, 'a')} ${D.A.length} · ${teamName(m, 'b')} ${D.B.length}: guarda il confronto e lo schieramento.` : D.T && D.T.source === 'waiting' ? `Le fa l'app appena la partita è piena: mancano ${plural(D.T.missing, 'giocatore', 'giocatori')}.` : pick ? 'Ognuno sceglie la sua squadra quando si iscrive.' : 'Ancora da fare.'}</div></div><${Icon} n="chev" /></div>
+      </button>`}
 
       ${(open || phase === 'toclose') && canAct && html`<button class="btn ghost block" disabled=${R.confirmed.length < 2}
-        onClick=${() => C.openSheet({ k: 'confirm', title: 'Partita finita?', text: `Le squadre salvate diventano quelle definitive (potrai correggerle insieme al risultato). Si apre il voto MVP per i ${R.confirmed.filter((x) => !x.guest).length} iscritti che hanno giocato: resta aperto 24 ore.`, label: 'Sì, chiudi la partita', onYes: closeMatch })}>
+        onClick=${() => C.openSheet({ k: 'confirm', title: 'Partita finita?', text: `Le squadre di adesso diventano quelle definitive (potrai correggerle insieme al risultato). Si apre il voto MVP per i ${R.confirmed.filter((x) => !x.guest).length} iscritti che hanno giocato: resta aperto 24 ore.`, label: 'Sì, chiudi la partita', onYes: closeMatch })}>
         <${Icon} n="check" s="16" /> Partita finita: chiudi e scrivi il risultato
       </button>`}
-    `}
+    `;
+  }
+
+  return html`<${Page} title=${dayLong(m)} sub=${(m.time || 'Ora da definire') + ' · ' + (m.field || 'Campo da definire')} onBack=${C.back}
+      right=${canAct && html`<button class="icon-btn" aria-label="Altre azioni" onClick=${() => C.openSheet({ k: 'matchMenu', id: m.id })}><${Icon} n="dots" fill /></button>`}>
+    ${phase === 'cancelled' && html`<div class="note bad"><${Icon} n="warn" s="16" /><span>Questa partita è stata annullata.</span></div>`}
+    ${phase === 'toclose' && tab === 'info' && html`<div class="note warn"><${Icon} n="clock" s="16" /><span>La partita è passata. Chiudila per scrivere il risultato e aprire il voto MVP, oppure annullala dal menu.</span></div>`}
+    ${tabs}
+    ${body}
   <//>`;
+}
+
+/* ---------- scheda Squadre: confronto + modifica ---------- */
+function TeamsTab({ m, R, D }) {
+  const C = useContext(Ctx);
+  const [editing, setEditing] = useState(false);
+  const phase = phaseOf(m);
+  const live = phase === 'upcoming' || phase === 'toclose';
+  const T = D.T;
+  const legacy = !m.teamMode;
+  const hasLineup = D.A.length + D.B.length > 0;
+  const makeTeams = (extra) => {
+    const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'bal', format: m.format });
+    if (r) C.act.saveTeams(m.id, r.a, r.b, r.roles, extra);
+  };
+  if (phase === 'played') {
+    return hasLineup ? html`<${TeamsVersus} m=${m} D=${D} />` : html`<div class="card small muted">Nessuna squadra era stata salvata per questa partita.</div>`;
+  }
+  /* di nuovo automatiche: se la partita è piena l'app le rifà subito, altrimenti appena si riempie */
+  const backToAuto = () => {
+    if (R.confirmed.length >= R.cap) {
+      const sig = rosterSig(R);
+      const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode: 'exact', format: m.format, rng: seededRng(m.id + '|' + sig) });
+      if (r) { C.act.saveTeams(m.id, r.a, r.b, r.roles, { auto: true, manual: false, sig }); setEditing(false); return; }
+    }
+    C.act.saveTeams(m.id, [], [], {}, { manual: false, auto: false, sig: '' });
+    setEditing(false);
+  };
+  return html`<div class="stack">
+    ${m.colors && html`<div class="hs wrap" style="justify-content:space-between">
+      <span class="small muted">${TEAM_MODE_TEXT[m.teamMode] || 'Squadre'}</span>
+      ${canOrganize(m, C) && html`<button class="btn sm" onClick=${() => C.openSheet({ k: 'colors', mid: m.id })}><${Shirt} c=${teamColor(m, 'a')} s=${16} /><${Shirt} c=${teamColor(m, 'b')} s=${16} /> Colori</button>`}
+    </div>`}
+    ${T && T.source === 'waiting' && html`<div class="card stack">
+      <div class="hs-12"><${Icon} n="shuffle" /><div class="grow"><div class="h3">Le squadre le fa l'app</div><div class="small muted">Appena la partita è piena l'app divide i giocatori in due squadre il più possibile alla pari e assegna i ruoli. Se poi qualcuno si ritira o entra, le rifà da sola. Mancano ${plural(T.missing, 'giocatore', 'giocatori')}.</div></div></div>
+      ${live && C.canWrite && R.confirmed.length >= 4 && html`<button class="btn" onClick=${() => makeTeams({ manual: true, auto: false })}>Falle ora con chi c'è (poi restano fatte a mano)</button>`}
+    </div>`}
+    ${T && T.source === 'manual' && html`<div class="note"><${Icon} n="edit" s="16" /><span class="grow">Squadre cambiate a mano: l'app non le rifà più da sola.</span>${live && C.canWrite && html`<button class="btn sm" onClick=${backToAuto}>Torna automatiche</button>`}</div>`}
+    ${T && T.source === 'pick' && T.free.length > 0 && html`<div class="note warn"><${Icon} n="info" s="16" /><span>Devono ancora scegliere la squadra: ${T.free.map((i) => R.byId[i].name).join(', ')}.</span></div>`}
+    ${hasLineup && html`<${TeamsVersus} m=${m} D=${D} />`}
+    ${live && (legacy || (T && T.source !== 'waiting')) && (hasLineup || legacy) && C.canWrite && html`<button class="btn block" onClick=${() => setEditing(!editing)}><${Icon} n=${editing ? 'x' : 'edit'} s="16" /> ${editing ? 'Chiudi la modifica' : m.teamMode === 'pick' ? 'Ruoli e spostamenti' : 'Modifica squadre e ruoli'}</button>`}
+    ${live && legacy && !hasLineup && html`<div class="card stack">
+      <div class="muted">L'app divide i ${R.confirmed.length} giocatori confermati in due squadre il più possibile alla pari e assegna i ruoli, scegliendo per ogni squadra il modulo che le va meglio. Poi potrai rimescolare, scambiare giocatori o cambiare ruoli a mano.</div>
+      <button class="btn primary" disabled=${R.confirmed.length < 4 || !C.canWrite} onClick=${() => makeTeams()}><${Icon} n="shuffle" s="16" /> Crea squadre equilibrate</button>
+      ${R.confirmed.length < 4 && html`<div class="tiny faint">Servono almeno 4 giocatori confermati.</div>`}
+    </div>`}
+    ${editing && live && html`<${TeamBoard} m=${m} R=${R} T=${T} />`}
+  </div>`;
 }
 
 /* ---------- partita giocata ---------- */
@@ -3225,9 +3847,9 @@ function PlayedSections({ m }) {
     <div class="card stack">
       ${hasRes ? html`
         <div class="score">
-          <div class="score-side a"><span class="chip ta">Squadra A</span><span class="score-n num">${m.result.a}</span></div>
+          <div class="score-side a"><${TeamTag} m=${m} side="a" /><span class="score-n num">${m.result.a}</span></div>
           <span class="score-dash">–</span>
-          <div class="score-side b"><span class="score-n num">${m.result.b}</span><span class="chip tb">Squadra B</span></div>
+          <div class="score-side b"><span class="score-n num">${m.result.b}</span><${TeamTag} m=${m} side="b" /></div>
         </div>
         ${(sA.goals || sB.goals || sA.assists || sB.assists) && html`<div class="scorers">
           <div><div>${sA.goals || 'Marcatori non inseriti'}</div>${sA.assists && html`<div class="faint">Assist: ${sA.assists}</div>`}</div>
@@ -3293,7 +3915,7 @@ function FinalTeams({ m }) {
     ids.forEach((id) => { const r = roles[id]; if (ROLES.includes(r)) rc[ROLE_ORDER[r]]++; });
     const sorted = ids.slice().sort((a, b) => numOr(ROLE_ORDER[roles[a]], 9) - numOr(ROLE_ORDER[roles[b]], 9));
     return html`<div class=${'team ' + t}>
-      <div class="team-h"><h4>Squadra ${t.toUpperCase()}</h4><span class="cnt">${Engine.moduleLabel(rc) || plural(ids.length, 'giocatore', 'giocatori')}</span></div>
+      <div class="team-h"><h4><${TeamTag} m=${m} side=${t} /></h4><span class="cnt">${Engine.moduleLabel(rc) || plural(ids.length, 'giocatore', 'giocatori')}</span></div>
       ${sorted.map((id) => {
         const p = C.playersById[id], e = ev[id] || {};
         const bits = [e.g ? e.g + (e.g === 1 ? ' gol' : ' gol') : '', e.a ? e.a + ' ass.' : '', e.og ? e.og + ' aut.' : ''].filter(Boolean).join(' · ');
@@ -3311,36 +3933,40 @@ function FinalTeams({ m }) {
 }
 
 /* ---------- squadre: scheda interattiva con ruoli ---------- */
-function TeamBoard({ m, R }) {
+function TeamBoard({ m, R, T }) {
   const C = useContext(Ctx);
   const [sel, setSel] = useState(null);
   const [mode, setMode] = useState('bal');
   const [sug, setSug] = useState(null);
   const [over, setOver] = useState(null);
+  const pick = m.teamMode === 'pick';
   const canEdit = C.canWrite;
+  /* con le squadre scelte, spostare qualcuno lo fa solo chi organizza */
+  const canMove = canEdit && (!pick || canOrganize(m, C));
   const fmt = m.format;
-
-  const clean = (ids) => (ids || []).filter((i) => R.confirmedById[i]);
-  const A = clean(m.teams && m.teams.a), B = clean(m.teams && m.teams.b);
-  const placed = new Set([...A, ...B]);
-  const free = R.confirmed.filter((x) => !placed.has(x.id)).map((x) => x.id);
+  const A = T.a, B = T.b, free = T.free, roles = T.roles;
   const P = (i) => R.confirmedById[i];
   const part = (i) => P(i).part;
-  const saved = (m.teams && m.teams.roles) || {};
-  const roles = useMemo(() => {
-    const out = {};
-    const fill = (ids) => {
-      const missing = ids.some((i) => !ROLES.includes(saved[i]));
-      const best = missing ? Engine.bestLineup(ids.map(part), fmt).roles : {};
-      ids.forEach((i) => { out[i] = ROLES.includes(saved[i]) ? saved[i] : best[i]; });
-    };
-    fill(A); fill(B);
-    return out;
-  }, [m.teams, R]);
   const ev = Engine.evaluate(A.map(part), B.map(part), roles);
   const whereOf = (i) => (A.includes(i) ? 'a' : B.includes(i) ? 'b' : 'f');
+  const nameA = teamName(m, 'a'), nameB = teamName(m, 'b');
 
-  const save = (a, b, r) => { setSug(null); if (canEdit) C.act.saveTeams(m.id, a, b, r); else C.flash('Hai accesso in sola lettura'); };
+  const save = (a, b, r) => {
+    setSug(null);
+    if (!canEdit) { C.flash('Hai accesso in sola lettura'); return; }
+    if (pick) {
+      /* le squadre scelte cambiano spostando le persone; i ruoli si salvano a parte */
+      const want = {};
+      a.forEach((i) => { want[i] = 'a'; }); b.forEach((i) => { want[i] = 'b'; });
+      Object.keys(want).forEach((i) => {
+        const x = P(i);
+        if (x && x.side !== want[i]) { if (x.guest) C.act.setGuestSide(m.id, i, want[i]); else C.act.setSide(m.id, i, want[i]); }
+      });
+      C.act.saveRoles(m.id, r);
+      return;
+    }
+    C.act.saveTeams(m.id, a, b, r, m.teamMode === 'auto' ? { manual: true, auto: false } : undefined);
+  };
   /* dopo uno scambio o uno spostamento l'app riassegna i ruoli di entrambe le squadre */
   const relineup = (a, b) => Object.assign({}, Engine.bestLineup(a.map(part), fmt).roles, Engine.bestLineup(b.map(part), fmt).roles);
   const swap = (x, y) => {
@@ -3348,6 +3974,7 @@ function TeamBoard({ m, R }) {
     const wx = whereOf(x), wy = whereOf(y);
     if (wx !== 'f') L[wx] = L[wx].map((v) => (v === x ? y : v));
     if (wy !== 'f') L[wy] = L[wy].map((v) => (v === y ? x : v));
+    if (wx === 'f' && wy !== 'f') L[wy] = L[wy].filter((v) => v !== y).concat(x);
     save(L.a, L.b, relineup(L.a, L.b));
   };
   const moveTo = (i, t) => {
@@ -3356,14 +3983,14 @@ function TeamBoard({ m, R }) {
     (t === 'a' ? a : b).push(i);
     save(a, b, relineup(a, b)); setSel(null);
   };
-  const setRole = (i, r) => { save(A, B, Object.assign({}, roles, { [i]: r })); };
+  const setRole = (i, r) => { if (pick) C.act.saveRoles(m.id, Object.assign({}, roles, { [i]: r })); else save(A, B, Object.assign({}, roles, { [i]: r })); };
   const tap = (i) => {
     if (sel == null) { setSel(i); return; }
     if (sel === i) { setSel(null); return; }
-    if (whereOf(sel) === whereOf(i)) { setSel(i); return; }
+    if (whereOf(sel) === whereOf(i) || !canMove) { setSel(i); return; }
     swap(sel, i); setSel(null);
   };
-  const dropOn = (d, i) => { if (P(d) && whereOf(d) !== whereOf(i)) { swap(d, i); setSel(null); } };
+  const dropOn = (d, i) => { if (canMove && P(d) && whereOf(d) !== whereOf(i)) { swap(d, i); setSel(null); } };
 
   const shuffle = () => {
     const r = Engine.suggestTeams(R.confirmed.map((x) => x.part), { mode, format: fmt, current: { a: A, b: B } });
@@ -3375,22 +4002,14 @@ function TeamBoard({ m, R }) {
   };
   const reset = () => C.openSheet({ k: 'confirm', title: 'Azzerare le squadre?', text: 'Squadre e ruoli salvati vengono cancellati. Potrai crearne di nuovi subito dopo.', label: 'Azzera', danger: true, onYes: () => { setSel(null); save([], [], {}); } });
 
-  const full = A.length > 0 && B.length > 0;
-  const rows = [
-    { l: 'Valore medio', a: ev.a.mean, b: ev.b.mean },
-    ...OUT_AREAS.map((k) => ({ l: Engine.AREA_BY[k].name, a: ev.a.areas[k], b: ev.b.areas[k] })),
-    { l: 'In porta', a: ev.a.gkVal || 0, b: ev.b.gkVal || 0 },
-  ];
-  const share = (r) => (r.a + r.b > 0 ? (r.a / (r.a + r.b)) * 100 : 50);
-
   const PRow = (i) => {
     const x = P(i), isSel = sel === i;
-    const cand = sel != null && sel !== i && whereOf(sel) !== whereOf(i);
+    const cand = canMove && sel != null && sel !== i && whereOf(sel) !== whereOf(i);
     const r = roles[i];
     const v = r ? Engine.valueIn(x.part, r) : x.ovr;
     const out = r && r !== 'POR' && Engine.roleMalus(x.part, r);
     const inGoal = r === 'POR' && x.part.pref !== 'POR';
-    return html`<div key=${i} class=${'prow' + (isSel ? ' sel' : '') + (cand ? ' cand' : '')} role="button" tabindex="0" draggable=${canEdit}
+    return html`<div key=${i} class=${'prow' + (isSel ? ' sel' : '') + (cand ? ' cand' : '')} role="button" tabindex="0" draggable=${canMove}
       onDragStart=${(e) => { e.dataTransfer.setData('text/plain', i); e.dataTransfer.effectAllowed = 'move'; }}
       onDragOver=${(e) => e.preventDefault()}
       onDrop=${(e) => { e.preventDefault(); e.stopPropagation(); setOver(null); dropOn(e.dataTransfer.getData('text/plain'), i); }}
@@ -3410,16 +4029,16 @@ function TeamBoard({ m, R }) {
     const e = t === 'a' ? ev.a : ev.b;
     return html`<div class=${'team ' + t + (over === t ? ' over' : '')}
       onDragOver=${(ev2) => { ev2.preventDefault(); setOver(t); }} onDragLeave=${() => setOver(null)}
-      onDrop=${(ev2) => { ev2.preventDefault(); setOver(null); moveTo(ev2.dataTransfer.getData('text/plain'), t); }}>
+      onDrop=${(ev2) => { ev2.preventDefault(); setOver(null); if (canMove) moveTo(ev2.dataTransfer.getData('text/plain'), t); }}>
       <div class="team-h">
-        <h4>Squadra ${t.toUpperCase()}</h4>
+        <h4><${TeamTag} m=${m} side=${t} /></h4>
         ${list.length > 0 && html`<span class="mod">${e.label}</span>`}
         <span class="cnt">${list.length} · ${r0(e.mean)}</span>
       </div>
       ${list.length > 0 && e.rc[0] === 0 && html`<div class="team-warn">Nessuno in porta</div>`}
       ${e.rc[0] > 1 && html`<div class="team-warn">${e.rc[0]} giocatori in porta</div>`}
       ${list.map(PRow)}
-      ${sel != null && whereOf(sel) !== t && P(sel) && html`<button class="drop hot" onClick=${() => moveTo(sel, t)}>Sposta ${P(sel).name} qui</button>`}
+      ${canMove && sel != null && whereOf(sel) !== t && P(sel) && html`<button class="drop hot" onClick=${() => moveTo(sel, t)}>Sposta ${P(sel).name} qui</button>`}
       ${list.length === 0 && sel == null && html`<div class="small faint" style="padding:12px 14px">Nessun giocatore</div>`}
       <div style="height:6px"></div>
     </div>`;
@@ -3427,30 +4046,15 @@ function TeamBoard({ m, R }) {
 
   const selX = sel != null && P(sel);
   return html`<div class="stack">
-    <div class="card bal">
-      ${full ? html`<div class="bal-top">
-          <div class="bal-num num">${ev.balance}<small>%</small></div>
-          <div class="bal-lab">${ev.label}<div class="small muted" style="font-weight:400">Differenza di valore medio: ${f1(Math.abs(ev.a.mean - ev.b.mean))}</div></div>
-        </div>
-        <div class="tug">
-          <div class="hs" style="justify-content:space-between"><span class="chip ta">Squadra A</span><span class="chip tb">Squadra B</span></div>
-          ${rows.map((r) => html`<div key=${r.l} class="tug-row">
-            <span class="tl">${r.l}</span>
-            <span class="tug-v a num">${r0(r.a)}</span>
-            <div class="tug-bar"><i style=${'width:' + share(r) + '%'}></i></div>
-            <span class="tug-v b num">${r0(r.b)}</span>
-          </div>`)}
-        </div>` : html`<div class="muted">Metti almeno un giocatore per squadra per vedere l'equilibrio.</div>`}
-    </div>
-
-    ${canEdit && html`<div class="tools">
+    ${canEdit && !pick && html`<div class="tools">
       <${Seg} value=${mode} onChange=${setMode} options=${[{ v: 'exact', l: 'Preciso' }, { v: 'bal', l: 'Bilanciato' }, { v: 'mix', l: 'Vario' }]} />
       <button class="btn primary" onClick=${shuffle}><${Icon} n="shuffle" s="16" /> Mischia</button>
       <button class="btn" onClick=${suggest}><${Icon} n="spark" s="16" /> Migliora</button>
     </div>`}
+    ${m.teamMode === 'auto' && canEdit && html`<div class="tiny faint">Se cambi le squadre a mano, l'app smette di rifarle da sola quando qualcuno entra o esce.</div>`}
 
     ${sug && sug !== 'none' && html`<div class="sug">
-      <div class="swp"><b>${P(sug.a).name}</b><span class="chip ta">A</span><${Icon} n="swap" s="16" /><span class="chip tb">B</span><b>${P(sug.b).name}</b></div>
+      <div class="swp"><b>${P(sug.a).name}</b><${TeamTag} m=${m} side="a" /><${Icon} n="swap" s="16" /><${TeamTag} m=${m} side="b" /><b>${P(sug.b).name}</b></div>
       <div class="small">${sug.after.balance > sug.before.balance ? `Con questo scambio l'equilibrio passa dal ${sug.before.balance}% al ${sug.after.balance}%.` : 'Questo scambio mette più giocatori nel loro ruolo.'} I ruoli vengono riassegnati.</div>
       <div class="hs"><button class="btn accent sm" onClick=${() => { save(A.map((v) => (v === sug.a ? sug.b : v)), B.map((v) => (v === sug.b ? sug.a : v)), sug.roles); setSel(null); }}>Applica scambio</button><button class="btn sm ghost" onClick=${() => setSug(null)}>Chiudi</button></div>
     </div>`}
@@ -3458,24 +4062,24 @@ function TeamBoard({ m, R }) {
 
     ${Math.abs(A.length - B.length) > 1 && html`<div class="note warn"><${Icon} n="warn" s="16" /><span>Le squadre hanno numeri diversi: ${A.length} contro ${B.length}.</span></div>`}
     ${Math.abs(A.length - B.length) === 1 && html`<div class="note"><${Icon} n="info" s="16" /><span>Una squadra ha un giocatore in meno: il confronto è sul valore medio. Con un ospite in più si pareggia.</span></div>`}
-    ${free.length > 0 && html`<div class="note warn"><${Icon} n="info" s="16" /><span>La lista è cambiata: ${free.length === 1 ? 'un giocatore non è ancora in una squadra' : free.length + ' giocatori non sono ancora in una squadra'}.</span></div>`}
+    ${free.length > 0 && html`<div class="note warn"><${Icon} n="info" s="16" /><span>${pick ? (free.length === 1 ? 'Un giocatore deve ancora scegliere la squadra' : free.length + ' giocatori devono ancora scegliere la squadra') : 'La lista è cambiata: ' + (free.length === 1 ? 'un giocatore non è ancora in una squadra' : free.length + ' giocatori non sono ancora in una squadra')}.</span></div>`}
 
     ${canEdit && selX && whereOf(sel) !== 'f' && html`<div class="card selbar stack-8">
       <div class="hs"><span class="row-t grow"><span class="ell">${selX.name}</span></span><button class="link" onClick=${() => setSel(null)}>Fatto</button></div>
       <span class="label">Ruolo in questa partita</span>
       <${RolePills} small value=${roles[sel]} onChange=${(r) => setRole(sel, r)} />
-      <div class="tiny faint">Oppure tocca un giocatore dell'altra squadra per scambiarli. Valore nel ruolo scelto: ${r0(Engine.valueIn(selX.part, roles[sel] || selX.part.pref))}.</div>
+      <div class="tiny faint">${canMove ? 'Oppure tocca un giocatore dell\'altra squadra per scambiarli. ' : ''}Valore nel ruolo scelto: ${r0(Engine.valueIn(selX.part, roles[sel] || selX.part.pref))}.</div>
     </div>`}
-    ${canEdit && !selX && html`<div class="tiny faint">Tocca un giocatore per cambiargli ruolo, poi uno dell'altra squadra per scambiarli. Su computer puoi anche trascinarli. Accanto al nome c'è il valore nel ruolo assegnato.</div>`}
+    ${canEdit && !selX && html`<div class="tiny faint">${canMove ? 'Tocca un giocatore per cambiargli ruolo, poi uno dell\'altra squadra per scambiarli. Su computer puoi anche trascinarli.' : 'Tocca un giocatore per cambiargli ruolo. Le squadre le scelgono i giocatori; spostarli lo può fare chi organizza.'}</div>`}
 
     <div class="teams">${Col('a')}${Col('b')}</div>
 
     ${free.length > 0 && html`<div class="tray">
-      <span class="eyebrow">Da assegnare</span>
+      <span class="eyebrow">${pick ? 'Senza squadra' : 'Da assegnare'}</span>
       ${free.map(PRow)}
     </div>`}
 
-    ${canEdit && html`<div class="hs" style="justify-content:flex-end"><button class="link" style="color:var(--ink-2)" onClick=${reset}>Azzera squadre</button></div>`}
+    ${canEdit && !pick && html`<div class="hs" style="justify-content:flex-end"><button class="link" style="color:var(--ink-2)" onClick=${reset}>Azzera squadre</button></div>`}
   </div>`;
 }
 
@@ -3508,10 +4112,11 @@ function ResultScreen({ id }) {
   const sum = (t, k) => all.filter((i) => side[i] === t).reduce((n, i) => n + ev[i][k], 0);
   const assignedA = sum('a', 'g') + sum('b', 'og'), assignedB = sum('b', 'g') + sum('a', 'og');
   const errs = [];
-  if (assignedA > st.ga) errs.push(`Squadra A: hai assegnato ${assignedA} gol, ma il risultato ne dice ${st.ga}.`);
-  if (assignedB > st.gb) errs.push(`Squadra B: hai assegnato ${assignedB} gol, ma il risultato ne dice ${st.gb}.`);
-  if (sum('a', 'a') > sum('a', 'g')) errs.push('Squadra A: ci sono più assist che gol dei suoi giocatori.');
-  if (sum('b', 'a') > sum('b', 'g')) errs.push('Squadra B: ci sono più assist che gol dei suoi giocatori.');
+  const nA = teamName(m, 'a'), nB = teamName(m, 'b');
+  if (assignedA > st.ga) errs.push(`${nA}: hai assegnato ${assignedA} gol, ma il risultato ne dice ${st.ga}.`);
+  if (assignedB > st.gb) errs.push(`${nB}: hai assegnato ${assignedB} gol, ma il risultato ne dice ${st.gb}.`);
+  if (sum('a', 'a') > sum('a', 'g')) errs.push(nA + ': ci sono più assist che gol dei suoi giocatori.');
+  if (sum('b', 'a') > sum('b', 'g')) errs.push(nB + ': ci sono più assist che gol dei suoi giocatori.');
   const noSide = all.filter((i) => !side[i]);
   if (noSide.length) errs.push(noSide.length === 1 ? 'Un giocatore non è in nessuna squadra.' : noSide.length + ' giocatori non sono in nessuna squadra.');
   const lost = all.filter((i) => !side[i] && (ev[i].g || ev[i].a || ev[i].og));
@@ -3544,8 +4149,8 @@ function ResultScreen({ id }) {
         <${Avatar} p=${p || { name: nameFor(pid, m, C) }} guest=${!p} size=${32} />
         <span class="row-main"><span class="row-t"><span class="ell">${nameFor(pid, m, C)}</span>${!p && html`<span class="chip">Ospite</span>`}</span></span>
         ${st.editTeams && html`<div class="seg mini-seg" role="group" aria-label=${'Squadra di ' + nameFor(pid, m, C)}>
-          <button type="button" class=${side[pid] === 'a' ? 'on ta-on' : ''} aria-pressed=${side[pid] === 'a'} onClick=${() => setSide(pid, 'a')}>A</button>
-          <button type="button" class=${side[pid] === 'b' ? 'on tb-on' : ''} aria-pressed=${side[pid] === 'b'} onClick=${() => setSide(pid, 'b')}>B</button>
+          <button type="button" class=${side[pid] === 'a' ? 'on ta-on' : ''} aria-pressed=${side[pid] === 'a'} aria-label=${teamName(m, 'a')} title=${teamName(m, 'a')} onClick=${() => setSide(pid, 'a')}>${m.colors ? html`<${Shirt} c=${teamColor(m, 'a')} s=${16} />` : 'A'}</button>
+          <button type="button" class=${side[pid] === 'b' ? 'on tb-on' : ''} aria-pressed=${side[pid] === 'b'} aria-label=${teamName(m, 'b')} title=${teamName(m, 'b')} onClick=${() => setSide(pid, 'b')}>${m.colors ? html`<${Shirt} c=${teamColor(m, 'b')} s=${16} />` : 'B'}</button>
         </div>`}
       </div>
       <div class="res-ctrs">
@@ -3569,12 +4174,12 @@ function ResultScreen({ id }) {
   return html`<${Page} title="Risultato" sub=${dayLong(m) + ' · ' + m.format + ' vs ' + m.format} onBack=${C.back}>
     <div class="card stack">
       <div class="score-in">
-        <div class="side"><span class="chip ta">Squadra A</span><span class="big num">${st.ga}</span>
-          <div class="hs"><button type="button" class="step" aria-label="Squadra A: un gol in meno" disabled=${st.ga <= 0} onClick=${() => setSt((s) => ({ ...s, ga: Math.max(0, s.ga - 1) }))}><${Icon} n="minus" s="16" /></button><button type="button" class="step" aria-label="Squadra A: un gol in più" onClick=${() => setSt((s) => ({ ...s, ga: Math.min(60, s.ga + 1) }))}><${Icon} n="plus" s="16" /></button></div>
+        <div class="side"><${TeamTag} m=${m} side="a" /><span class="big num">${st.ga}</span>
+          <div class="hs"><button type="button" class="step" aria-label=${teamName(m, 'a') + ': un gol in meno'} disabled=${st.ga <= 0} onClick=${() => setSt((s) => ({ ...s, ga: Math.max(0, s.ga - 1) }))}><${Icon} n="minus" s="16" /></button><button type="button" class="step" aria-label=${teamName(m, 'a') + ': un gol in più'} onClick=${() => setSt((s) => ({ ...s, ga: Math.min(60, s.ga + 1) }))}><${Icon} n="plus" s="16" /></button></div>
         </div>
         <span class="score-dash">–</span>
-        <div class="side"><span class="chip tb">Squadra B</span><span class="big num">${st.gb}</span>
-          <div class="hs"><button type="button" class="step" aria-label="Squadra B: un gol in meno" disabled=${st.gb <= 0} onClick=${() => setSt((s) => ({ ...s, gb: Math.max(0, s.gb - 1) }))}><${Icon} n="minus" s="16" /></button><button type="button" class="step" aria-label="Squadra B: un gol in più" onClick=${() => setSt((s) => ({ ...s, gb: Math.min(60, s.gb + 1) }))}><${Icon} n="plus" s="16" /></button></div>
+        <div class="side"><${TeamTag} m=${m} side="b" /><span class="big num">${st.gb}</span>
+          <div class="hs"><button type="button" class="step" aria-label=${teamName(m, 'b') + ': un gol in meno'} disabled=${st.gb <= 0} onClick=${() => setSt((s) => ({ ...s, gb: Math.max(0, s.gb - 1) }))}><${Icon} n="minus" s="16" /></button><button type="button" class="step" aria-label=${teamName(m, 'b') + ': un gol in più'} onClick=${() => setSt((s) => ({ ...s, gb: Math.min(60, s.gb + 1) }))}><${Icon} n="plus" s="16" /></button></div>
         </div>
       </div>
       <div class="tiny faint">Marcatori, assist e autogol sono facoltativi: se non te li ricordi tutti, salva lo stesso. Un autogol conta per la squadra avversaria.</div>
@@ -3582,8 +4187,8 @@ function ResultScreen({ id }) {
 
     <label class="hs" style="gap:10px;cursor:pointer"><input id="rs-teams" type="checkbox" checked=${st.editTeams} onChange=${(e) => setSt((s) => ({ ...s, editTeams: e.target.checked }))} style="width:18px;height:18px;accent-color:var(--accent)" /><span>Correggi le squadre (se qualcuno ha cambiato lato)</span></label>
 
-    ${group('a', 'Squadra A')}
-    ${group('b', 'Squadra B')}
+    ${group('a', teamName(m, 'a'))}
+    ${group('b', teamName(m, 'b'))}
     ${group('', 'Senza squadra')}
     ${lost.length > 0 && html`<div class="note warn"><${Icon} n="warn" s="16" /><span>Chi non è in una squadra non può avere gol o assist.</span></div>`}
 
@@ -3607,8 +4212,8 @@ function MvpScreen({ id }) {
   const cands = (fin.ids || []).filter((x) => x !== C.uid && C.playersById[x]);
   const inA = (x) => (fin.a || []).includes(x), inB = (x) => (fin.b || []).includes(x);
   const groups = [
-    { t: 'Squadra A', l: cands.filter(inA), c: 'ta' },
-    { t: 'Squadra B', l: cands.filter(inB), c: 'tb' },
+    { t: teamName(m, 'a'), l: cands.filter(inA), c: 'ta' },
+    { t: teamName(m, 'b'), l: cands.filter(inB), c: 'tb' },
     { t: 'Altri', l: cands.filter((x) => !inA(x) && !inB(x)), c: '' },
   ];
   const save = async () => {
@@ -4250,7 +4855,7 @@ function StoricoScreen() {
   const C = useContext(Ctx);
   const [tab, setTab] = useState('list');
   const past = C.matches
-    .filter((m) => { const p = phaseOf(m); return p === 'played' || p === 'cancelled'; })
+    .filter((m) => { const p = phaseOf(m); return m.date && (p === 'played' || p === 'cancelled'); })
     .sort((a, b) => mStart(b) - mStart(a));
   const nPlayed = past.filter((m) => m.status === 'played').length;
   return html`<div class="page">
@@ -4283,11 +4888,15 @@ function MatchFormSheet({ editId, onClose }) {
   const [format, setFormat] = useState(ex ? ex.format : (lastM && lastM.format) || 7);
   const [note, setNote] = useState(ex ? ex.note || '' : '');
   const [join, setJoin] = useState(true);
+  const [when, setWhen] = useState('date');
+  const [days, setDays] = useState([]);
+  const [teamMode, setTeamMode] = useState(ex ? ex.teamMode || null : 'auto');
   const [busy, setBusy] = useState(false);
+  const poll = !ex && when === 'poll';
   const known = new Set(C.allFields.map((f) => f.name.toLowerCase()));
   const fields = [...new Set(recent.map((m) => m.field).filter((n) => n && !known.has(n.toLowerCase())))].slice(0, 4);
   const zones = [...FIELD_ZONES, ...new Set(C.allFields.map((f) => f.zone).filter((z) => z && !FIELD_ZONES.includes(z)))].filter((z) => C.allFields.some((f) => f.zone === z));
-  const valid = date && time;
+  const valid = poll ? days.length >= 2 : !!(date && time);
   const pick = (f) => { setField(f.name); setFid(f.id); };
   const addField = async () => {
     if (!nf.name.trim() || busy) return;
@@ -4301,13 +4910,25 @@ function MatchFormSheet({ editId, onClose }) {
     if (!valid || busy) return;
     setBusy(true);
     if (ex) {
-      const ok = await C.act.updateMatch(ex.id, { date, time, field: field.trim(), fid: fid || '', format, note: note.trim() });
+      const ok = await C.act.updateMatch(ex.id, Object.assign({ date, time, field: field.trim(), fid: fid || '', format, note: note.trim() }, teamMode ? { teamMode } : {}, teamMode && !ex.colors ? { colors: DEFAULT_COLORS } : {}));
       setBusy(false);
       if (ok) { C.flash('Partita aggiornata'); onClose(); }
+    } else if (poll) {
+      const mid = 'm_' + uid8();
+      const doc = {
+        status: 'poll', format, time: time || '', field: field.trim(), ...(fid ? { fid } : {}), note: note.trim(), by: C.uid, created: Date.now(),
+        teamMode: teamMode || 'auto', colors: DEFAULT_COLORS,
+        poll: { days: days.slice().sort(), need: FORMATS[format].cap, votes: {} },
+        rsvp: {}, guests: {}, teams: { a: [], b: [], roles: {} },
+      };
+      const ok = await C.act.createMatch(doc, mid);
+      setBusy(false);
+      if (ok) { onClose(); C.go({ t: 'match', id: mid }); C.flash('Sondaggio creato: segna anche tu i giorni in cui sei libero'); }
     } else {
       const mid = 'm_' + uid8();
       const doc = {
         date, time, field: field.trim(), ...(fid ? { fid } : {}), format, note: note.trim(), status: 'open', by: C.uid, created: Date.now(),
+        teamMode: teamMode || 'auto', colors: DEFAULT_COLORS,
         rsvp: join && C.me ? { [C.uid]: { s: 'in', t: Date.now() } } : {}, guests: {}, teams: { a: [], b: [], roles: {} },
       };
       const ok = await C.act.createMatch(doc, mid);
@@ -4316,14 +4937,30 @@ function MatchFormSheet({ editId, onClose }) {
     }
   };
 
-  return html`<${Sheet} title=${ex ? 'Modifica partita' : 'Nuova partita'} onClose=${onClose}>
+  const formatField = html`<div class="field">
+        <span class="label">Formato</span>
+        <${Seg} value=${format} onChange=${setFormat} options=${[{ v: 5, l: 'Calcio a 5' }, { v: 7, l: 'Calcio a 7' }, { v: 8, l: 'Calcio a 8' }]} />
+        <div class="tiny faint">${FORMATS[format].cap} giocatori: ${format} contro ${format}. Moduli: ${Engine.MODULES[format].map((x) => Engine.moduleLabel(x)).join(', ')}. Gli iscritti oltre il numero finiscono in lista d'attesa.</div>
+      </div>`;
+  return html`<${Sheet} title=${ex ? 'Modifica partita' : poll ? 'Nuovo sondaggio' : 'Nuova partita'} onClose=${onClose}>
     <form class="stack" onSubmit=${submit}>
-      <div class="grid2 keep">
+      ${!ex && formatField}
+      ${!ex && html`<div class="field">
+        <span class="label">Quando</span>
+        <${Seg} value=${when} onChange=${setWhen} options=${[{ v: 'date', l: 'Giorno fisso' }, { v: 'poll', l: 'Sondaggio sul giorno' }]} />
+      </div>`}
+      ${poll ? html`<div class="field">
+        <span class="label">Giorni possibili <span class="faint">(almeno 2)</span></span>
+        <${PollDaysPicker} days=${days} setDays=${setDays} />
+        <div class="tiny faint">Tutti i membri del gruppo segnano i giorni in cui sono liberi. Si gioca il primo giorno che arriva a ${FORMATS[format].cap}: la partita nasce da sola, con chi l'ha votato.</div>
+      </div>
+      <div class="field"><label class="label" for="mf-time">Ora <span class="faint">(facoltativa: puoi deciderla dopo)</span></label><input id="mf-time" class="input" type="time" value=${time} onInput=${(e) => setTime(e.target.value)} /></div>`
+      : html`<div class="grid2 keep">
         <div class="field"><label class="label" for="mf-date">Giorno</label><input id="mf-date" class="input" type="date" value=${date} onInput=${(e) => setDate(e.target.value)} /></div>
         <div class="field"><label class="label" for="mf-time">Ora</label><input id="mf-time" class="input" type="time" value=${time} onInput=${(e) => setTime(e.target.value)} /></div>
-      </div>
+      </div>`}
       <div class="field">
-        <label class="label" for="mf-field">Campo</label>
+        <label class="label" for="mf-field">Campo${poll ? html` <span class="faint">(facoltativo)</span>` : ''}</label>
         <input id="mf-field" class="input" value=${field} maxlength="60" placeholder="Scegli un campo o scrivi il nome" onInput=${(e) => { setField(e.target.value); setFid(''); }} />
         ${zones.map((z) => html`<div key=${z} class="fz"><div class="tiny faint fz-t">${z}</div><div class="hs wrap">${C.allFields.filter((f) => f.zone === z).map((f) => html`<button key=${f.id} type="button" class=${'chip' + (f.id === fid ? ' ok' : '')} style="border:0;cursor:pointer" onClick=${() => pick(f)}>${f.name.replace(/^(Centro Sportivo|Campo) /, '')}</button>`)}</div></div>`)}
         ${fields.length > 0 && html`<div class="fz-t tiny faint" style="margin-top:4px">USATI DI RECENTE</div><div class="hs wrap">${fields.map((f) => html`<button key=${f} type="button" class=${'chip' + (f === field && !fid ? ' ok' : '')} style="border:0;cursor:pointer" onClick=${() => { setField(f); setFid(''); }}>${f}</button>`)}</div>`}
@@ -4337,14 +4974,16 @@ function MatchFormSheet({ editId, onClose }) {
           <button type="button" class="btn accent sm" disabled=${!nf.name.trim()} onClick=${addField}>Salva campo per tutti</button>
         </div>`}
       </div>
+      ${ex && formatField}
       <div class="field">
-        <span class="label">Formato</span>
-        <${Seg} value=${format} onChange=${setFormat} options=${[{ v: 5, l: 'Calcio a 5' }, { v: 7, l: 'Calcio a 7' }, { v: 8, l: 'Calcio a 8' }]} />
-        <div class="tiny faint">${FORMATS[format].cap} giocatori: ${format} contro ${format}. Moduli: ${Engine.MODULES[format].map((x) => Engine.moduleLabel(x)).join(', ')}. Gli iscritti oltre il numero finiscono in lista d'attesa.</div>
+        <span class="label">Squadre</span>
+        <${Seg} value=${teamMode} onChange=${setTeamMode} options=${[{ v: 'auto', l: 'Automatiche' }, { v: 'pick', l: 'Scelte dai giocatori' }]} />
+        <div class="tiny faint">${teamMode === 'pick' ? 'Ognuno, quando si iscrive, sceglie in quale squadra giocare (Bianchi o Neri: i colori si cambiano dopo). L\'app mostra la forza delle squadre e propone i ruoli.' : teamMode === 'auto' ? 'L\'app fa le squadre appena la partita è piena e le rifà da sola se qualcuno entra o esce, finché qualcuno non le cambia a mano.' : 'Scegli come fare le squadre.'}</div>
       </div>
       <div class="field"><label class="label" for="mf-note">Nota <span class="faint">(facoltativa)</span></label><textarea id="mf-note" class="input" rows="2" maxlength="200" placeholder="Es. portate maglia chiara e scura" value=${note} onInput=${(e) => setNote(e.target.value)}></textarea></div>
-      ${!ex && C.me && html`<label class="hs" style="gap:10px;cursor:pointer"><input id="mf-join" type="checkbox" checked=${join} onChange=${(e) => setJoin(e.target.checked)} style="width:18px;height:18px;accent-color:var(--accent)" /><span>Ci sono anch'io</span></label>`}
-      <button class="btn primary block" type="submit" disabled=${!valid || busy}>${busy ? 'Salvo…' : ex ? 'Salva modifiche' : 'Crea partita'}</button>
+      ${!ex && !poll && C.me && html`<label class="hs" style="gap:10px;cursor:pointer"><input id="mf-join" type="checkbox" checked=${join} onChange=${(e) => setJoin(e.target.checked)} style="width:18px;height:18px;accent-color:var(--accent)" /><span>Ci sono anch'io</span></label>`}
+      <button class="btn primary block" type="submit" disabled=${!valid || busy}>${busy ? 'Salvo…' : ex ? 'Salva modifiche' : poll ? 'Crea il sondaggio' : 'Crea partita'}</button>
+      ${poll && days.length < 2 && html`<div class="tiny faint" style="text-align:center">Scegli almeno 2 giorni.</div>`}
     </form>
   <//>`;
 }
@@ -4373,13 +5012,16 @@ function AddPlayerSheet({ mid, onClose }) {
 
 function GuestSheet({ mid, onClose }) {
   const C = useContext(Ctx);
+  const gm = C.matchesById[mid];
+  const pick = !!(gm && gm.teamMode === 'pick');
+  const [side, setSide] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState('CEN');
   const [v, setV] = useState({ att: Engine.VDEF, cen: Engine.VDEF, dif: Engine.VDEF, gen: Engine.VDEF, por: 45 });
   const submit = (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    C.act.addGuest(mid, 'g_' + uid8(), { name: name.trim().slice(0, 24), role, v, t: Date.now(), by: C.uid });
+    if (!name.trim() || (pick && !side)) return;
+    C.act.addGuest(mid, 'g_' + uid8(), Object.assign({ name: name.trim().slice(0, 24), role, v, t: Date.now(), by: C.uid }, pick ? { side } : {}));
     C.flash('Ospite aggiunto');
     onClose();
   };
@@ -4389,9 +5031,10 @@ function GuestSheet({ mid, onClose }) {
       <div class="small muted">Per chi viene ma non è iscritto all'app. Dai tu un valore per area: può segnare e fare assist, ma non ha profilo e non è votabile come MVP.</div>
       <div class="field"><label class="label" for="gs-name">Nome</label><input id="gs-name" class="input" value=${name} maxlength="24" placeholder="Es. Cugino di Nico" onInput=${(e) => setName(e.target.value)} /></div>
       <div class="field"><span class="label">Ruolo</span><${RolePills} small value=${role} onChange=${setRole} /></div>
+      ${pick && html`<div class="field"><span class="label">Gioca con</span><${Seg} value=${side} onChange=${setSide} options=${[{ v: 'a', l: teamName(gm, 'a') }, { v: 'b', l: teamName(gm, 'b') }]} /></div>`}
       <div class="sec-h"><span class="label">Valori</span><span class="hs tiny muted">Punteggio <${Ovr} v=${ovr} size="sm" /></span></div>
       ${AREAS.map((a) => html`<${RateSlider} key=${a.k} id=${'gs-' + a.k} name=${a.name} hint=${a.voci.map((x) => x.name.toLowerCase()).join(', ')} value=${v[a.k]} onChange=${(x) => setV((s) => ({ ...s, [a.k]: x }))} />`)}
-      <button class="btn primary block" type="submit" disabled=${!name.trim()}>Aggiungi alla partita</button>
+      <button class="btn primary block" type="submit" disabled=${!name.trim() || (pick && !side)}>Aggiungi alla partita</button>
     </form>
   <//>`;
 }
@@ -4412,6 +5055,8 @@ function MemberSheet({ mid, id, onClose }) {
       <${Ovr} v=${x.ovr} /></div>
     <div class="hs"><span class="label">Ruoli</span><${RoleChips} role=${x.role} role2=${x.role2} /></div>
     <${InjuryCard} inj=${x.inj} />
+    ${m.teamMode === 'pick' && x.s === 'in' && (canOrganize(m, C) || (id === C.uid && C.canWrite)) && html`<div class="field"><span class="label">Squadra</span>
+      <${Seg} value=${x.side || null} onChange=${(sd) => (x.guest ? C.act.setGuestSide(mid, id, sd) : C.act.setSide(mid, id, sd))} options=${[{ v: 'a', l: teamName(m, 'a') }, { v: 'b', l: teamName(m, 'b') }]} /></div>`}
     ${!x.guest && canAct && html`<div class="field"><span class="label">Presenza</span>
       <${Seg} cls="rsvp" value=${x.s} onChange=${(s) => C.act.setRsvp(mid, id, s)} options=${[{ v: 'in', l: 'Ci sono', cls: 'in' }, { v: 'maybe', l: 'Forse', cls: 'maybe' }, { v: 'out', l: 'Non viene', cls: 'out' }]} /></div>`}
     ${!x.guest && html`<button class="btn block" onClick=${() => { onClose(); C.go({ t: 'player', id }); }}>Vedi scheda giocatore</button>`}
@@ -4510,6 +5155,8 @@ function SheetHost({ sheet, onClose }) {
     case 'menu': return html`<${MenuSheet} onClose=${onClose} />`;
     case 'groupSwitch': return html`<${GroupSwitchSheet} onClose=${onClose} />`;
     case 'member2': return html`<${MemberActionsSheet} key=${sheet.uid} uid=${sheet.uid} onClose=${onClose} />`;
+    case 'colors': return html`<${ColorSheet} mid=${sheet.mid} onClose=${onClose} />`;
+    case 'pollClose': return html`<${PollCloseSheet} mid=${sheet.mid} onClose=${onClose} />`;
     default: return null;
   }
 }
@@ -4728,6 +5375,19 @@ function App() {
     go, back, goTab, openSheet: setSheet, closeSheet: () => setSheet(null), flash, startDemo, exitDemo,
   };
 
+  const autoTried = useRef(new Set());
+  useEffect(() => {
+    if (!be || !canWrite || !validGid || !loaded || !act) return;
+    let todo = [];
+    try { todo = autoTeamsTodo(ctx); } catch (e) { todo = []; }
+    todo.forEach((t) => {
+      const key = t.mid + '|' + t.sig;
+      if (autoTried.current.has(key)) return;
+      autoTried.current.add(key);
+      act.saveTeams(t.mid, t.a, t.b, t.roles, { auto: true, manual: false, sig: t.sig });
+    });
+  }, [data.matches, gdata.players, data.ratings, validGid, canWrite, loaded]);
+
   const needsProfile = status === 'ready' && loaded && ctx.canWrite && !me;
   /* chi era iscritto col vecchio sistema rifà l'autovalutazione una volta, nel nuovo formato */
   const needsSelf = status === 'ready' && loaded && ctx.canWrite && !!me && !Engine.hasNewSelf(me);
@@ -4796,6 +5456,8 @@ function App() {
    ============================================================ */
 function scErr(e) {
   const c = e && e.code, m = (e && e.message) || '';
+  /* funzione del database non ancora installata (manca un aggiornamento SQL) */
+  if (c === 'PGRST202' || /could not find the function/i.test(m)) return { code: 'unavailable', message: 'Questa funzione non è ancora attiva: va aggiornato il database su Supabase.', raw: m };
   const denied = c === '42501' || c === 'P0002' || c === 'PGRST116' || /row-level security|non trovato|not found/i.test(m);
   /* i messaggi in italiano scritti dalle funzioni del database arrivano così come sono */
   const mine = c === '42501' || c === '22023';
