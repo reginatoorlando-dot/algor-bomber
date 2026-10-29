@@ -607,6 +607,45 @@ a.btn { text-decoration: none; }
 .photo-big img { width: min(78vw, 320px); aspect-ratio: 1; object-fit: cover; border-radius: 24px; box-shadow: var(--shadow); }
 .photo-big .av { width: min(60vw, 240px); height: min(60vw, 240px); font-size: min(30vw, 120px); }
 
+/* ---------- gruppi, menu, messaggi ---------- */
+.nav-in { grid-template-columns: repeat(5, 1fr); }
+.nav-btn { font-size: 11px; }
+.nav-ic { position: relative; display: inline-flex; }
+.count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--bad); color: #fff; font: 700 11.5px/1 var(--f-body); font-variant-numeric: tabular-nums; }
+.nav-badge { position: absolute; top: -6px; right: -12px; min-width: 18px; height: 18px; padding: 0 5px; font-size: 10.5px; box-shadow: 0 0 0 2px var(--bg); }
+.page-head .icon-btn { position: relative; }
+.dot-badge { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 2px var(--surface); }
+.group-chip { appearance: none; border: 0; background: var(--surface-2); color: var(--ink-2); border-radius: 999px; padding: 5px 10px 5px 12px; margin-top: 6px; font: 600 13px/1.2 var(--f-body); display: inline-flex; align-items: center; gap: 6px; max-width: 100%; cursor: pointer; }
+.menu-list { display: flex; flex-direction: column; gap: 6px; }
+.menu-item { appearance: none; border: 0; background: var(--surface-2); color: var(--ink); border-radius: 14px; padding: 13px 14px; display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: 600 15px/1.25 var(--f-body); cursor: pointer; }
+.menu-item .ic:last-child { color: var(--ink-3); }
+.g-ic { width: 38px; height: 38px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.req-row { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; }
+.reply { background: var(--surface-2); border-radius: 12px; padding: 9px 12px; font-size: 13.5px; }
+.dev-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dev-mail { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+.sel { user-select: all; -webkit-user-select: all; }
+select.input { appearance: auto; }
+
+.chat { display: flex; flex-direction: column; gap: 3px; padding-bottom: 6px; }
+.chat-day { align-self: center; margin: 12px 0 6px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font: 600 12px/1.2 var(--f-body); }
+.msg { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; flex-wrap: wrap; }
+.msg:not(.cont) { margin-top: 7px; }
+.msg.mine { justify-content: flex-end; }
+.msg-av { width: 30px; flex: none; }
+.bubble { appearance: none; border: 0; text-align: left; color: var(--ink); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); border-radius: 16px 16px 16px 6px; padding: 7px 11px 6px; max-width: min(78%, 420px); display: flex; flex-direction: column; gap: 2px; font: 400 15px/1.35 var(--f-body); cursor: default; }
+.msg.mine .bubble { background: var(--accent-soft); box-shadow: none; border-radius: 16px 16px 6px 16px; }
+.msg.cont .bubble { border-radius: 16px; }
+.msg-name { font: 700 12.5px/1.2 var(--f-body); color: var(--accent); }
+.msg-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg-time { align-self: flex-end; font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.msg-del { flex-basis: 100%; text-align: right; color: var(--bad); padding: 0 4px; }
+.msg:not(.mine) .msg-del { text-align: left; padding-left: 40px; }
+.chat-input { position: sticky; bottom: calc(66px + env(safe-area-inset-bottom, 0px)); z-index: 5; display: flex; gap: 8px; align-items: flex-end; padding: 10px 0 4px; background: linear-gradient(to top, var(--bg) 75%, transparent); }
+.chat-input textarea { resize: none; min-height: 44px; max-height: 120px; line-height: 1.35; }
+.chat-input .send { width: 46px; height: 44px; padding: 0; border-radius: 12px; flex: none; }
+.shell.chat-shell { padding-bottom: 76px; }
+
 </style>
 </head>
 <body>
@@ -1195,6 +1234,7 @@ const Demo = (() => {
     };
     const db = {
       put(path, data) { docs.set(path, clone(data)); },
+      dump() { return Array.from(docs, ([p, d]) => [p, clone(d)]); },
       doc(path) {
         return {
           id: idOf(path), path,
@@ -1220,6 +1260,87 @@ const Demo = (() => {
           },
         };
       },
+    };
+    /* --- funzioni del database simulate (stesse regole dell'SQL) --- */
+    const mp = (g, u) => 'members/' + g + '~' + u;
+    const fail = (message) => { throw { code: 'invalid_argument', message }; };
+    const setD = (path, d) => { docs.set(path, clone(d)); emit(colOf(path)); };
+    const delD = (path) => { if (docs.delete(path)) emit(colOf(path)); };
+    const membersOf = (g) => [...docs.entries()].filter(([p]) => p.startsWith('members/' + g + '~')).map(([p, d]) => ({ p, d }));
+    const refresh = (g) => {
+      const act = membersOf(g).filter((x) => x.d.status === 'active');
+      if (act.length && !act.some((x) => x.d.role === 'admin')) { act.sort((a, b) => a.d.t - b.d.t)[0].d.role = 'admin'; emit('members'); }
+      const gd = docs.get('groups/' + g);
+      if (gd) { gd.n = act.length; emit('groups'); }
+    };
+    const isGA = (g) => { const m = docs.get(mp(g, db.me)); return !!(m && m.status === 'active' && m.role === 'admin'); };
+    const canManage = (g) => isGA(g) || !!db.admin;
+    db.rpc = async (fn, a) => {
+      a = a || {};
+      switch (fn) {
+        case 'is_app_admin': return !!db.admin;
+        case 'create_group': {
+          const nm = String(a.p_name || '').trim(), ct = String(a.p_city || '').trim();
+          if (nm.length < 2 || nm.length > 40) fail('Il nome del gruppo deve avere tra 2 e 40 caratteri.');
+          if (ct.length < 2 || ct.length > 40) fail('La città deve avere tra 2 e 40 caratteri.');
+          if (!docs.has('players/' + db.me)) fail('Crea prima il tuo profilo.');
+          const g = 'g_' + Math.random().toString(36).slice(2, 12);
+          setD('groups/' + g, { name: nm, city: ct, by: db.me, created: Date.now(), n: 1 });
+          setD(mp(g, db.me), { gid: g, uid: db.me, role: 'admin', status: 'active', t: Date.now() });
+          return g;
+        }
+        case 'request_join': {
+          if (!docs.has('groups/' + a.p_gid)) fail('Questo gruppo non esiste più.');
+          if (!docs.has('players/' + db.me)) fail('Crea prima il tuo profilo.');
+          const m = docs.get(mp(a.p_gid, db.me));
+          if (m) return m.status;
+          setD(mp(a.p_gid, db.me), { gid: a.p_gid, uid: db.me, role: 'member', status: 'pending', t: Date.now() });
+          return 'pending';
+        }
+        case 'decide_request': {
+          if (!canManage(a.p_gid)) fail('Solo gli amministratori del gruppo possono decidere sulle richieste.');
+          const p = mp(a.p_gid, a.p_uid), m = docs.get(p);
+          if (!m || m.status !== 'pending') fail('La richiesta non c\'è più.');
+          if (a.p_accept) setD(p, Object.assign({}, m, { status: 'active', t: Date.now() })); else delD(p);
+          refresh(a.p_gid); return null;
+        }
+        case 'remove_member': {
+          if (a.p_uid === db.me) fail('Per uscire dal gruppo usa "Esci dal gruppo".');
+          if (!canManage(a.p_gid)) fail('Solo gli amministratori del gruppo possono togliere un membro.');
+          delD(mp(a.p_gid, a.p_uid)); refresh(a.p_gid); return null;
+        }
+        case 'set_member_role': {
+          if (!canManage(a.p_gid)) fail('Solo gli amministratori del gruppo possono cambiare i ruoli.');
+          const p = mp(a.p_gid, a.p_uid), m = docs.get(p);
+          if (!m || m.status !== 'active') fail('Questa persona non è nel gruppo.');
+          const admins = membersOf(a.p_gid).filter((x) => x.d.status === 'active' && x.d.role === 'admin').length;
+          if (a.p_role === 'member' && m.role === 'admin' && admins <= 1) fail('Il gruppo deve avere almeno un amministratore: nominane prima un altro.');
+          setD(p, Object.assign({}, m, { role: a.p_role })); return null;
+        }
+        case 'leave_group': { delD(mp(a.p_gid, db.me)); refresh(a.p_gid); return null; }
+        case 'delete_group': {
+          if (!db.admin) fail('Solo gli amministratori dell\'app possono eliminare un gruppo.');
+          for (const p of [...docs.keys()]) if (p.startsWith('g/' + a.p_gid + '/') || p.startsWith('members/' + a.p_gid + '~') || p === 'groups/' + a.p_gid) delD(p);
+          return null;
+        }
+        case 'delete_account': {
+          if (!db.admin) fail('Solo gli amministratori dell\'app possono eliminare un account.');
+          if (a.p_uid === db.me) fail('Non puoi eliminare il tuo account da qui.');
+          const gs = [];
+          for (const p of [...docs.keys()]) {
+            const id = idOf(p), col = colOf(p).split('/').pop();
+            if (p === 'players/' + a.p_uid) delD(p);
+            else if (col === 'members' && id.split('~')[1] === a.p_uid) { gs.push(id.split('~')[0]); delD(p); }
+            else if ((col === 'ratings' || col === 'mvp') && id === a.p_uid) delD(p);
+            else if (col === 'help' && id.split('~')[0] === a.p_uid) delD(p);
+            else if (col === 'ratings' && docs.get(p).r && docs.get(p).r[a.p_uid]) { const d = docs.get(p); delete d.r[a.p_uid]; emit(colOf(p)); }
+          }
+          gs.forEach(refresh);
+          return 'ok';
+        }
+        default: fail('Funzione non disponibile nella demo.');
+      }
+      return null;
     };
     return db;
   }
@@ -1253,6 +1374,7 @@ const Demo = (() => {
     ['Emanuele', 'Lombardi', 'Ema', '💪', 'DIF', 'CEN', [52, 60, 66, 69, 44]],
   ];
   const ME = 'demo-me';
+  const GID = 'g_demo';
 
   const pad = (n) => String(n).padStart(2, '0');
   const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -1260,6 +1382,7 @@ const Demo = (() => {
 
   function createSeeded() {
     const db = createMemDb();
+    const GP = 'g/' + GID + '/';
     const rng = mulberry32(11);
     const now = Date.now();
     const DAY = 86400000, HOUR = 3600000;
@@ -1310,7 +1433,7 @@ const Demo = (() => {
         r[target] = { v, t: now - Math.floor(1 + rng() * 30) * DAY };
       });
       ratingDocs.push({ id: voter, r });
-      db.put('ratings/' + voter, { r });
+      db.put(GP + 'ratings/' + voter, { r });
     });
     const rated = Engine.computeRatings(players, ratingDocs);
     const partOf = (i) => Engine.partOf(ids[i], rated[ids[i]].areas, PEOPLE[i][4], PEOPLE[i][5], null);
@@ -1374,7 +1497,7 @@ const Demo = (() => {
       if (o.score) {
         m.result = { a: o.score[0], b: o.score[1], ev: makeEvents(sug, o.score, byId, o.og || 0, o.unassigned || 0), by: ids[o.resBy || 1], t: playedAt + 2 * HOUR };
       }
-      db.put('matches/' + o.mid, m);
+      db.put(GP + 'matches/' + o.mid, m);
       return { m, sug, ids: m.final.ids };
     };
 
@@ -1397,7 +1520,7 @@ const Demo = (() => {
     // ieri sera: MVP ancora aperto e risultato da inserire
     const py = played({ mid: 'm_demo_y', daysAgo: 1, time: '21:00', field: 'Centro Sportivo Le Giraffe', fid: 'le-giraffe', format: 7, who: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 13, 14, 15], score: null, by: 1 });
     voteWeighted('m_demo_y', [ids[1], ids[3], ids[8], ids[9], ids[13]], py.ids, null);
-    Object.keys(mvpDocs).forEach((v) => db.put('mvp/' + v, mvpDocs[v]));
+    Object.keys(mvpDocs).forEach((v) => db.put(GP + 'mvp/' + v, mvpDocs[v]));
 
     // prossima partita a 7: 15 iscritti, uno finisce in lista d'attesa
     const next = addDays(((4 - new Date().getDay() + 7) % 7) || 7);
@@ -1409,18 +1532,45 @@ const Demo = (() => {
     };
     m1.rsvp[ME] = { s: 'maybe', t: now - 2 * DAY };
     m1.guests.g_demo1 = { name: 'Cugino di Nico', role: 'CEN', v: { att: 62, cen: 66, dif: 55, gen: 70, por: 40 }, t: now - 2.9 * DAY, by: ids[11] };
-    db.put('matches/m_demo_next', m1);
+    db.put(GP + 'matches/m_demo_next', m1);
 
     // domani sera, a 5: pochi iscritti
-    db.put('matches/m_demo_tomorrow', {
+    db.put(GP + 'matches/m_demo_tomorrow', {
       date: ymd(addDays(1)), time: '20:30', field: 'Centro Sportivo A. Montagna', fid: 'montagna', format: 5, note: '',
       status: 'open', by: ids[2], created: now - 2 * DAY,
       rsvp: rsvpFor([2, 4, 6, 8, 11], now - DAY), guests: {}, teams: { a: [], b: [], roles: {} },
     });
+    // gruppi: il nostro (Luca è l'amministratore) e due di altre città, per provare la ricerca
+    db.put('groups/' + GID, { name: 'Algor Bomber', city: 'La Spezia', by: ME, created: now - 60 * DAY, n: ids.length });
+    db.put('groups/g_demo_sarzana', { name: 'Calcetto del Giovedì', city: 'Sarzana', by: 'demo-x1', created: now - 30 * DAY, n: 9 });
+    db.put('groups/g_demo_milano', { name: 'Milano Nord Five', city: 'Milano', by: 'demo-x2', created: now - 90 * DAY, n: 12 });
+    ids.forEach((id, i) => db.put('members/' + GID + '~' + id, { gid: GID, uid: id, role: i === 0 ? 'admin' : 'member', status: 'active', t: now - (60 - i) * DAY }));
+    // una richiesta di ingresso da approvare
+    db.put('players/demo-17', { first: 'Pietro', last: 'Neri', nick: 'Pietrone', icon: '🐺', photo: '', role: 'DIF', role2: '', self: Object.fromEntries(Engine.VOCI.map((x) => [x.k, 58])), selfAt: now - DAY, selfUnlock: false, injury: null, created: now - DAY, updated: now - DAY });
+    db.put('members/' + GID + '~demo-17', { gid: GID, uid: 'demo-17', role: 'member', status: 'pending', t: now - 5 * HOUR });
+    // chat del gruppo
+    const chat = [
+      [1, 46, 'Ragazzi giovedì ci siamo? Ho prenotato Le Giraffe alle 21'],
+      [4, 45, 'Io ci sono 💪'],
+      [8, 44, 'Presente, porto il pallone nuovo'],
+      [0, 30, 'Ieri bella partita! Votate l\'MVP che si chiude stasera'],
+      [3, 29, 'Fatto. Per me Fede ha fatto la differenza'],
+      [12, 20, 'Io sto fuori qualche settimana, ginocchio 😩'],
+      [6, 3, 'Forza Ricky! Ci vediamo giovedì allora'],
+      [13, 1, 'Qualcuno ha la pettorina arancione?'],
+    ];
+    chat.forEach(([i, hAgo, text], k) => {
+      const t = now - hAgo * HOUR;
+      db.put(GP + 'chat/' + ids[i] + '~' + t.toString(36) + k, { by: ids[i], text, t });
+    });
+    // una richiesta di aiuto per gli amministratori
+    db.put('help/' + ids[4] + '~' + (now - 3 * HOUR).toString(36), { by: ids[4], topic: 'Eliminare una partita', text: 'Ho creato per sbaglio due volte la partita di giovedì, potete cancellare quella doppia?', t: now - 3 * HOUR, status: 'open', replies: [] });
+    db.me = ME;
+    db.admin = true;
     return db;
   }
 
-  return { createMemDb, createSeeded, ME };
+  return { createMemDb, createSeeded, ME, GID };
 })();
 
 /* ============================================================
@@ -1550,7 +1700,7 @@ function nextMatchOf(m, matches) {
 }
 function canEditPlayed(m, C) {
   if (!C.canWrite) return false;
-  if (C.isAdmin) return true;
+  if (C.isAdmin || C.isGroupAdmin) return true;
   const nx = nextMatchOf(m, C.matches);
   return !nx || Date.now() < mStart(nx);
 }
@@ -1587,6 +1737,16 @@ const ICONS = {
   bandage: '<g transform="rotate(-45 12 12)"><rect x="2" y="8.5" width="20" height="7" rx="3.5"/><path d="M9.5 8.5v7M14.5 8.5v7"/><path d="M11.5 11h.01M12.5 13h.01"/></g>',
   cross: '<path d="M9.4 3.5h5.2v5.9h5.9v5.2h-5.9v5.9H9.4v-5.9H3.5V9.4h5.9z"/>',
   podium: '<path d="M9 20V9.5h6V20M3 20v-6h6M15 20v-4h6v4M2.5 20h19"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  chevdown: '<path d="m6 9 6 6 6-6"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
+  help: '<circle cx="12" cy="12" r="9.5"/><path d="M9.3 9a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.5-2.7 4"/><path d="M12 17.3h.01"/>',
+  code: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
+  send: '<path d="M21 3 10.5 13.5"/><path d="M21 3 14.5 21l-4-7.5L3 9.5 21 3Z"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
+  phone: '<path d="M5 3.5h3.5l1.8 4.5-2.3 1.4a11 11 0 0 0 6.6 6.6l1.4-2.3 4.5 1.8V19a1.5 1.5 0 0 1-1.6 1.5A17 17 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5Z"/>',
+  chat: '<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.2A8 8 0 1 1 20 12Z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/>',
 };
 function Icon({ n, s, fill }) {
   return html`<svg class=${'ic' + (s ? ' s' + s : '') + (fill ? ' fill' : '')} viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML=${{ __html: ICONS[n] || '' }}></svg>`;
@@ -1882,9 +2042,9 @@ function errText(e) {
   return 'Salvataggio non riuscito. Se succede sempre, potresti avere accesso in sola lettura.';
 }
 
-function makeActions(be, notify, dataRef, onDenied) {
+function makeActions(be, notify, dataRef, onDenied, gidRef) {
   const queues = new Map();
-  const overlay = { r: {}, mvp: {} };
+  const overlays = {};
   /* opts.probe: il primo salvataggio dell'iscrizione; se il database lo rifiuta (invalid_argument)
      chi guarda ha solo il permesso di lettura e l'app passa alla sola lettura per questa visita */
   const run = (path, fn, opts) => {
@@ -1895,14 +2055,22 @@ function makeActions(be, notify, dataRef, onDenied) {
       if (opts && opts.probe && e && e.code === 'invalid_argument' && onDenied) {
         onDenied();
         notify('Non puoi iscriverti: hai accesso in sola lettura.', 'err');
-      } else notify(errText(e), 'err');
+      } else notify((e && e.message) || errText(e), 'err');
       return false;
     });
   };
   const doc = (p) => be.db.doc(p);
-  const upd = (mid, patch) => run('matches/' + mid, () => doc('matches/' + mid).update(patch));
+  /* documenti del gruppo attuale: g/{gruppo}/... */
+  const G = () => 'g/' + gidRef.current + '/';
+  const ov = () => (overlays[gidRef.current] = overlays[gidRef.current] || { r: {}, mvp: {} });
+  const upd = (mid, patch) => { const path = G() + 'matches/' + mid; return run(path, () => doc(path).update(patch)); };
   const updP = (pid, patch) => run('players/' + pid, () => doc('players/' + pid).update(patch));
   const mine = (col) => (dataRef.current[col] || []).find((x) => x.id === be.uid) || {};
+  const rpc = async (fn, args) => {
+    if (!be.db.rpc) { notify('Non disponibile in questa versione.', 'err'); return { ok: false }; }
+    try { return { ok: true, data: await be.db.rpc(fn, args) }; }
+    catch (e) { notify((e && e.message) || errText(e), 'err'); return { ok: false }; }
+  };
   return {
     saveProfile: (p) => run('players/' + be.uid, () => doc('players/' + be.uid).set(p), { probe: true }),
     updateProfile: (patch) => updP(be.uid, Object.assign({}, patch, { updated: Date.now() })),
@@ -1910,23 +2078,39 @@ function makeActions(be, notify, dataRef, onDenied) {
     setInjury: (inj) => updP(be.uid, { injury: inj, updated: Date.now() }),
     unlockSelf: (pid) => updP(pid, { selfUnlock: true }),
     saveField: (id, f) => run('fields/' + id, () => doc('fields/' + id).set(f)),
-    createMatch: (m, id) => run('matches/' + id, () => doc('matches/' + id).set(m)),
+    createMatch: (m, id) => { const path = G() + 'matches/' + id; return run(path, () => doc(path).set(m)); },
     updateMatch: upd,
+    deleteMatch: (mid) => { const path = G() + 'matches/' + mid; return run(path, () => doc(path).delete()); },
     setRsvp: (mid, pid, s) => upd(mid, { rsvp: { [pid]: { s, t: Date.now() } } }),
-    addGuest: (mid, gid, g) => upd(mid, { guests: { [gid]: g } }),
-    removeGuest: (mid, gid) => upd(mid, { guests: { [gid]: { gone: true } } }),
+    addGuest: (mid, gsid, g) => upd(mid, { guests: { [gsid]: g } }),
+    removeGuest: (mid, gsid) => upd(mid, { guests: { [gsid]: { gone: true } } }),
     saveTeams: (mid, a, b, roles) => upd(mid, { teams: { a, b, roles, t: Date.now(), by: be.uid } }),
     markPlayed: (mid, fin) => upd(mid, { status: 'played', playedAt: Date.now(), final: fin }),
     saveResult: (mid, result, finPatch) => upd(mid, finPatch ? { result, final: finPatch } : { result }),
     setStatus: (mid, status) => upd(mid, { status }),
-    saveRating: (target, v) => run('ratings/' + be.uid, () => {
-      overlay.r[target] = { v, t: Date.now() };
-      return doc('ratings/' + be.uid).set({ r: Object.assign({}, mine('ratings').r || {}, overlay.r) });
-    }),
-    saveMvp: (mid, target) => run('mvp/' + be.uid, () => {
-      overlay.mvp[mid] = target;
-      return doc('mvp/' + be.uid).set({ v: Object.assign({}, mine('mvp').v || {}, overlay.mvp) });
-    }),
+    saveRating: (target, v) => { const path = G() + 'ratings/' + be.uid; return run(path, () => {
+      const o = ov(); o.r[target] = { v, t: Date.now() };
+      return doc(path).set({ r: Object.assign({}, mine('ratings').r || {}, o.r) });
+    }); },
+    saveMvp: (mid, target) => { const path = G() + 'mvp/' + be.uid; return run(path, () => {
+      const o = ov(); o.mvp[mid] = target;
+      return doc(path).set({ v: Object.assign({}, mine('mvp').v || {}, o.mvp) });
+    }); },
+    /* chat del gruppo */
+    sendChat: (text) => {
+      const id = be.uid + '~' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const path = G() + 'chat/' + id;
+      return run(path, () => doc(path).set({ by: be.uid, text, t: Date.now() }));
+    },
+    deleteChat: (id) => { const path = G() + 'chat/' + id; return run(path, () => doc(path).delete()); },
+    /* help: messaggi agli sviluppatori */
+    sendHelp: (topic, text) => {
+      const id = be.uid + '~' + Date.now().toString(36);
+      return run('help/' + id, () => doc('help/' + id).set({ by: be.uid, topic, text, t: Date.now(), status: 'open', replies: [] }));
+    },
+    answerHelp: (id, replies, status) => run('help/' + id, () => doc('help/' + id).update({ replies, status })),
+    /* gruppi ed eliminazioni (funzioni del database) */
+    rpc,
   };
 }
 
@@ -1975,7 +2159,7 @@ function ProfileForm({ initial, onSaved }) {
       ? await C.act.saveProfile(Object.assign(base(), { self: Engine.cleanVoci(vals), selfAt: now, selfUnlock: false, injury: null, created: now, updated: now }))
       : await C.act.updateProfile(base());
     setBusy(false);
-    if (ok) { C.flash(create ? 'Benvenuto nel gruppo!' : 'Profilo aggiornato'); if (onSaved) onSaved(); }
+    if (ok) { C.flash(create ? (C.gid ? 'Benvenuto nel gruppo!' : 'Profilo creato! Ora entra in un gruppo') : 'Profilo aggiornato'); if (onSaved) onSaved(); }
   };
   const submit = (e) => {
     e.preventDefault();
@@ -1984,7 +2168,7 @@ function ProfileForm({ initial, onSaved }) {
       C.openSheet({
         k: 'confirm', title: 'Confermi l\'autovalutazione?',
         text: `Il tuo punteggio di partenza sarà ${r0(ovr)}. Dopo il salvataggio non potrai più modificare l'autovalutazione: le tue stats cambieranno solo con le valutazioni degli altri.`,
-        label: 'Sì, entra nel gruppo', onYes: doSave,
+        label: 'Sì, salva il profilo', onYes: doSave,
       });
     } else doSave();
   };
@@ -2027,7 +2211,7 @@ function ProfileForm({ initial, onSaved }) {
       <div class="tiny faint">${SCALE_HINT}</div>
       <${RatingEditor} idp="pf" vals=${vals} setVals=${setVals} role=${role} />
     </div>`}
-    <button class="btn primary block" type="submit" disabled=${!valid || busy || !C.canWrite}>${busy ? 'Salvo…' : create ? 'Salva ed entra nel gruppo' : 'Salva modifiche'}</button>
+    <button class="btn primary block" type="submit" disabled=${!valid || busy || !C.canWrite}>${busy ? 'Salvo…' : create ? 'Salva e continua' : 'Salva modifiche'}</button>
     ${!valid && html`<div class="tiny faint" style="text-align:center">Servono nome, cognome e ruolo preferito.</div>`}
   </form>`;
 }
@@ -2295,6 +2479,11 @@ function PlayerScreen({ id }) {
     text: `${dispName(p)} potrà rifare la sua autovalutazione una volta. Le valutazioni degli altri restano com'erano.`,
     label: 'Sblocca', onYes: async () => { if (await C.act.unlockSelf(id)) C.flash('Autovalutazione sbloccata per ' + dispName(p)); },
   });
+  const delAccount = () => C.openSheet({
+    k: 'confirm', title: 'Eliminare l\'account di ' + dispName(p) + '?', danger: true, label: 'Elimina per sempre',
+    text: `Spariscono l'accesso, il profilo e le valutazioni date e ricevute da ${fullName(p) || dispName(p)}, in tutti i gruppi. Nelle partite già giocate resta come "Ex giocatore", così risultati e classifiche non cambiano.`,
+    onYes: async () => { const r2 = await C.act.rpc('delete_account', { p_uid: id }); if (r2.ok) { C.flash(r2.data === 'profilo' ? 'Profilo eliminato. L\'accesso va tolto da Supabase, Authentication.' : 'Account eliminato'); C.back(); } },
+  });
   return html`<${Page} title=${dispName(p)} onBack=${C.back}>
     <${PlayerCard} p=${p} r=${r} />
     ${isMe
@@ -2308,6 +2497,7 @@ function PlayerScreen({ id }) {
       <div class="grow"><div class="row-t">Autovalutazione</div><div class="small muted">${p.selfUnlock ? 'Sbloccata: può rifarla una volta.' : p.selfAt ? 'Bloccata dal ' + fmtTs(p.selfAt) + '.' : 'Non ancora fatta.'}</div></div>
       ${!p.selfUnlock && p.selfAt && C.canWrite && html`<button class="btn sm" onClick=${unlock}><${Icon} n="unlock" s="16" /> Sblocca</button>`}
     </div>`}
+    ${C.isAdmin && !isMe && html`<button class="btn danger block" onClick=${delAccount}><${Icon} n="x" s="16" /> Elimina l'account di ${dispName(p)}</button>`}
     <${PlayerSections} p=${p} r=${r} s=${s} />
   <//>`;
 }
@@ -2318,8 +2508,7 @@ function MeScreen() {
   const me = C.me;
   const r = me && C.rated[C.uid], s = me && C.stats.byPlayer[C.uid];
   return html`<div class="page">
-    <div class="page-head"><div class="ttl"><h1 class="h1">Profilo</h1></div>
-      <button class="icon-btn" aria-label="Come funziona" onClick=${() => C.openSheet({ k: 'help' })}><${Icon} n="info" /></button></div>
+    <${MainHead} title="Profilo" right=${html`<button class="icon-btn" aria-label="Come funziona" onClick=${() => C.openSheet({ k: 'help' })}><${Icon} n="info" /></button>`} />
     ${me && r ? html`
       <${OverdueNote} />
       ${edit ? html`<div class="card"><${ProfileForm} initial=${me} onSaved=${() => setEdit(false)} /></div>
@@ -2353,7 +2542,8 @@ function PlayersScreen() {
     .sort(sort === 'lvl' ? (a, b) => C.rated[b.id].ovr - C.rated[a.id].ovr : (a, b) => dispName(a).localeCompare(dispName(b), 'it'));
   const injured = C.players.filter((p) => p.injury && p.injury.level).length;
   return html`<div class="page">
-    <div class="page-head"><div class="ttl"><h1 class="h1">Giocatori</h1><div class="sub">${plural(C.players.length, 'iscritto', 'iscritti')} al gruppo${injured ? ' · ' + plural(injured, 'infortunato', 'infortunati') : ''}</div></div></div>
+    <${MainHead} title="Giocatori" />
+    <div class="small muted">${plural(C.players.length, 'membro', 'membri')} nel gruppo${injured ? ' · ' + plural(injured, 'infortunato', 'infortunati') : ''}</div>
     <div class="stack-8">
       <input id="player-search" class="input" type="search" placeholder="Cerca per nome o soprannome" value=${q} onInput=${(e) => setQ(e.target.value)} />
       <${Seg} value=${sort} onChange=${setSort} options=${[{ v: 'lvl', l: 'Per punteggio' }, { v: 'name', l: 'Per nome' }]} />
@@ -2453,19 +2643,14 @@ function HomeScreen() {
   const recent = played.slice(0, 2);
 
   return html`<div class="page">
-    <div class="page-head">
-      <div class="ttl">
-        <h1 class="h1">Partite</h1>
-        ${C.me && html`<div class="sub">Ciao, ${dispName(C.me)}</div>`}
-      </div>
-      ${C.me && html`<button class="icon-btn" style="border:0;background:none" aria-label="Il mio profilo" onClick=${() => C.goTab('me')}><${Avatar} p=${C.me} size=${38} /></button>`}
-    </div>
+    <${MainHead} title="Partite" right=${C.me && html`<button class="icon-btn" style="border:0;background:none" aria-label="Il mio profilo" onClick=${() => C.goTab('me')}><${Avatar} p=${C.me} size=${38} /></button>`} />
 
     <${OverdueNote} />
 
-    ${(mvpTodo.length > 0 || resTodo.length > 0) && html`<section class="sec">
+    ${(mvpTodo.length > 0 || resTodo.length > 0 || C.badges.requests > 0) && html`<section class="sec">
       <h2 class="h3">Da fare</h2>
       <div class="cards">
+        ${C.badges.requests > 0 && html`<${TodoCard} icon="users" title=${plural(C.badges.requests, 'richiesta', 'richieste') + ' per entrare nel gruppo'} text="Accetta o rifiuta chi vuole giocare con voi" onClick=${() => C.go({ t: 'group' })} />`}
         ${mvpTodo.map((m) => { const mv = C.stats.mvps[m.id]; return html`<${TodoCard} key=${'v' + m.id} icon="trophy" title=${'Vota l\'MVP di ' + dayShort(m).toLowerCase()} text=${'Si chiude tra ' + fmtLeft(mv.closesAt - Date.now()) + ' · hanno votato ' + mv.nVoted + ' su ' + mv.nEligible} onClick=${() => C.go({ t: 'mvp', id: m.id })} />`; })}
         ${resTodo.map((m) => html`<${TodoCard} key=${'r' + m.id} icon="ball" title=${'Risultato di ' + dayShort(m).toLowerCase()} text="Scrivi il punteggio e, se te li ricordi, marcatori e assist" onClick=${() => C.go({ t: 'result', id: m.id })} />`)}
       </div>
@@ -3105,6 +3290,391 @@ function MatchRateScreen({ id }) {
 
 
 /* ============================================================
+   APP: gruppi, menu, messaggi, help, sviluppatori, impostazioni, amministrazione
+   ============================================================ */
+const DEVELOPERS = [
+  { name: 'Orlando Reginato', email: 'reginatoorlando@gmail.com', phone: '370 352 4400' },
+  { name: 'Luca Tortorelli', email: 'lgmtortorelli@gmail.com', phone: '347 181 8221' },
+];
+const HELP_TOPICS = ['Eliminare il mio account', 'Eliminare una partita', 'Eliminare un gruppo', 'Problema con l\'app', 'Altro'];
+
+function readLS(k, d) { try { const v = window.localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
+function writeLS(k, v) { try { if (v == null) window.localStorage.removeItem(k); else window.localStorage.setItem(k, v); } catch (e) { /* archivio non disponibile */ } }
+function applyTheme(t) {
+  const el = document.documentElement;
+  if (t === 'dark' || t === 'light') el.setAttribute('data-theme', t); else el.removeAttribute('data-theme');
+}
+const memberKey = (gid, uid) => gid + '~' + uid;
+const fmtClock = (ts) => { const d = new Date(ts); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
+function fmtDay(ts) {
+  const d = new Date(ts); d.setHours(0, 0, 0, 0);
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const k = Math.round((t - d) / 86400000);
+  if (k === 0) return 'Oggi';
+  if (k === 1) return 'Ieri';
+  return `${cap1(DOW_FULL[d.getDay()])} ${d.getDate()} ${MON_FULL[d.getMonth()]}`;
+}
+
+/* intestazione delle schede principali: menu, titolo, gruppo attuale */
+function MainHead({ title, right }) {
+  const C = useContext(Ctx);
+  return html`<div class="page-head">
+    <button class="icon-btn" aria-label="Menu" onClick=${() => C.openSheet({ k: 'menu' })}><${Icon} n="menu" />${C.badges.menu > 0 && html`<span class="dot-badge" aria-hidden="true"></span>`}</button>
+    <div class="ttl">
+      <h1 class="h1">${title}</h1>
+      ${C.group && html`<button class="group-chip" onClick=${() => C.openSheet({ k: 'groupSwitch' })} aria-label=${'Gruppo: ' + C.group.name + '. Cambia gruppo'}>
+        <span class="ell">${C.group.name} · ${C.group.city}</span><${Icon} n="chevdown" s="14" />
+      </button>`}
+    </div>
+    ${right}
+  </div>`;
+}
+
+function MenuSheet({ onClose }) {
+  const C = useContext(Ctx);
+  const go = (s) => { onClose(); C.go(s); };
+  const item = (icon, label, fn, extra) => html`<button class="menu-item" onClick=${fn}><${Icon} n=${icon} /><span class="grow">${label}</span>${extra}<${Icon} n="chev" s="16" /></button>`;
+  const badge = (n) => n > 0 && html`<span class="count-badge">${n}</span>`;
+  return html`<${Sheet} title="Menu" onClose=${onClose}>
+    <div class="menu-list">
+      ${C.group && item('users', 'Il mio gruppo: ' + C.group.name, () => go({ t: 'group' }), badge(C.badges.requests))}
+      ${item('pitch', 'Gruppi: cambia, cerca o crea', () => go({ t: 'groups' }))}
+      ${item('settings', 'Impostazioni', () => go({ t: 'settings' }))}
+      ${item('help', 'Help: scrivi agli sviluppatori', () => go({ t: 'help' }), badge(C.badges.helpReplies))}
+      ${item('code', 'Sviluppatori', () => go({ t: 'devs' }))}
+      ${item('info', 'Come funziona', () => { onClose(); C.openSheet({ k: 'help' }); })}
+      ${C.isAdmin && item('shield', 'Amministrazione', () => go({ t: 'admin' }), badge(C.badges.helpOpen))}
+    </div>
+  <//>`;
+}
+
+function GroupSwitchSheet({ onClose }) {
+  const C = useContext(Ctx);
+  return html`<${Sheet} title="I tuoi gruppi" onClose=${onClose}>
+    <div class="card pad0 divided">${C.myGroups.map((g) => html`<button key=${g.id} class="row tap" style="padding:12px 14px" onClick=${() => { C.switchGroup(g.id); onClose(); }}>
+      <span class="g-ic"><${Icon} n="pitch" s="18" /></span>
+      <span class="row-main"><span class="row-t ell">${g.name}</span><span class="row-s">${g.city} · ${plural(numOr(g.n, 0), 'membro', 'membri')}</span></span>
+      ${g.id === C.gid && html`<span class="chip ok"><${Icon} n="check" s="14" /> Attuale</span>`}
+    </button>`)}</div>
+    <button class="btn block" onClick=${() => { onClose(); C.go({ t: 'groups' }); }}><${Icon} n="search" s="16" /> Cerca o crea un gruppo</button>
+  <//>`;
+}
+
+/* ---------- gruppi: i miei, cerca, crea ---------- */
+function GroupsScreen({ main }) {
+  const C = useContext(Ctx);
+  const [q, setQ] = useState('');
+  const [name, setName] = useState('');
+  const [city, setCity] = useState('');
+  const [busy, setBusy] = useState(false);
+  const status = (gid) => { const m = C.memberById[memberKey(gid, C.uid)]; return m ? m.status : null; };
+  const t = q.trim().toLowerCase();
+  const all = C.groups.slice().sort((a, b) => (a.city || '').localeCompare(b.city || '', 'it') || (a.name || '').localeCompare(b.name || '', 'it'));
+  const found = all.filter((g) => !t || ((g.name || '') + ' ' + (g.city || '')).toLowerCase().includes(t));
+  const pending = all.filter((g) => status(g.id) === 'pending');
+  const ask = async (g) => { setBusy(true); const r = await C.act.rpc('request_join', { p_gid: g.id }); setBusy(false); if (r.ok) C.flash(r.data === 'active' ? 'Sei già nel gruppo' : 'Richiesta inviata agli amministratori di ' + g.name); };
+  const cancel = (g) => C.openSheet({ k: 'confirm', title: 'Annullare la richiesta?', text: `La richiesta per entrare in ${g.name} viene ritirata.`, label: 'Annulla richiesta', danger: true, onYes: async () => { if ((await C.act.rpc('leave_group', { p_gid: g.id })).ok) C.flash('Richiesta annullata'); } });
+  const create = async (e) => {
+    e.preventDefault();
+    if (busy || name.trim().length < 2 || city.trim().length < 2) return;
+    setBusy(true);
+    const r = await C.act.rpc('create_group', { p_name: name.trim(), p_city: city.trim() });
+    setBusy(false);
+    if (r.ok) { setName(''); setCity(''); C.flash('Gruppo creato: ora sei il suo amministratore'); C.switchGroup(r.data, true); }
+  };
+  const body = html`
+    ${main && html`<div class="note ok"><${Icon} n="info" s="16" /><span>Per giocare entra in un gruppo della tua città: chiedi di entrare e un amministratore del gruppo ti accetta. Oppure crea un gruppo nuovo, e ne sarai tu l'amministratore.</span></div>`}
+    ${C.myGroups.length > 0 && html`<section class="sec"><h2 class="h3">I tuoi gruppi</h2>
+      <div class="card pad0 divided">${C.myGroups.map((g) => html`<button key=${g.id} class="row tap" style="padding:12px 14px" onClick=${() => C.switchGroup(g.id, true)}>
+        <span class="g-ic"><${Icon} n="pitch" s="18" /></span>
+        <span class="row-main"><span class="row-t ell">${g.name}</span><span class="row-s">${g.city} · ${plural(numOr(g.n, 0), 'membro', 'membri')}</span></span>
+        ${g.id === C.gid ? html`<span class="chip ok">Attuale</span>` : html`<span class="chip">Apri</span>`}
+      </button>`)}</div></section>`}
+    ${pending.length > 0 && html`<section class="sec"><h2 class="h3">Richieste in attesa</h2>
+      <div class="card pad0 divided">${pending.map((g) => html`<div key=${g.id} class="row" style="padding:12px 14px">
+        <span class="g-ic"><${Icon} n="clock" s="18" /></span>
+        <span class="row-main"><span class="row-t ell">${g.name}</span><span class="row-s">${g.city} · aspetta che un amministratore ti accetti</span></span>
+        <button class="btn sm ghost" onClick=${() => cancel(g)}>Annulla</button>
+      </div>`)}</div></section>`}
+    <section class="sec"><h2 class="h3">Cerca un gruppo</h2>
+      <input id="group-search" class="input" type="search" placeholder="Nome del gruppo o città" value=${q} onInput=${(e) => setQ(e.target.value)} />
+      ${found.length ? html`<div class="card pad0 divided">${found.map((g) => { const st = status(g.id); return html`<div key=${g.id} class="row" style="padding:12px 14px">
+        <span class="g-ic"><${Icon} n="pin" s="18" /></span>
+        <span class="row-main"><span class="row-t ell">${g.name}</span><span class="row-s">${g.city} · ${plural(numOr(g.n, 0), 'membro', 'membri')}</span></span>
+        ${st === 'active' ? html`<span class="chip ok">Ci sei</span>` : st === 'pending' ? html`<span class="chip warn">In attesa</span>`
+          : C.canWrite && C.me && html`<button class="btn sm primary" disabled=${busy} onClick=${() => ask(g)}>Chiedi di entrare</button>`}
+      </div>`; })}</div>` : html`<div class="card empty small">${C.groups.length ? 'Nessun gruppo con questo nome o città.' : 'Ancora nessun gruppo: crea il primo.'}</div>`}
+    </section>
+    ${C.canWrite && C.me && html`<section class="sec"><h2 class="h3">Crea un gruppo</h2>
+      <form class="card stack" onSubmit=${create}>
+        <div class="grid2 keep">
+          <div class="field"><label class="label" for="ng-name">Nome</label><input id="ng-name" class="input" maxlength="40" placeholder="Es. Calcetto del martedì" value=${name} onInput=${(e) => setName(e.target.value)} /></div>
+          <div class="field"><label class="label" for="ng-city">Città</label><input id="ng-city" class="input" maxlength="40" placeholder="Es. La Spezia" value=${city} onInput=${(e) => setCity(e.target.value)} /></div>
+        </div>
+        <div class="tiny faint">Chi crea il gruppo ne è l'amministratore: accetta le richieste di ingresso e può nominare altri amministratori.</div>
+        <button class="btn primary" type="submit" disabled=${busy || name.trim().length < 2 || city.trim().length < 2}>Crea il gruppo</button>
+      </form>
+    </section>`}`;
+  if (main) {
+    return html`<div class="page">
+      <${MainHead} title="Gruppi" />
+      ${body}
+      ${window.SC_SIGNOUT && !C.demo && html`<button class="btn ghost block" onClick=${window.SC_SIGNOUT}>Esci dall'account</button>`}
+      ${C.demo && html`<button class="btn danger block" onClick=${C.exitDemo}>Esci dalla demo</button>`}
+    </div>`;
+  }
+  return html`<${Page} title="Gruppi" onBack=${C.back}>${body}<//>`;
+}
+
+/* ---------- il gruppo attuale: membri, richieste, ruoli ---------- */
+function GroupScreen() {
+  const C = useContext(Ctx);
+  const g = C.group;
+  if (!g) return html`<${Page} title="Gruppo" onBack=${C.back}><div class="card empty">Nessun gruppo selezionato.</div><//>`;
+  const manage = C.isGroupAdmin || C.isAdmin;
+  const rows = C.members.filter((m) => m.gid === g.id);
+  const active = rows.filter((m) => m.status === 'active').sort((a, b) => (a.role === b.role ? dispName(C.playersById[a.uid]).localeCompare(dispName(C.playersById[b.uid]), 'it') : a.role === 'admin' ? -1 : 1));
+  const pending = rows.filter((m) => m.status === 'pending').sort((a, b) => a.t - b.t);
+  const decide = async (m, yes) => {
+    const r = await C.act.rpc('decide_request', { p_gid: g.id, p_uid: m.uid, p_accept: yes });
+    if (r.ok) C.flash(yes ? dispName(C.playersById[m.uid]) + ' è nel gruppo' : 'Richiesta rifiutata');
+  };
+  const leave = () => C.openSheet({
+    k: 'confirm', title: 'Uscire dal gruppo?', danger: true, label: 'Esci dal gruppo',
+    text: `Non vedrai più partite, chat e classifiche di ${g.name}. Per rientrare dovrai chiedere di nuovo.${C.isGroupAdmin && active.filter((m) => m.role === 'admin').length === 1 ? ' Sei l\'unico amministratore: lo diventerà il membro iscritto da più tempo.' : ''}`,
+    onYes: async () => { if ((await C.act.rpc('leave_group', { p_gid: g.id })).ok) { C.flash('Sei uscito da ' + g.name); C.goTab('matches'); } },
+  });
+  const del = () => C.openSheet({
+    k: 'confirm', title: 'Eliminare il gruppo?', danger: true, label: 'Elimina per sempre',
+    text: `Vengono cancellati per sempre partite, chat, valutazioni e membri di ${g.name}. I profili delle persone restano.`,
+    onYes: async () => { if ((await C.act.rpc('delete_group', { p_gid: g.id })).ok) { C.flash('Gruppo eliminato'); C.goTab('matches'); } },
+  });
+  return html`<${Page} title=${g.name} sub=${g.city + ' · ' + plural(active.length, 'membro', 'membri')} onBack=${C.back}>
+    ${manage && pending.length > 0 && html`<section class="sec">
+      <div class="sec-h"><h2 class="h3">Richieste per entrare</h2><span class="chip warn num">${pending.length}</span></div>
+      <div class="card pad0 divided">${pending.map((m) => { const p = C.playersById[m.uid]; return html`<div key=${m.uid} class="req-row">
+        <div class="hs-12"><${Avatar} p=${p || { id: m.uid }} size=${40} />
+          <span class="row-main"><span class="row-t ell">${p ? dispName(p) : 'Nuovo giocatore'}</span><span class="row-s">${p ? fullName(p) + ' · ' : ''}chiesto il ${fmtTs(m.t)}</span></span>
+          ${p && html`<${RoleChips} role=${p.role} role2=${p.role2} />`}</div>
+        <div class="hs" style="gap:8px"><button class="btn sm accent grow" onClick=${() => decide(m, true)}><${Icon} n="check" s="16" /> Accetta</button><button class="btn sm ghost grow" onClick=${() => decide(m, false)}>Rifiuta</button></div>
+      </div>`; })}</div>
+    </section>`}
+    ${!manage && pending.length > 0 && html`<div class="note"><${Icon} n="clock" s="16" /><span>${plural(pending.length, 'persona aspetta', 'persone aspettano')} che un amministratore del gruppo le accetti.</span></div>`}
+    <section class="sec">
+      <h2 class="h3">Membri</h2>
+      <div class="card pad0 divided">${active.map((m) => { const p = C.playersById[m.uid]; return html`<button key=${m.uid} class="row tap" style="padding:10px 14px" onClick=${() => (manage && m.uid !== C.uid ? C.openSheet({ k: 'member2', uid: m.uid }) : p && C.go({ t: 'player', id: m.uid }))}>
+        <${Avatar} p=${p || { id: m.uid }} size=${36} />
+        <span class="row-main"><span class="row-t"><span class="ell">${p ? dispName(p) : 'Giocatore'}</span>${m.uid === C.uid && html`<span class="chip ok">Tu</span>`}</span><span class="row-s ell" style="display:block">${p ? fullName(p) : ''}</span></span>
+        ${m.role === 'admin' && html`<span class="chip"><${Icon} n="shield" s="14" /> Amministratore</span>`}
+        ${manage && m.uid !== C.uid && html`<${Icon} n="dots" s="16" fill />`}
+      </button>`; })}</div>
+      ${manage && html`<div class="tiny faint">Tocca un membro per renderlo amministratore o toglierlo dal gruppo.</div>`}
+    </section>
+    <button class="btn ghost block" onClick=${leave}>Esci dal gruppo</button>
+    ${C.isAdmin && html`<button class="btn danger block" onClick=${del}><${Icon} n="x" s="16" /> Elimina il gruppo (amministrazione)</button>`}
+  <//>`;
+}
+
+function MemberActionsSheet({ uid, onClose }) {
+  const C = useContext(Ctx);
+  const g = C.group, p = C.playersById[uid], m = g && C.memberById[memberKey(g.id, uid)];
+  if (!g || !m) return null;
+  const name = p ? dispName(p) : 'questo giocatore';
+  const role = async (r) => { onClose(); if ((await C.act.rpc('set_member_role', { p_gid: g.id, p_uid: uid, p_role: r })).ok) C.flash(r === 'admin' ? name + ' ora è amministratore' : name + ' non è più amministratore'); };
+  const remove = () => { onClose(); C.openSheet({ k: 'confirm', title: 'Togliere ' + name + ' dal gruppo?', danger: true, label: 'Togli dal gruppo', text: `${name} non vedrà più partite, chat e classifiche di ${g.name}. Le partite già giocate restano com'erano.`, onYes: async () => { if ((await C.act.rpc('remove_member', { p_gid: g.id, p_uid: uid })).ok) C.flash(name + ' è uscito dal gruppo'); } }); };
+  return html`<${Sheet} title=${name} onClose=${onClose}>
+    <div class="stack-8">
+      ${p && html`<button class="btn block" style="justify-content:flex-start" onClick=${() => { onClose(); C.go({ t: 'player', id: uid }); }}><${Icon} n="user" s="16" /> Vedi scheda giocatore</button>`}
+      ${m.role === 'admin'
+        ? html`<button class="btn block" style="justify-content:flex-start" onClick=${() => role('member')}><${Icon} n="shield" s="16" /> Togli il ruolo di amministratore</button>`
+        : html`<button class="btn block" style="justify-content:flex-start" onClick=${() => role('admin')}><${Icon} n="shield" s="16" /> Rendi amministratore del gruppo</button>`}
+      <button class="btn danger block" style="justify-content:flex-start" onClick=${remove}><${Icon} n="x" s="16" /> Togli dal gruppo</button>
+    </div>
+  <//>`;
+}
+
+/* ---------- messaggi: la chat del gruppo ---------- */
+function ChatScreen() {
+  const C = useContext(Ctx);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [sel, setSel] = useState(null);
+  const endRef = useRef(null);
+  const msgs = C.chat.slice().sort((a, b) => a.t - b.t);
+  const lastT = msgs.length ? msgs[msgs.length - 1].t : 0;
+  useEffect(() => { C.markRead(lastT); }, [lastT]);
+  useEffect(() => { window.scrollTo(0, document.documentElement.scrollHeight); }, [msgs.length]);
+  const send = async () => {
+    const t = text.trim();
+    if (!t || busy) return;
+    setBusy(true);
+    const ok = await C.act.sendChat(t.slice(0, 1000));
+    setBusy(false);
+    if (ok) setText('');
+  };
+  const del = (m) => C.openSheet({ k: 'confirm', title: 'Eliminare il messaggio?', danger: true, label: 'Elimina', text: 'Il messaggio sparisce per tutti.', onYes: async () => { if (await C.act.deleteChat(m.id)) C.flash('Messaggio eliminato'); } });
+  let lastDay = '';
+  return html`<div class="page chat-page">
+    <${MainHead} title="Messaggi" />
+    ${msgs.length === 0 ? html`<div class="card empty"><div class="h3">Nessun messaggio</div><div>Scrivi il primo messaggio al gruppo: lo leggono tutti i membri.</div></div>` : html`<div class="chat">
+      ${msgs.map((m, i) => {
+        const day = fmtDay(m.t);
+        const sep = day !== lastDay ? (lastDay = day, html`<div class="chat-day" key=${'d' + m.id}>${day}</div>`) : null;
+        const mine = m.by === C.uid;
+        const p = C.playersById[m.by];
+        const prev = msgs[i - 1];
+        const cont = prev && prev.by === m.by && !sep && m.t - prev.t < 10 * 60000;
+        const canDel = mine || C.isAdmin;
+        return html`${sep}<div key=${m.id} class=${'msg' + (mine ? ' mine' : '') + (cont ? ' cont' : '')}>
+          ${!mine && html`<span class="msg-av">${!cont && html`<${Avatar} p=${p || { id: m.by }} size=${30} />`}</span>`}
+          <button type="button" class="bubble" onClick=${() => canDel && setSel(sel === m.id ? null : m.id)} aria-label=${(p ? dispName(p) : 'Ex giocatore') + ', ' + fmtClock(m.t) + ': ' + m.text}>
+            ${!mine && !cont && html`<span class="msg-name">${p ? dispName(p) : 'Ex giocatore'}</span>`}
+            <span class="msg-text">${m.text}</span>
+            <span class="msg-time">${fmtClock(m.t)}</span>
+          </button>
+          ${sel === m.id && canDel && html`<button class="link msg-del" onClick=${() => { setSel(null); del(m); }}>Elimina</button>`}
+        </div>`;
+      })}
+      <div ref=${endRef}></div>
+    </div>`}
+    ${C.canWrite && html`<form class="chat-input" onSubmit=${(e) => { e.preventDefault(); send(); }}>
+      <textarea id="chat-text" class="input" rows="1" maxlength="1000" placeholder=${'Scrivi a ' + (C.group ? C.group.name : 'il gruppo')} value=${text}
+        onInput=${(e) => { setText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(120, e.target.scrollHeight) + 'px'; }}
+        onKeyDown=${(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}></textarea>
+      <button class="btn primary send" type="submit" aria-label="Invia" disabled=${!text.trim() || busy}><${Icon} n="send" /></button>
+    </form>`}
+  </div>`;
+}
+
+/* ---------- help: scrivere agli sviluppatori ---------- */
+function HelpScreen() {
+  const C = useContext(Ctx);
+  const [topic, setTopic] = useState(HELP_TOPICS[0]);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const mine = C.help.filter((h) => h.by === C.uid).sort((a, b) => b.t - a.t);
+  useEffect(() => { C.markHelpSeen(); }, [mine.length]);
+  const send = async (e) => {
+    e.preventDefault();
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    const ok = await C.act.sendHelp(topic, text.trim().slice(0, 1500));
+    setBusy(false);
+    if (ok) { setText(''); C.flash('Messaggio inviato: vi rispondono qui'); }
+  };
+  return html`<${Page} title="Help" sub="Scrivi a Orlando e Luca" onBack=${C.back}>
+    <div class="note"><${Icon} n="info" s="16" /><span>Per eliminare un account, una partita o un gruppo scrivi qui: possono farlo solo gli amministratori dell'app. La risposta la trovi in questa pagina.</span></div>
+    <form class="card stack" onSubmit=${send}>
+      <div class="field"><label class="label" for="hp-topic">Argomento</label>
+        <select id="hp-topic" class="input" value=${topic} onChange=${(e) => setTopic(e.target.value)}>${HELP_TOPICS.map((t) => html`<option key=${t} value=${t}>${t}</option>`)}</select></div>
+      <div class="field"><label class="label" for="hp-text">Messaggio</label>
+        <textarea id="hp-text" class="input" rows="4" maxlength="1500" placeholder="Spiega cosa ti serve: per una partita, scrivi giorno e campo" value=${text} onInput=${(e) => setText(e.target.value)}></textarea></div>
+      <button class="btn primary" type="submit" disabled=${!text.trim() || busy || !C.canWrite}>${busy ? 'Invio…' : 'Invia'}</button>
+    </form>
+    ${mine.length > 0 && html`<section class="sec"><h2 class="h3">I tuoi messaggi</h2>
+      ${mine.map((h) => html`<${HelpCard} key=${h.id} h=${h} />`)}
+    </section>`}
+    <button class="btn ghost block" onClick=${() => C.go({ t: 'devs' })}>Contatti degli sviluppatori</button>
+  <//>`;
+}
+
+function HelpCard({ h, admin }) {
+  const C = useContext(Ctx);
+  const [reply, setReply] = useState('');
+  const [busy, setBusy] = useState(false);
+  const p = C.playersById[h.by];
+  const replies = Array.isArray(h.replies) ? h.replies : [];
+  const answer = async (status) => {
+    setBusy(true);
+    const next = reply.trim() ? replies.concat([{ by: C.uid, text: reply.trim().slice(0, 1500), t: Date.now() }]) : replies;
+    const ok = await C.act.answerHelp(h.id, next, status);
+    setBusy(false);
+    if (ok) { setReply(''); C.flash(status === 'done' ? 'Segnato come risolto' : 'Risposta inviata'); }
+  };
+  return html`<div class="card stack-8">
+    <div class="hs">
+      ${admin && html`<${Avatar} p=${p || { id: h.by }} size=${28} />`}
+      <span class="row-t grow"><span class="ell">${admin ? (p ? dispName(p) + ' · ' : '') + (h.topic || 'Help') : h.topic || 'Help'}</span></span>
+      <span class=${'chip ' + (h.status === 'done' ? 'ok' : 'warn')}>${h.status === 'done' ? 'Risolto' : 'Aperto'}</span>
+    </div>
+    <div class="small">${h.text}</div>
+    <div class="tiny faint">${fmtTs(h.t)}${admin && p ? ' · ' + fullName(p) : ''}</div>
+    ${replies.map((r, i) => { const rp = C.playersById[r.by]; return html`<div key=${i} class="reply"><b>${rp ? dispName(rp) : 'Sviluppatori'}:</b> ${r.text}<div class="tiny faint">${fmtTs(r.t)}</div></div>`; })}
+    ${admin && html`<div class="stack-8">
+      <textarea class="input" id=${'hr-' + h.id} rows="2" maxlength="1500" placeholder="Rispondi" value=${reply} onInput=${(e) => setReply(e.target.value)}></textarea>
+      <div class="hs wrap">
+        <button class="btn sm primary" disabled=${busy || !reply.trim()} onClick=${() => answer(h.status === 'done' ? 'done' : 'open')}>Rispondi</button>
+        ${h.status !== 'done' ? html`<button class="btn sm accent" disabled=${busy} onClick=${() => answer('done')}>Segna come risolto</button>` : html`<button class="btn sm ghost" disabled=${busy} onClick=${() => answer('open')}>Riapri</button>`}
+      </div>
+    </div>`}
+  </div>`;
+}
+
+function DevelopersScreen() {
+  const C = useContext(Ctx);
+  const copy = async (v) => { try { await navigator.clipboard.writeText(v); C.flash('Copiato: ' + v); } catch (e) { C.flash(v); } };
+  return html`<${Page} title="Sviluppatori" sub="Chi ha fatto Algor Bomber" onBack=${C.back}>
+    ${DEVELOPERS.map((d) => html`<div key=${d.email} class="card stack-8">
+      <div class="h3">${d.name}</div>
+      <div class="dev-row"><${Icon} n="mail" s="16" /><span class="grow sel dev-mail">${d.email}</span>
+        <a class="btn sm" href=${'mailto:' + d.email}>Scrivi</a><button class="btn sm ghost" onClick=${() => copy(d.email)}>Copia</button></div>
+      <div class="dev-row"><${Icon} n="phone" s="16" /><span class="grow sel num">${d.phone}</span>
+        <a class="btn sm" href=${'tel:+39' + d.phone.replace(/\s/g, '')}>Chiama</a><button class="btn sm ghost" onClick=${() => copy(d.phone)}>Copia</button></div>
+    </div>`)}
+    <button class="btn block" onClick=${() => C.go({ t: 'help' })}><${Icon} n="help" s="16" /> Scrivi dall'app</button>
+  <//>`;
+}
+
+function SettingsScreen() {
+  const C = useContext(Ctx);
+  return html`<${Page} title="Impostazioni" onBack=${C.back}>
+    <section class="sec"><h2 class="h3">Aspetto</h2>
+      <${Seg} value=${C.theme} onChange=${C.setTheme} options=${[{ v: 'auto', l: 'Automatico' }, { v: 'light', l: 'Chiaro' }, { v: 'dark', l: 'Scuro' }]} />
+      <div class="tiny faint">Automatico segue il tema del telefono.</div>
+    </section>
+    <section class="sec"><h2 class="h3">Profilo</h2>
+      <button class="btn block" style="justify-content:flex-start" onClick=${() => C.goTab('me')}><${Icon} n="edit" s="16" /> Modifica nome, foto, ruoli e infortunio</button>
+    </section>
+    <section class="sec"><h2 class="h3">Account</h2>
+      ${window.SC_EMAIL && html`<div class="small muted">Accesso con ${window.SC_EMAIL}</div>`}
+      ${window.SC_SIGNOUT && !C.demo && html`<button class="btn block" onClick=${window.SC_SIGNOUT}>Esci dall'account</button>`}
+      <div class="tiny faint">Per eliminare il tuo account scrivi agli sviluppatori dalla pagina Help.</div>
+      ${C.demo && html`<button class="btn danger block" onClick=${C.exitDemo}>Esci dalla demo</button>`}
+    </section>
+  <//>`;
+}
+
+/* ---------- amministrazione: solo Orlando e Luca ---------- */
+function AdminScreen() {
+  const C = useContext(Ctx);
+  const [tab, setTab] = useState('help');
+  const [q, setQ] = useState('');
+  if (!C.isAdmin) return html`<${Page} title="Amministrazione" onBack=${C.back}><div class="card empty">Solo per gli amministratori dell'app.</div><//>`;
+  const help = C.help.slice().sort((a, b) => (a.status === 'done') - (b.status === 'done') || b.t - a.t);
+  const t = q.trim().toLowerCase();
+  const people = C.allPlayers.filter((p) => !t || (fullName(p) + ' ' + (p.nick || '')).toLowerCase().includes(t)).sort((a, b) => dispName(a).localeCompare(dispName(b), 'it'));
+  const groups = C.groups.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'it'));
+  const delGroup = (g) => C.openSheet({ k: 'confirm', title: 'Eliminare ' + g.name + '?', danger: true, label: 'Elimina per sempre', text: 'Vengono cancellati per sempre partite, chat, valutazioni e membri del gruppo. I profili restano.', onYes: async () => { if ((await C.act.rpc('delete_group', { p_gid: g.id })).ok) C.flash('Gruppo eliminato'); } });
+  return html`<${Page} title="Amministrazione" sub="Solo per gli amministratori dell'app" onBack=${C.back}>
+    <${Seg} value=${tab} onChange=${setTab} options=${[{ v: 'help', l: 'Help' + (C.badges.helpOpen ? ' (' + C.badges.helpOpen + ')' : '') }, { v: 'people', l: 'Account' }, { v: 'groups', l: 'Gruppi' }]} />
+    ${tab === 'help' && (help.length ? help.map((h) => html`<${HelpCard} key=${h.id} h=${h} admin />`) : html`<div class="card empty small">Nessun messaggio.</div>`)}
+    ${tab === 'people' && html`<div class="stack">
+      <input id="adm-search" class="input" type="search" placeholder="Cerca per nome" value=${q} onInput=${(e) => setQ(e.target.value)} />
+      <div class="card pad0 divided">${people.map((p) => html`<button key=${p.id} class="row tap" style="padding:10px 14px" onClick=${() => C.go({ t: 'player', id: p.id })}>
+        <${Avatar} p=${p} size=${34} /><span class="row-main"><span class="row-t ell">${dispName(p)}</span><span class="row-s ell" style="display:block">${fullName(p)} · ${plural(C.members.filter((m) => m.uid === p.id && m.status === 'active').length, 'gruppo', 'gruppi')}</span></span><${Icon} n="chev" s="16" />
+      </button>`)}</div>
+      <div class="tiny faint">Apri un account per eliminarlo.</div>
+    </div>`}
+    ${tab === 'groups' && html`<div class="card pad0 divided">${groups.map((g) => html`<div key=${g.id} class="row" style="padding:12px 14px">
+      <span class="g-ic"><${Icon} n="pitch" s="18" /></span>
+      <span class="row-main"><span class="row-t ell">${g.name}</span><span class="row-s">${g.city} · ${plural(numOr(g.n, 0), 'membro', 'membri')}</span></span>
+      <button class="btn sm danger" onClick=${() => delGroup(g)}>Elimina</button>
+    </div>`)}</div>`}
+  <//>`;
+}
+
+
+/* ============================================================
    APP: storico e classifiche
    ============================================================ */
 function AccuracyCard() {
@@ -3195,7 +3765,8 @@ function StoricoScreen() {
     .sort((a, b) => mStart(b) - mStart(a));
   const nPlayed = past.filter((m) => m.status === 'played').length;
   return html`<div class="page">
-    <div class="page-head"><div class="ttl"><h1 class="h1">Storico</h1><div class="sub">${plural(nPlayed, 'partita giocata', 'partite giocate')}</div></div></div>
+    <${MainHead} title="Storico" />
+    <div class="small muted">${plural(nPlayed, 'partita giocata', 'partite giocate')} in questo gruppo: gol, assist e MVP contano solo qui.</div>
     <${Seg} value=${tab} onChange=${setTab} options=${[{ v: 'list', l: 'Partite' }, { v: 'rank', l: 'Classifiche' }]} />
     ${tab === 'list' ? html`
       <${AccuracyCard} />
@@ -3383,7 +3954,8 @@ function MatchMenuSheet({ id, onClose }) {
       ${phase === 'cancelled' && item('check', 'Riapri la partita', () => { C.act.setStatus(id, 'open'); onClose(); })}
       ${editPlayed && item('ball', Engine.hasResult(m) ? 'Correggi risultato e marcatori' : 'Inserisci il risultato', () => { onClose(); C.go({ t: 'result', id }); })}
       ${editPlayed && item('clock', 'Riapri la partita (annulla la chiusura)', () => C.openSheet({ k: 'confirm', title: 'Riaprire la partita?', text: 'Risultato e voti MVP restano salvati ma non contano finché non la chiudi di nuovo. Alla nuova chiusura il voto MVP riparte per 24 ore.', label: 'Riapri', onYes: () => C.act.setStatus(id, 'open') }))}
-      ${phase === 'played' && !editPlayed && html`<div class="note"><${Icon} n="lock" s="16" /><span>La partita successiva è già iniziata: le correzioni le fa solo l'amministratore.</span></div>`}
+      ${phase === 'played' && !editPlayed && html`<div class="note"><${Icon} n="lock" s="16" /><span>La partita successiva è già iniziata: le correzioni le fanno solo gli amministratori.</span></div>`}
+      ${C.isAdmin && item('x', 'Elimina la partita (amministrazione)', () => C.openSheet({ k: 'confirm', title: 'Eliminare la partita?', danger: true, label: 'Elimina per sempre', text: 'La partita sparisce per tutti, con risultato, marcatori e voti MVP. Le classifiche si aggiornano.', onYes: async () => { if (await C.act.deleteMatch(id)) { C.flash('Partita eliminata'); C.goTab('matches'); } } }), 'danger')}
     </div>
   <//>`;
 }
@@ -3445,6 +4017,9 @@ function SheetHost({ sheet, onClose }) {
     case 'ratingDetail': return html`<${RatingDetailSheet} pid=${sheet.pid} voter=${sheet.voter} self=${sheet.self} onClose=${onClose} />`;
     case 'help': return html`<${HelpSheet} onClose=${onClose} />`;
     case 'photo': return html`<${PhotoSheet} pid=${sheet.pid} onClose=${onClose} />`;
+    case 'menu': return html`<${MenuSheet} onClose=${onClose} />`;
+    case 'groupSwitch': return html`<${GroupSwitchSheet} onClose=${onClose} />`;
+    case 'member2': return html`<${MemberActionsSheet} key=${sheet.uid} uid=${sheet.uid} onClose=${onClose} />`;
     default: return null;
   }
 }
@@ -3477,20 +4052,29 @@ function Gate({ status, startDemo }) {
   </div>`;
 }
 
-const COLLECTIONS = ['players', 'ratings', 'mvp', 'matches', 'fields'];
+const GLOBAL_COLS = ['players', 'groups', 'members', 'fields', 'help'];
+const GROUP_COLS = ['matches', 'ratings', 'mvp', 'chat'];
+const EMPTY_GLOBAL = { players: null, groups: null, members: null, fields: [], help: [] };
+const EMPTY_GROUP = { matches: null, ratings: null, mvp: null, chat: null };
 
 function App() {
   const [real, setReal] = useState({ status: 'loading', be: null });
   const [demoBe, setDemoBe] = useState(null);
   const [deniedBe, setDeniedBe] = useState(null);
-  const [data, setData] = useState({ players: null, ratings: null, mvp: null, matches: null, fields: [] });
+  const [gdata, setGdata] = useState(EMPTY_GLOBAL);
+  const [data, setData] = useState(EMPTY_GROUP);
+  const [gid, setGid] = useState(null);
   const [tab, setTab] = useState('matches');
   const [stack, setStack] = useState([]);
   const [sheet, setSheet] = useState(null);
   const [toast, setToast] = useState(null);
   const [tick, setTick] = useState(0);
+  const [theme, setThemeS] = useState(() => readLS('sc-theme', 'auto'));
+  const [readMark, setReadMark] = useState(0);
   const dataRef = useRef(data);
   dataRef.current = data;
+  const gidRef = useRef(gid);
+  gidRef.current = gid;
   const toastT = useRef(0);
 
   const flash = (text, kind) => {
@@ -3501,6 +4085,8 @@ function App() {
 
   const be = demoBe || real.be;
   const status = demoBe ? 'ready' : real.status;
+  useEffect(() => { applyTheme(theme); }, [theme]);
+  const setTheme = (t) => { setThemeS(t); writeLS('sc-theme', t === 'auto' ? null : t); };
 
   /* ogni minuto: chiusura dei voti MVP e scadenze senza bisogno di ricaricare */
   useEffect(() => {
@@ -3532,54 +4118,111 @@ function App() {
     return () => { dead = true; };
   }, []);
 
-  /* ---- iscrizione ai dati (una sola volta per collegamento) ---- */
+  const subscribe = (key, cpath, set, opts) => be.db.collection(cpath, opts).onSnapshot(
+    (snap) => set((d) => ({ ...d, [key]: snap.docs.map((x) => Object.assign({ id: x.id }, x.data())) })),
+    (err) => {
+      if (err && err.code === 'revoked') setReal({ status: 'revoked', be: null });
+      else flash('Collegamento ai dati interrotto. Ricarica la pagina.', 'err');
+      set((d) => (d[key] ? d : { ...d, [key]: [] }));
+    }
+  );
+
+  /* ---- dati di tutti: profili, gruppi, iscrizioni ai gruppi, campi, help ---- */
   useEffect(() => {
     if (!be) return;
-    setData({ players: null, ratings: null, mvp: null, matches: null, fields: [] });
+    setGdata(EMPTY_GLOBAL);
+    setGid(be.demo ? Demo.GID : readLS('sc-group-' + be.uid, null));
     const unsubs = [];
-    COLLECTIONS.forEach((key) => {
-      try {
-        unsubs.push(be.db.collection(key).onSnapshot(
-          (snap) => setData((d) => ({ ...d, [key]: snap.docs.map((x) => Object.assign({ id: x.id }, x.data())) })),
-          (err) => {
-            if (err && err.code === 'revoked') setReal({ status: 'revoked', be: null });
-            else flash('Collegamento ai dati interrotto. Ricarica la pagina.', 'err');
-            setData((d) => (d[key] ? d : { ...d, [key]: [] }));
-          }
-        ));
-      } catch (e) { setData((d) => ({ ...d, [key]: [] })); }
+    GLOBAL_COLS.forEach((key) => {
+      try { unsubs.push(subscribe(key, key, setGdata)); } catch (e) { setGdata((d) => ({ ...d, [key]: [] })); }
     });
     return () => unsubs.forEach((u) => { try { u(); } catch (e) { /* già chiusa */ } });
   }, [be]);
 
-  const act = useMemo(() => (be ? makeActions(be, flash, dataRef, () => setDeniedBe(be)) : null), [be]);
-  const canWrite = !!(be && be.canWrite) && deniedBe !== be;
-  const loaded = !!(data.players && data.ratings && data.mvp && data.matches);
-  const players = data.players || [];
-  const allFields = useMemo(() => FIELDS_SEED.concat((data.fields || []).filter((f) => f && f.name).map((f) => Object.assign({ custom: true }, f))), [data.fields]);
-  const matches = data.matches || [];
-  const playersById = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [data.players]);
-  const matchesById = useMemo(() => Object.fromEntries(matches.map((m) => [m.id, m])), [data.matches]);
-  const rated = useMemo(() => Engine.computeRatings(players, data.ratings || []), [data.players, data.ratings]);
-  const stats = useMemo(() => Engine.matchStats(players, matches, data.mvp || [], Date.now()), [data.players, data.matches, data.mvp, tick]);
   const uid = be ? be.uid : null;
+  const members = (gdata.members || []).map((m) => Object.assign({ gid: m.gid || m.id.split('~')[0], uid: m.uid || m.id.split('~')[1] }, m));
+  const memberById = useMemo(() => Object.fromEntries(members.map((m) => [m.id, m])), [gdata.members]);
+  const groupsById = useMemo(() => Object.fromEntries((gdata.groups || []).map((g) => [g.id, g])), [gdata.groups]);
+  const myGroups = members.filter((m) => m.uid === uid && m.status === 'active' && groupsById[m.gid]).map((m) => groupsById[m.gid])
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'it'));
+  const globalsLoaded = !!(gdata.players && gdata.groups && gdata.members);
+  const validGid = gid && myGroups.some((g) => g.id === gid) ? gid : null;
+
+  /* se il gruppo scelto non è più tra i miei, passo al primo disponibile */
+  useEffect(() => {
+    if (!be || !globalsLoaded) return;
+    if (!validGid && myGroups.length) setGid(myGroups[0].id);
+  }, [be, globalsLoaded, validGid, myGroups.length]);
+  useEffect(() => { if (be && !be.demo && validGid) writeLS('sc-group-' + be.uid, validGid); }, [be, validGid]);
+
+  /* ---- dati del gruppo attuale: partite, valutazioni, voti MVP, chat ---- */
+  useEffect(() => {
+    if (!be || !validGid) { setData(EMPTY_GROUP); return; }
+    setData(EMPTY_GROUP);
+    const unsubs = [];
+    GROUP_COLS.forEach((key) => {
+      try { unsubs.push(subscribe(key, 'g/' + validGid + '/' + key, setData, key === 'chat' ? { last: 300 } : undefined)); }
+      catch (e) { setData((d) => ({ ...d, [key]: [] })); }
+    });
+    return () => unsubs.forEach((u) => { try { u(); } catch (e) { /* già chiusa */ } });
+  }, [be, validGid]);
+
+  const act = useMemo(() => (be ? makeActions(be, flash, dataRef, () => setDeniedBe(be), gidRef) : null), [be]);
+  const canWrite = !!(be && be.canWrite) && deniedBe !== be;
+  const groupLoaded = !validGid || !!(data.matches && data.ratings && data.mvp && data.chat);
+  const loaded = globalsLoaded && groupLoaded;
+  const allPlayers = gdata.players || [];
+  const inGroup = useMemo(() => new Set(members.filter((m) => m.gid === validGid && m.status === 'active').map((m) => m.uid)), [gdata.members, validGid]);
+  const players = useMemo(() => allPlayers.filter((p) => inGroup.has(p.id)), [gdata.players, inGroup]);
+  const allFields = useMemo(() => FIELDS_SEED.concat((gdata.fields || []).filter((f) => f && f.name).map((f) => Object.assign({ custom: true }, f))), [gdata.fields]);
+  const matches = data.matches || [];
+  const playersById = useMemo(() => Object.fromEntries(allPlayers.map((p) => [p.id, p])), [gdata.players]);
+  const matchesById = useMemo(() => Object.fromEntries(matches.map((m) => [m.id, m])), [data.matches]);
+  const rated = useMemo(() => Engine.computeRatings(allPlayers, data.ratings || []), [gdata.players, data.ratings]);
+  const stats = useMemo(() => Engine.matchStats(players, matches, data.mvp || [], Date.now()), [players, data.matches, data.mvp, tick]);
   const me = uid ? playersById[uid] : null;
+  const group = validGid ? groupsById[validGid] : null;
+  const myMember = validGid ? memberById[validGid + '~' + uid] : null;
+  const isAdmin = !!(be && be.admin);
+  const isGroupAdmin = !!(myMember && myMember.status === 'active' && myMember.role === 'admin');
+
+  /* non letti: chat (per gruppo, in questo dispositivo), richieste di ingresso, risposte dell'help */
+  const readKey = 'sc-read-' + (uid || '') + '-' + (validGid || '');
+  const joinedAt = numOr(myMember && myMember.t, 0);
+  const lastRead = useMemo(() => Number(readLS(readKey, 0)) || joinedAt, [readKey, readMark, joinedAt]);
+  const chat = data.chat || [];
+  const unread = chat.filter((m) => m.t > lastRead && m.by !== uid).length;
+  const markRead = (t) => { if (t && t > lastRead) { writeLS(readKey, String(t)); setReadMark((x) => x + 1); } };
+  const help = gdata.help || [];
+  const helpSeenKey = 'sc-help-' + (uid || '');
+  const helpSeen = useMemo(() => Number(readLS(helpSeenKey, 0)) || 0, [helpSeenKey, readMark]);
+  const lastReplyT = (h) => (Array.isArray(h.replies) && h.replies.length ? h.replies[h.replies.length - 1].t : 0);
+  const helpReplies = help.filter((h) => h.by === uid && lastReplyT(h) > helpSeen).length;
+  const markHelpSeen = () => { const t = Math.max(0, ...help.filter((h) => h.by === uid).map(lastReplyT)); if (t > helpSeen) { writeLS(helpSeenKey, String(t)); setReadMark((x) => x + 1); } };
+  const requests = (isGroupAdmin || isAdmin) ? members.filter((m) => m.gid === validGid && m.status === 'pending').length : 0;
+  const helpOpen = isAdmin ? help.filter((h) => h.status !== 'done').length : 0;
+  const badges = { chat: unread, requests, helpReplies, helpOpen, menu: requests + helpReplies + helpOpen };
 
   const go = (s) => { setStack((st) => [...st, s]); window.scrollTo(0, 0); };
   const back = () => { setStack((st) => st.slice(0, -1)); };
   const goTab = (t) => { setTab(t); setStack([]); window.scrollTo(0, 0); };
+  const switchGroup = (id, home) => { setGid(id); if (home !== false) { setTab('matches'); setStack([]); window.scrollTo(0, 0); } };
   const startDemo = () => { setDemoBe({ db: Demo.createSeeded(), uid: Demo.ME, canWrite: true, demo: true, admin: true }); setTab('matches'); setStack([]); setSheet(null); };
   const exitDemo = () => { setDemoBe(null); setTab('matches'); setStack([]); setSheet(null); };
 
   const ctx = {
-    uid, me, canWrite, isAdmin: !!(be && be.admin), demo: !!(be && be.demo), act, players, playersById, rated, stats,
+    uid, me, canWrite, isAdmin, isGroupAdmin, demo: !!(be && be.demo), act,
+    players, allPlayers, playersById, rated, stats,
     matches, matchesById, allFields, fieldOf: (m) => fieldOfMatch(m, allFields), ratings: data.ratings || [], mvp: data.mvp || [],
+    gid: validGid, group, groups: gdata.groups || [], groupsById, members, memberById, myGroups, switchGroup,
+    chat, markRead, help, markHelpSeen, badges, theme, setTheme,
     go, back, goTab, openSheet: setSheet, closeSheet: () => setSheet(null), flash, startDemo, exitDemo,
   };
 
   const needsProfile = status === 'ready' && loaded && ctx.canWrite && !me;
   /* chi era iscritto col vecchio sistema rifà l'autovalutazione una volta, nel nuovo formato */
   const needsSelf = status === 'ready' && loaded && ctx.canWrite && !!me && !Engine.hasNewSelf(me);
+  const noGroup = status === 'ready' && loaded && !!me && !validGid;
   const top = stack[stack.length - 1];
   let view;
   if (status === 'loading') view = html`<${Skeleton} />`;
@@ -3587,35 +4230,46 @@ function App() {
   else if (!loaded) view = html`<${Skeleton} />`;
   else if (needsProfile) view = html`<${Welcome} />`;
   else if (needsSelf) view = html`<${SelfRateScreen} key="forced" forced />`;
+  else if (top && top.t === 'groups') view = html`<${GroupsScreen} key="groups" />`;
+  else if (top && top.t === 'settings') view = html`<${SettingsScreen} key="settings" />`;
+  else if (top && top.t === 'help') view = html`<${HelpScreen} key="help" />`;
+  else if (top && top.t === 'devs') view = html`<${DevelopersScreen} key="devs" />`;
+  else if (top && top.t === 'admin') view = html`<${AdminScreen} key="admin" />`;
+  else if (top && top.t === 'player') view = html`<${PlayerScreen} key=${'p' + top.id} id=${top.id} />`;
+  else if (noGroup) view = html`<${GroupsScreen} key="nogroup" main />`;
+  else if (top && top.t === 'group') view = html`<${GroupScreen} key="group" />`;
   else if (top && top.t === 'match') view = html`<${MatchScreen} key=${'m' + top.id} id=${top.id} />`;
   else if (top && top.t === 'mvp') view = html`<${MvpScreen} key=${'v' + top.id} id=${top.id} />`;
   else if (top && top.t === 'result') view = html`<${ResultScreen} key=${'r' + top.id} id=${top.id} />`;
   else if (top && top.t === 'rateMatch') view = html`<${MatchRateScreen} key=${'rm' + top.id} id=${top.id} />`;
   else if (top && top.t === 'rate') view = html`<${RateScreen} key=${'rt' + top.id} id=${top.id} />`;
   else if (top && top.t === 'self') view = html`<${SelfRateScreen} key="self" />`;
-  else if (top && top.t === 'player') view = html`<${PlayerScreen} key=${'p' + top.id} id=${top.id} />`;
   else if (tab === 'history') view = html`<${StoricoScreen} />`;
+  else if (tab === 'chat') view = html`<${ChatScreen} key=${'c' + validGid} />`;
   else if (tab === 'players') view = html`<${PlayersScreen} />`;
   else if (tab === 'me') view = html`<${MeScreen} />`;
   else view = html`<${HomeScreen} />`;
 
-  const showNav = status === 'ready' && loaded && !needsProfile && !needsSelf;
+  const showNav = status === 'ready' && loaded && !needsProfile && !needsSelf && !noGroup;
   const showFab = showNav && tab === 'matches' && stack.length === 0 && ctx.canWrite && ctx.me;
   const NAV = [
     { t: 'matches', i: 'calendar', l: 'Partite' },
     { t: 'history', i: 'history', l: 'Storico' },
+    { t: 'chat', i: 'chat', l: 'Messaggi', badge: unread },
     { t: 'players', i: 'users', l: 'Giocatori' },
     { t: 'me', i: 'user', l: 'Profilo' },
   ];
 
   return html`<${Ctx.Provider} value=${ctx}>
-    <div class="shell">
-      ${be && be.demo && html`<div class="banner"><${Icon} n="info" s="16" /><span class="grow">Demo: dati di esempio, non vengono salvati. Sei Luca "Lucky" e anche l'amministratore.</span><button class="btn sm" onClick=${exitDemo}>Esci</button></div>`}
+    <div class=${'shell' + (tab === 'chat' && !top && showNav ? ' chat-shell' : '')}>
+      ${be && be.demo && html`<div class="banner"><${Icon} n="info" s="16" /><span class="grow">Demo: dati di esempio, non vengono salvati. Sei Luca "Lucky", amministratore dell'app e del gruppo.</span><button class="btn sm" onClick=${exitDemo}>Esci</button></div>`}
       ${be && !be.demo && !canWrite && html`<div class="banner"><${Icon} n="info" s="16" /><span class="grow">Hai accesso in sola lettura: puoi guardare, ma non rispondere alle partite né votare. Chiedi a chi ha creato l'app di darti il permesso di modificare.</span></div>`}
       ${view}
     </div>
     ${showNav && html`<nav class="nav" aria-label="Sezioni"><div class="nav-in">
-      ${NAV.map((n) => html`<button key=${n.t} class=${'nav-btn' + (tab === n.t ? ' on' : '')} aria-current=${tab === n.t ? 'page' : null} onClick=${() => goTab(n.t)}><${Icon} n=${n.i} />${n.l}</button>`)}
+      ${NAV.map((n) => html`<button key=${n.t} class=${'nav-btn' + (tab === n.t ? ' on' : '')} aria-current=${tab === n.t ? 'page' : null} onClick=${() => goTab(n.t)}>
+        <span class="nav-ic"><${Icon} n=${n.i} />${n.badge > 0 && html`<span class="count-badge nav-badge">${n.badge > 99 ? '99+' : n.badge}</span>`}</span>${n.l}
+      </button>`)}
     </div></nav>`}
     ${showFab && html`<button class="fab" onClick=${() => setSheet({ k: 'newMatch' })}><${Icon} n="plus" /> Nuova partita</button>`}
     <${SheetHost} sheet=${sheet} onClose=${() => setSheet(null)} />
@@ -3623,14 +4277,25 @@ function App() {
   <//>`;
 }
 
+
 /* ============================================================
    VERSIONE AUTONOMA: accesso con email e password + database Supabase
-   Espone la stessa interfaccia "db" usata dall'app (doc/collection/onSnapshot).
+   Espone la stessa interfaccia "db" usata dall'app (doc/collection/onSnapshot),
+   con i percorsi dei gruppi (g/{gruppo}/partite/...) e le funzioni del database (rpc).
    ============================================================ */
 function scErr(e) {
   const c = e && e.code, m = (e && e.message) || '';
   const denied = c === '42501' || c === 'P0002' || c === 'PGRST116' || /row-level security|non trovato|not found/i.test(m);
-  return { code: denied ? 'invalid_argument' : 'unavailable', message: m };
+  /* i messaggi in italiano scritti dalle funzioni del database arrivano così come sono */
+  const mine = c === '42501' || c === '22023';
+  return { code: denied ? 'invalid_argument' : 'unavailable', message: mine ? m : '', raw: m };
+}
+
+/* "players/abc" -> cartella "players"; "g/g_x/matches/m1" -> cartella "g/g_x/matches", tipo "matches", gruppo "g_x" */
+function parsePath(path) {
+  const segs = String(path).split('/');
+  const id = segs[segs.length - 1];
+  return { id, cpath: segs.slice(0, -1).join('/'), col: segs[segs.length - 2], gid: segs[0] === 'g' ? segs[1] : null };
 }
 
 function makeSupaDb(sb) {
@@ -3640,22 +4305,23 @@ function makeSupaDb(sb) {
     return { docs, size: docs.length, empty: docs.length === 0 };
   };
   const emit = (st) => { const s = snap(st); st.subs.forEach((x) => { try { x.next(s); } catch (e) { /* errore dell'interfaccia */ } }); };
-  const splitPath = (p) => { const i = p.indexOf('/'); return [p.slice(0, i), p.slice(i + 1)]; };
 
-  function ensure(name) {
-    if (cols.has(name)) return cols.get(name);
-    const st = { docs: new Map(), subs: new Set(), loaded: false };
-    cols.set(name, st);
+  function ensure(cpath, opts) {
+    if (cols.has(cpath)) return cols.get(cpath);
+    const st = { docs: new Map(), subs: new Set(), loaded: false, last: (opts && opts.last) || 0 };
+    cols.set(cpath, st);
     st.load = async () => {
-      const { data, error } = await sb.from('docs').select('id,data').eq('col', name);
+      let q = sb.from('docs').select('id,data').eq('cpath', cpath);
+      if (st.last) q = q.order('updated_at', { ascending: false }).limit(st.last);
+      const { data, error } = await q;
       if (error) { st.subs.forEach((x) => x.error && x.error(scErr(error))); return; }
       st.docs = new Map(data.map((r) => [r.id, r.data]));
       st.loaded = true;
       emit(st);
     };
-    st.chan = sb.channel('col-' + name)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'docs', filter: 'col=eq.' + name }, (p) => {
-        if (p.eventType === 'DELETE') { const id = (p.old && p.old.id) || (p.old && p.old.path && splitPath(p.old.path)[1]); if (id) { st.docs.delete(id); emit(st); } else st.load(); }
+    st.chan = sb.channel('c-' + cpath)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'docs', filter: 'cpath=eq.' + cpath }, (p) => {
+        if (p.eventType === 'DELETE') { const id = (p.old && p.old.id) || (p.old && p.old.path && parsePath(p.old.path).id); if (id) { st.docs.delete(id); emit(st); } else st.load(); }
         else if (p.new && p.new.data) { st.docs.set(p.new.id, p.new.data); emit(st); }
         else st.load();
       })
@@ -3663,19 +4329,19 @@ function makeSupaDb(sb) {
     st.load();
     return st;
   }
-  const refresh = () => cols.forEach((st) => st.load());
+  const refresh = () => Promise.all(Array.from(cols.values(), (st) => st.load().catch(() => {})));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
   window.addEventListener('online', refresh);
 
   async function afterWrite(path) {
-    const [col, id] = splitPath(path);
-    const st = cols.get(col);
+    const { cpath, id } = parsePath(path);
+    const st = cols.get(cpath);
     if (!st) return;
     const { data } = await sb.from('docs').select('data').eq('path', path).maybeSingle();
     if (data) { st.docs.set(id, data.data); emit(st); }
   }
   const docRef = (path) => {
-    const [col, id] = splitPath(path);
+    const { id, col, cpath } = parsePath(path);
     return {
       id, path,
       get: async () => {
@@ -3694,28 +4360,53 @@ function makeSupaDb(sb) {
         await afterWrite(path);
       },
       delete: async () => {
-        const { error } = await sb.from('docs').delete().eq('path', path);
+        const { data, error } = await sb.from('docs').delete().eq('path', path).select('path');
         if (error) throw scErr(error);
-        const st = cols.get(col); if (st) { st.docs.delete(id); emit(st); }
+        if (!data || !data.length) throw { code: 'invalid_argument', message: 'Non hai il permesso di eliminarlo.' };
+        const st = cols.get(cpath); if (st) { st.docs.delete(id); emit(st); }
       },
     };
   };
   return {
     doc: docRef,
-    collection(name) {
+    collection(cpath, opts) {
       return {
-        path: name,
-        doc: (id) => docRef(name + '/' + (id || Math.random().toString(36).slice(2, 12))),
+        path: cpath,
+        doc: (id) => docRef(cpath + '/' + (id || Math.random().toString(36).slice(2, 12))),
         onSnapshot(next, error) {
-          const st = ensure(name);
+          const st = ensure(cpath, opts);
           const sub = { next, error };
           st.subs.add(sub);
           if (st.loaded) setTimeout(() => next(snap(st)), 0);
-          return () => st.subs.delete(sub);
+          return () => {
+            st.subs.delete(sub);
+            /* nessuno la guarda più (per esempio dopo il cambio di gruppo): chiudo il canale */
+            if (!st.subs.size && cols.get(cpath) === st) { cols.delete(cpath); try { sb.removeChannel(st.chan); } catch (e) { /* già chiuso */ } }
+          };
         },
       };
     },
+    /* funzioni del database: gruppi, richieste, eliminazioni */
+    rpc: async (fn, args) => {
+      const { data, error } = await sb.rpc(fn, args || {});
+      if (error) throw scErr(error);
+      /* le funzioni cambiano gruppi, iscrizioni e profili: ricarico subito senza aspettare il tempo reale */
+      if (fn !== 'is_app_admin') await refresh();
+      return data;
+    },
   };
+}
+
+/* amministratori dell'app: la tabella app_admins del database (funzione is_app_admin); se manca, le email di config.js */
+function isAdminEmail(email) {
+  const list = ((window.SC_CONFIG && window.SC_CONFIG.admins) || []).map((x) => String(x).trim().toLowerCase());
+  return !!email && list.includes(String(email).trim().toLowerCase());
+}
+const __admin = {};
+function adminCheck(sb, email) {
+  const k = String(email || '').toLowerCase();
+  if (!__admin[k]) __admin[k] = sb.rpc('is_app_admin').then(({ data, error }) => (error ? isAdminEmail(email) : !!data), () => isAdminEmail(email));
+  return __admin[k];
 }
 
 /* ---------- schermate di accesso ---------- */
@@ -3800,6 +4491,7 @@ function NewPassword({ sb, done }) {
   </form><//>`;
 }
 
+
 function Root() {
   const cfg = window.SC_CONFIG || {};
   const sb = useMemo(() => (cfg.url && cfg.anonKey && window.supabase ? window.supabase.createClient(cfg.url, cfg.anonKey) : null), []);
@@ -3822,20 +4514,9 @@ function Root() {
   if (!uid) return html`<${AuthForm} sb=${sb} />`;
   window.SC_SIGNOUT = () => sb.auth.signOut();
   window.SC_EMAIL = st.session.user.email;
-  window.claude = { use: async (n) => (n === 'db' ? db : n === 'user' ? { id: async () => uid, can: async () => true, isOwner: () => adminCheck(sb, st.session.user.email), canEdit: () => adminCheck(sb, st.session.user.email) } : null) };
+  const email = st.session.user.email;
+  window.claude = { use: async (n) => (n === 'db' ? db : n === 'user' ? { id: async () => uid, can: async () => true, isOwner: () => adminCheck(sb, email), canEdit: () => adminCheck(sb, email) } : null) };
   return html`<${App} key=${uid} />`;
-}
-
-/* amministratori: la tabella app_admins del database (funzione is_app_admin); se manca, le email di config.js */
-const __admin = {};
-function adminCheck(sb, email) {
-  const k = String(email || '').toLowerCase();
-  if (!__admin[k]) __admin[k] = sb.rpc('is_app_admin').then(({ data, error }) => (error ? isAdminEmail(email) : !!data), () => isAdminEmail(email));
-  return __admin[k];
-}
-function isAdminEmail(email) {
-  const list = ((window.SC_CONFIG && window.SC_CONFIG.admins) || []).map((x) => String(x).trim().toLowerCase());
-  return !!email && list.includes(String(email).trim().toLowerCase());
 }
 
 render(html`<${typeof Root === 'function' ? Root : App} />`, document.getElementById('app'));
