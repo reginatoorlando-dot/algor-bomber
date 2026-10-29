@@ -886,6 +886,8 @@ const Engine = (() => {
     ] },
     { k: 'dif', code: 'DIF', name: 'Difesa', voci: [
       { k: 'con', name: 'Contrasto', hint: 'vincere i duelli' },
+      /* aggiunta dopo: nei voti che non ce l'hanno vale la media di Contrasto e Posizionamento */
+      { k: 'sci', name: 'Scivolata', hint: 'intervenire in tempo, senza fallo', from: ['con', 'pdi'] },
       { k: 'pdi', name: 'Posizionamento', hint: 'stare al posto giusto, coprire' },
     ] },
     { k: 'gen', code: 'GEN', name: 'Generale', voci: [
@@ -903,7 +905,9 @@ const Engine = (() => {
   ];
   const AREA_BY = Object.fromEntries(AREAS.map((a) => [a.k, a]));
   const OUT_AREAS = ['att', 'cen', 'dif', 'gen'];
-  const VOCI = AREAS.flatMap((a) => a.voci.map((v) => ({ k: v.k, name: v.name, hint: v.hint, area: a.k })));
+  const VOCI = AREAS.flatMap((a) => a.voci.map((v) => ({ k: v.k, name: v.name, hint: v.hint, area: a.k, from: v.from || null })));
+  /* le voci aggiunte dopo l'inizio, che le valutazioni già date non hanno */
+  const LATE_VOCI = VOCI.filter((x) => x.from);
   const VMIN = 1, VMAX = 99, VDEF = 60;
 
   /* Riferimenti della scala 1–99 (45 alle prime armi, 65 nella media, 75 forte, 85 top, 90+ fuoriclasse) */
@@ -961,8 +965,27 @@ const Engine = (() => {
     for (const a of AREAS) if (map[a.k] != null) a.voci.forEach((x) => { out[x.k] = clamp(Math.round(map[a.k] * 10), VMIN, VMAX); });
     return out;
   }
-  /* true se il giocatore ha già l'autovalutazione nel formato a 16 voci */
+  /* true se il giocatore ha già l'autovalutazione nel formato a voci (non quello vecchio da 1 a 10) */
   const hasNewSelf = (p) => !!p && Object.keys(cleanVoci(p.self)).length > 0;
+  /* una voce aggiunta dopo, in un voto che non ce l'ha, vale la media delle voci da cui parte:
+     così l'area resta identica finché qualcuno non la vota davvero */
+  function withLate(v) {
+    let out = v;
+    for (const x of LATE_VOCI) {
+      if (okv(v[x.k])) continue;
+      const b = x.from.map((k) => v[k]).filter(okv);
+      if (!b.length) continue;
+      if (out === v) out = Object.assign({}, v);
+      out[x.k] = mean(b);
+    }
+    return out;
+  }
+  /* le voci aggiunte dopo che mancano nell'autovalutazione (va data una volta, poi resta bloccata) */
+  const missingSelfVoci = (p) => {
+    if (!hasNewSelf(p)) return [];
+    const s = cleanVoci(p.self);
+    return LATE_VOCI.filter((x) => !okv(s[x.k]) && x.from.some((k) => okv(s[k])));
+  };
 
   /* media delle voci presenti per ogni area (null se l'area non ha voci) */
   function areasOf(voci) {
@@ -995,16 +1018,19 @@ const Engine = (() => {
       const self = cleanVoci(p.self);
       const hasSelf = Object.keys(self).length > 0;
       const peers = peerBy[p.id] || [];
+      /* nei conti, le voci aggiunte dopo prendono il valore di partenza; nei singoli voti restano come sono stati dati */
+      const selfC = withLate(self);
+      const peersC = peers.map((pr) => withLate(pr.v));
       const voci = {}, counts = {};
       for (const x of VOCI) {
         const arr = [];
-        if (okv(self[x.k])) arr.push(self[x.k]);
-        for (const pr of peers) if (okv(pr.v[x.k])) arr.push(pr.v[x.k]);
+        if (okv(selfC[x.k])) arr.push(selfC[x.k]);
+        for (const v of peersC) if (okv(v[x.k])) arr.push(v[x.k]);
         voci[x.k] = arr.length ? mean(arr) : VDEF;
         counts[x.k] = arr.length;
       }
       const areas = areasOf(voci);
-      const selfAreas = hasSelf ? areasOf(self) : null;
+      const selfAreas = hasSelf ? areasOf(selfC) : null;
       out[p.id] = {
         voci, counts, areas,
         outfield: outfieldOf(areas), porta: num(areas.por, VDEF),
@@ -1433,7 +1459,7 @@ const Engine = (() => {
     ROLES, OUT_ROLES, ROLE_NAME, FORMATS, AREAS, AREA_BY, OUT_AREAS, VOCI, VMIN, VMAX, VDEF,
     SCALE, scaleLabel, tierOf, TIER_NAME, CFG, MODULES,
     clamp, mean, num, okv, matchTime,
-    cleanVoci, legacyVoci, hasNewSelf, areasOf, outfieldOf, ovrOf, computeRatings,
+    cleanVoci, legacyVoci, hasNewSelf, withLate, missingSelfVoci, LATE_VOCI, areasOf, outfieldOf, ovrOf, computeRatings,
     partOf, roleMalus, injMalus, valueIn, natural,
     modulesFor, moduleLabel, bestLineup, evalTeam, evaluate, suggestTeams, bestSwap, balanceLabel,
     mvpResult, hasResult, matchStats, accuracy,
@@ -2523,6 +2549,8 @@ function makeActions(be, notify, dataRef, onDenied, gidRef) {
     saveProfile: (p) => run('players/' + be.uid, () => doc('players/' + be.uid).set(p), { probe: true }),
     updateProfile: (patch) => updP(be.uid, Object.assign({}, patch, { updated: Date.now() })),
     saveSelf: (vals) => updP(be.uid, { self: vals, selfAt: Date.now(), selfUnlock: false, updated: Date.now() }),
+    /* aggiunge all'autovalutazione solo le voci nuove (l'unione tiene tutte le altre com'erano) */
+    addSelfVoci: (vals) => updP(be.uid, { self: vals, selfLateAt: Date.now(), updated: Date.now() }),
     setInjury: (inj) => updP(be.uid, { injury: inj, updated: Date.now() }),
     unlockSelf: (pid) => updP(pid, { selfUnlock: true }),
     saveField: (id, f) => run('fields/' + id, () => doc('fields/' + id).set(f)),
@@ -3246,7 +3274,7 @@ const fmtAffRec = (w, d) => [w ? plural(w, 'vittoria', 'vittorie') : '', d ? plu
 
 
 /* ============================================================
-   APP: la card in stile FIFA a tutto schermo (si gira toccandola: davanti le aree, dietro le 16 voci)
+   APP: la card in stile FIFA a tutto schermo (si gira toccandola: davanti le aree, dietro tutte le voci)
    ============================================================ */
 function FifaOverlay({ pid, all, onClose }) {
   const C = useContext(Ctx);
@@ -3700,7 +3728,7 @@ function Welcome() {
       <div class="brand"><span class="brand-mark"><${Icon} n="pitch" /></span><span class="eyebrow">Algor Bomber</span></div>
       <h1 class="h1">Gioca con squadre equilibrate.</h1>
       <div class="steps">
-        <div><${Icon} n="check" s="16" /><span>Crea il tuo profilo e valutati su 16 voci, da 1 a 99.</span></div>
+        <div><${Icon} n="check" s="16" /><span>Crea il tuo profilo e valutati su ${VOCI.length} voci, da 1 a 99.</span></div>
         <div><${Icon} n="check" s="16" /><span>Rispondi alle partite: l'app fa squadre e ruoli il più possibile alla pari.</span></div>
         <div><${Icon} n="check" s="16" /><span>A fine partita: risultato, marcatori, voto MVP e valutazioni dei compagni.</span></div>
       </div>
@@ -3731,12 +3759,55 @@ function SelfRateScreen({ forced }) {
     if (ok) { C.flash('Autovalutazione salvata'); if (!forced) C.back(); }
   };
   const ask = () => C.openSheet({ k: 'confirm', title: 'Confermi l\'autovalutazione?', text: `Con questi valori il tuo punteggio di partenza è ${r0(ovr)}. Dopo il salvataggio non potrai più modificarla.`, label: 'Sì, salva', onYes: doSave });
-  return html`<${Page} title=${isNew ? 'Nuova autovalutazione' : 'Rifai l\'autovalutazione'} sub=${isNew ? 'Le stats sono cambiate: ora sono 16 voci da 1 a 99' : me.selfUnlock ? 'L\'amministratore l\'ha sbloccata per te' : 'Come amministratore puoi modificarla'} onBack=${forced ? null : C.back}>
-    ${isNew && html`<div class="note ok"><${Icon} n="info" s="16" /><span>Ciao ${dispName(me)}! L'app ora usa 5 aree e 16 voci, da 1 a 99 come su FIFA. Ti chiediamo di rifare l'autovalutazione, una volta sola. Abbiamo già messo i tuoi vecchi valori di attacco, centrocampo e difesa come punto di partenza.</span></div>`}
+  return html`<${Page} title=${isNew ? 'Nuova autovalutazione' : 'Rifai l\'autovalutazione'} sub=${isNew ? 'Le stats sono cambiate: ora sono ' + VOCI.length + ' voci da 1 a 99' : me.selfUnlock ? 'L\'amministratore l\'ha sbloccata per te' : 'Come amministratore puoi modificarla'} onBack=${forced ? null : C.back}>
+    ${isNew && html`<div class="note ok"><${Icon} n="info" s="16" /><span>Ciao ${dispName(me)}! L'app ora usa ${AREAS.length} aree e ${VOCI.length} voci, da 1 a 99 come su FIFA. Ti chiediamo di rifare l'autovalutazione, una volta sola. Abbiamo già messo i tuoi vecchi valori di attacco, centrocampo e difesa come punto di partenza.</span></div>`}
     <${SelfLockNote} />
     <div class="tiny faint">${SCALE_HINT}</div>
     <${RatingEditor} idp="sr" vals=${vals} setVals=${setVals} role=${me.role} />
     <div class="sticky-act"><button class="btn primary block" disabled=${busy || !C.canWrite} onClick=${ask}>${busy ? 'Salvo…' : 'Salva autovalutazione · ' + r0(ovr)}</button></div>
+  <//>`;
+}
+
+/* ---------- voci aggiunte dopo (la Scivolata): chi è già iscritto le dà una volta, poi restano bloccate ---------- */
+const vociNames = (ks) => ks.map((k) => (VOCI.find((v) => v.k === k) || {}).name).filter(Boolean);
+const joinE = (xs) => (xs.length > 1 ? xs.slice(0, -1).join(', ') + ' e ' + xs[xs.length - 1] : xs.join(''));
+function NewVociScreen() {
+  const C = useContext(Ctx);
+  const me = C.me;
+  const miss = me ? Engine.missingSelfVoci(me) : [];
+  const self = me ? Engine.cleanVoci(me.self) : {};
+  const start = Engine.withLate(self);
+  const [vals, setVals] = useState(() => Object.fromEntries(miss.map((x) => [x.k, Math.round(start[x.k])])));
+  const [busy, setBusy] = useState(false);
+  if (!me || !miss.length) return null;
+  const merged = Object.assign({}, self, vals);
+  const areasNow = Engine.areasOf(merged);
+  const areas = AREAS.filter((a) => miss.some((x) => x.area === a.k));
+  const one = miss.length === 1 ? miss[0] : null;
+  const save = async () => {
+    setBusy(true);
+    const ok = await C.act.addSelfVoci(Object.assign({}, vals));
+    setBusy(false);
+    if (ok) C.flash(one ? one.name + ' salvata nella tua autovalutazione' : 'Voci salvate nella tua autovalutazione');
+  };
+  const ask = () => C.openSheet({
+    k: 'confirm', title: 'Confermi?', label: 'Sì, salva',
+    text: (one ? `${one.name}: ${vals[one.k]}. ` : '') + 'Dopo il salvataggio non potrai più cambiarla, come il resto della tua autovalutazione.',
+    onYes: save,
+  });
+  return html`<${Page} title=${one ? 'Nuova voce: ' + one.name : 'Nuove voci'} sub="Una volta sola, poi resta bloccata">
+    <div class="note ok"><${Icon} n="info" s="16" /><span>Ciao ${dispName(me)}! ${miss.map((x) => 'Nella ' + Engine.AREA_BY[x.area].name + ' ora c\'è anche la voce ' + x.name + '.').join(' ')} Dai il tuo voto, una volta sola: il resto della tua autovalutazione non cambia. Il cursore parte dalla media di ${joinE(vociNames(miss[0].from))}.</span></div>
+    <div class="tiny faint">${SCALE_HINT}</div>
+    ${areas.map((a) => html`<section key=${a.k} class="card area-card" aria-label=${a.name}>
+      <div class="area-h">
+        <div class="grow"><h3 class="h3">${a.name}</h3><div class="tiny faint">La tua autovalutazione · media delle ${a.voci.length} voci</div></div>
+        <${Ovr} v=${areasNow[a.k]} size="sm" />
+      </div>
+      ${a.voci.map((x) => (miss.some((y) => y.k === x.k)
+        ? html`<${RateSlider} key=${x.k} id=${'nv-' + x.k} name=${x.name} hint=${x.hint} value=${vals[x.k]} onChange=${(v) => setVals((s) => ({ ...s, [x.k]: v }))} />`
+        : html`<div key=${x.k} class="vb"><span class="vb-n">${x.name}</span><span class="vb-bar"><i style=${'width:' + (self[x.k] || 0) + '%'}></i></span><span class="vb-v num">${Engine.okv(self[x.k]) ? self[x.k] : '–'}</span></div>`))}
+    </section>`)}
+    <div class="sticky-act"><button class="btn primary block" disabled=${busy || !C.canWrite} onClick=${ask}>${busy ? 'Salvo…' : one ? 'Salva la ' + one.name.toLowerCase() + ' · ' + vals[one.k] : 'Salva'}</button></div>
   <//>`;
 }
 
@@ -3747,9 +3818,11 @@ function RateScreen({ id }) {
   const mine = ((C.ratings.find((x) => x.id === C.uid) || {}).r || {})[id];
   const [vals, setVals] = useState(() => {
     const out = {};
+    /* nel tuo voto di prima, una voce arrivata dopo parte dalla media delle voci da cui nasce */
+    const mv = mine && mine.v ? Engine.withLate(Engine.cleanVoci(mine.v)) : null;
     VOCI.forEach((x) => {
-      const pv = mine && mine.v && mine.v[x.k];
-      out[x.k] = Engine.okv(pv) ? pv : r0(r ? r.voci[x.k] : Engine.VDEF);
+      const pv = mv && mv[x.k];
+      out[x.k] = Engine.okv(pv) ? Math.round(pv) : r0(r ? r.voci[x.k] : Engine.VDEF);
     });
     return out;
   });
@@ -5793,6 +5866,8 @@ function RatingDetailSheet({ pid, voter, self, onClose }) {
   else { const e = ((C.ratings.find((x) => x.id === voter) || {}).r || {})[pid]; v = e && Engine.cleanVoci(e.v); t = numOr(e && e.t, 0); }
   if (!p || !v) return null;
   const areas = Engine.areasOf(v);
+  /* voci arrivate dopo questo voto: nei conti valgono la media delle voci da cui nascono */
+  const late = Engine.LATE_VOCI.filter((x) => !Engine.okv(v[x.k]) && areas[x.area] != null);
   return html`<${Sheet} title=${self ? 'Autovalutazione di ' + dispName(p) : (vp ? dispName(vp) : 'Ex giocatore') + ' su ' + dispName(p)} onClose=${onClose}>
     <div class="small muted">${t ? 'Del ' + fmtTs(t) + '. ' : ''}${self ? 'Conta come una valutazione qualsiasi nella media.' : 'Le valutazioni sono pubbliche.'}</div>
     <div class="card pad0 divided">
@@ -5801,6 +5876,7 @@ function RatingDetailSheet({ pid, voter, self, onClose }) {
         ${areas[a.k] != null && a.voci.map((x) => html`<div key=${x.k} class="vb"><span class="vb-n">${x.name}</span><span class="vb-bar"><i style=${'width:' + (v[x.k] || 0) + '%'}></i></span><span class="vb-v num">${Engine.okv(v[x.k]) ? v[x.k] : '–'}</span></div>`)}
       </div>`)}
     </div>
+    ${late.length > 0 && html`<div class="tiny faint">${late.map((x) => x.name + ' è arrivata dopo questo voto: nei conti vale la media di ' + joinE(vociNames(x.from)) + '.').join(' ')}</div>`}
   <//>`;
 }
 
@@ -5818,14 +5894,14 @@ function PhotoSheet({ pid, onClose }) {
 function HelpSheet({ onClose }) {
   return html`<${Sheet} title="Come funziona" onClose=${onClose}>
     <div class="stack">
-      <div><h3 class="h3">Le stats</h3><p class="muted">Ogni giocatore ha 16 voci da 1 a 99, divise in 5 aree: Attacco (tiro, dribbling, posizionamento), Centrocampo (passaggio, visione di gioco, posizionamento), Difesa (contrasto, posizionamento), Generale (velocità, resistenza, elevazione, calci piazzati) e Porta (riflessi, uscite, tuffo, lanci). Riferimenti: ${SCALE_HINT}.</p></div>
+      <div><h3 class="h3">Le stats</h3><p class="muted">Ogni giocatore ha ${VOCI.length} voci da 1 a 99, divise in ${AREAS.length} aree: ${joinE(AREAS.map((a) => a.name + ' (' + a.voci.map((x) => x.name.toLowerCase()).join(', ') + ')'))}. Riferimenti: ${SCALE_HINT}.</p></div>
       <div><h3 class="h3">Da dove vengono i numeri</h3><p class="muted">Ogni voce è la media di tutte le valutazioni ricevute, autovalutazione compresa: la tua conta come quella di chiunque altro. Ogni area è la media delle sue voci. L'autovalutazione si fa una volta sola, all'iscrizione; le valutazioni agli altri invece le dai e le cambi quando vuoi, e conta l'ultima. Se un'area non la sai giudicare, la salti.</p></div>
       <div><h3 class="h3">Il punteggio</h3><p class="muted">Per chi gioca fuori dai pali è la media di Attacco, Centrocampo, Difesa e Generale: la Porta non conta. Per i portieri conta solo la Porta. Il colore della card segue il punteggio: bronzo sotto 65, argento da 65 a 74, oro da 75.</p></div>
       <div><h3 class="h3">Squadre e ruoli</h3><p class="muted">I ruoli li assegna l'app, insieme alle squadre. Prova tutte le divisioni possibili e per ogni squadra sceglie il modulo che le va meglio (a 5: 1-1-2-1, 1-2-1-1, 1-2-2; a 7: 1-2-3-1, 1-3-1-2, 1-3-2-1, dove 1-2-1-2-1 conta come 1-2-3-1; a 8: 1-3-3-1, 1-2-3-2, 1-3-2-2, 1-2-4-1). Nel tuo ruolo o nel secondo vali il tuo punteggio. In un ruolo vicino (difesa e centrocampo, centrocampo e attacco) vali ${CFG.MALUS_NEAR} punti in meno, in un ruolo lontano (difesa e attacco) ${CFG.MALUS_FAR} in meno. Se vai in porta senza essere portiere conta la tua Porta; un portiere fuori dai pali vale la media delle sue aree di movimento. Con il cerotto conti ${CFG.INJ_LIGHT} punti in meno, con la croce rossa ${CFG.INJ_BAD}. L'app cerca le squadre più vicine nel valore medio e area per area, tenendo fuori ruolo meno gente possibile. Puoi sempre cambiare ruoli e giocatori a mano.</p></div>
       <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. Poi l'app ti propone di aggiornare le valutazioni dei compagni, anche più tardi.</p></div>
       <div><h3 class="h3">Gruppi e stats generali</h3><p class="muted">Partite, storico, messaggi e valutazioni sono di ogni gruppo. Puoi stare in più gruppi: cambi gruppo toccando il suo nome in alto. Nella scheda Giocatori vedi i membri del gruppo oppure tutti gli iscritti all'app. Le stats nel gruppo sono la media delle valutazioni date in quel gruppo; le stats generali sono la media di tutte le valutazioni ricevute in tutti i gruppi, autovalutazione compresa.</p></div>
       <div><h3 class="h3">Affinità</h3><p class="muted">Più partite due giocatori vincono (o pareggiano) nella stessa squadra, più cresce la loro affinità, piano piano: una vittoria vale 1, un pareggio mezzo, le sconfitte non tolgono niente. Si arriva a circa 28 dopo 10 partite positive insieme, 57 dopo 25, 81 dopo 50 (massimo 100). Una squadra di compagni affiatati prende fino a +${Engine.AFF_BONUS} punti sul valore medio, e l'app ne tiene conto quando fa le squadre.</p></div>
-      <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo. Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le 16 voci.</p></div>
+      <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo. Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le ${VOCI.length} voci.</p></div>
       <div><h3 class="h3">Amici</h3><p class="muted">Chiedi l'amicizia dalla scheda di un giocatore: diventate amici quando l'altro accetta. Gli amici compaiono per primi nelle ricerche e puoi invitarli alle partite del tuo gruppo.</p></div>
       <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti.</p></div>
     </div>
@@ -6102,6 +6178,8 @@ function App() {
   const needsProfile = status === 'ready' && loaded && ctx.canWrite && !me;
   /* chi era iscritto col vecchio sistema rifà l'autovalutazione una volta, nel nuovo formato */
   const needsSelf = status === 'ready' && loaded && ctx.canWrite && !!me && !Engine.hasNewSelf(me);
+  /* voce aggiunta dopo (la Scivolata): chi è già iscritto la dà una volta, prima di tutto il resto */
+  const needsLate = status === 'ready' && loaded && ctx.canWrite && !!me && !needsSelf && Engine.missingSelfVoci(me).length > 0;
   const noGroup = status === 'ready' && loaded && !validGid;
   const top = stack[stack.length - 1];
   let view;
@@ -6110,6 +6188,7 @@ function App() {
   else if (!loaded) view = html`<${Skeleton} />`;
   else if (needsProfile) view = html`<${Welcome} />`;
   else if (needsSelf) view = html`<${SelfRateScreen} key="forced" forced />`;
+  else if (needsLate) view = html`<${NewVociScreen} key="late" />`;
   else if (top && top.t === 'groups') view = html`<${GroupsScreen} key="groups" />`;
   else if (top && top.t === 'settings') view = html`<${SettingsScreen} key="settings" />`;
   else if (top && top.t === 'help') view = html`<${HelpScreen} key="help" />`;
@@ -6134,7 +6213,7 @@ function App() {
   else if (tab === 'chat') view = html`<${ChatScreen} key=${'c' + validGid} />`;
   else view = html`<${HomeScreen} />`;
 
-  const showNav = status === 'ready' && loaded && !needsProfile && !needsSelf;
+  const showNav = status === 'ready' && loaded && !needsProfile && !needsSelf && !needsLate;
   const showFab = showNav && !noGroup && tab === 'matches' && stack.length === 0 && ctx.canWrite && ctx.me;
   const NAV = [
     { t: 'matches', i: 'calendar', l: 'Partite' },
