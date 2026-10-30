@@ -91,9 +91,13 @@ end $$;
 
 grant execute on function public.ms_of(jsonb) to authenticated;
 grant execute on function public.chat_users(text) to authenticated;
-grant execute on function public.dm_allowed(text, text) to authenticated;
+/* le usano le regole di accesso: servono a chi ha fatto l'accesso, a nessun altro */
+revoke execute on function public.chat_can_read(text) from public, anon;
+revoke execute on function public.chat_can_write(text) from public, anon;
 grant execute on function public.chat_can_read(text) to authenticated;
 grant execute on function public.chat_can_write(text) to authenticated;
+/* dice se due persone sono amiche o compagne: la usa solo chat_can_write, non si chiama dall'app */
+revoke execute on function public.dm_allowed(text, text) from public, anon, authenticated;
 
 -- 2. regole di accesso (uguali a prima, con in più le chat private e le letture)
 drop policy if exists docs_read on public.docs;
@@ -158,7 +162,7 @@ create policy docs_delete on public.docs for delete to authenticated using (
 -- i messaggi nuovi: ora giusta (niente messaggi "dal futuro"), niente reazioni o modifiche
 -- scritte a mano, testo al massimo di 4000 caratteri
 create or replace function public.chat_clean() returns trigger
-language plpgsql as $$
+language plpgsql set search_path = public as $$
 declare n bigint := public.now_ms(); t bigint := public.ms_of(new.data -> 't');
 begin
   /* il gruppo (gid) lo calcola un altro trigger: qui si guarda il percorso */
@@ -578,6 +582,7 @@ begin
 exception when others then
   return null;
 end $$;
+revoke execute on function public.chat_push() from public, anon, authenticated;
 drop trigger if exists docs_chat_push on public.docs;
 create trigger docs_chat_push after insert on public.docs
   for each row when (new.col = 'chat') execute function public.chat_push();
