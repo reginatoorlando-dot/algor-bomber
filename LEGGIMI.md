@@ -5,7 +5,7 @@ Il sito è la cartella `web` (questa). Il resto dello zip (`sorgenti`) serve sol
 
 ## 1. Il database (Supabase)
 1. Vai su supabase.com → **New project**. Scegli un nome (es. `algor-bomber`), una password per il database (salvala) e una regione europea.
-2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) con `supabase/aggiornamento-amici.sql` (amicizie) con `supabase/aggiornamento-traguardi.sql` (traguardi di tutti) e con `supabase/aggiornamento-chat.sql` (chat come WhatsApp; per le notifiche serve anche la funzione `notify`, vedi più sotto).
+2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) con `supabase/aggiornamento-amici.sql` (amicizie) con `supabase/aggiornamento-traguardi.sql` (traguardi di tutti), con `supabase/aggiornamento-chat.sql` (chat come WhatsApp; per le notifiche serve anche la funzione `notify`, vedi più sotto) e con `supabase/aggiornamento-notifiche.sql` (notifiche delle partite, link d'invito, pronostici).
 3. **Authentication → Providers → Email**: lascia attivo l'accesso con email e **disattiva "Confirm email"** (così gli amici entrano subito senza aspettare la mail).
 4. **Project Settings → API**: copia **Project URL** e la chiave **anon public**.
 5. Apri il file `config.js` di questa cartella e incolla i due valori al posto delle scritte `INCOLLA_QUI_…`. (La chiave anon può stare nel sito: la sicurezza la fanno le regole del database.)
@@ -76,6 +76,25 @@ La scheda Messaggi ha le chat dei gruppi e le chat private tra compagni di grupp
 2. **Notifiche** (una volta sola): Supabase → **Edge Functions** → **Deploy a new function** → **Via Editor**. Nome: `notify`. Cancella l'esempio, incolla tutto `supabase/functions/notify/index.ts` e premi **Deploy**. Poi, nella pagina della funzione, apri **Settings** (o Details), spegni **Enforce JWT verification** / **Verify JWT** e salva: chi chiama lo controlla la funzione stessa. Non servono segreti: le chiavi delle notifiche le crea la funzione la prima volta e le tiene nel database.
 3. Ognuno attiva le notifiche dal proprio telefono: scheda Messaggi (riquadro "Attiva le notifiche") o menu ☰ → Impostazioni → Notifiche, dove c'è anche "Manda una prova". Su iPhone funzionano solo con l'app aggiunta alla schermata Home (Safari → Condividi → Aggiungi alla schermata Home) e aperta da lì.
 4. **GIF e sticker** (facoltativo): servono una chiave gratuita di KLIPY (partner.klipy.com → API Keys) da mettere in `config.js` alla voce `klipyKey`. Senza chiave si possono comunque mandare le GIF salvate nel telefono dalla Galleria.
+
+## Novità di fine ottobre 2026: feste, cassa, maglie, temi, home (solo `index.html`)
+Non serve niente sul database: basta caricare `index.html`.
+- **Addobbi delle feste** (Halloween, neve dall'8 dicembre al 6 gennaio, Natale, Capodanno, Befana, Carnevale, San Valentino, Pasqua e Pasquetta, Ferragosto): si spengono in Impostazioni → Aspetto.
+- **Cassa e campo prenotato** nei Dettagli della partita; chi deve pagare lo trova tra le cose da fare.
+- **Maglie del mese** (rosa, ciclamino, azzurra, bianca) nello Storico, alla voce Maglie; a fine mese diventano medaglie nel profilo.
+- **4 temi**, **home a modo tuo** e scheda iniziale in Impostazioni; **piede preferito** in Modifica profilo.
+
+## Notifiche delle partite, link d'invito e pronostici (supabase/aggiornamento-notifiche.sql e funzione notify)
+1. **Database** (una volta sola, dopo `aggiornamento-chat.sql`): Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-notifiche.sql` e premi **Run**. Deve comparire "Aggiornamento notifiche completato" con `promemoria_attivi` = 1. Non sposta e non cancella dati; si può rieseguire. Accende anche l'orologio del database (pg_cron) che ogni 10 minuti controlla i promemoria.
+2. **Funzione notify** (va ripubblicata): Supabase → **Edge Functions** → `notify` → **Code** (o "Edit"), cancella il codice, incolla tutto il nuovo `supabase/functions/notify/index.ts` e premi **Deploy**. "Verify JWT" resta spento.
+3. **Sito**: carica su GitHub `index.html` e `sw.js` (nella cartella principale), più questo file e i due di `supabase` nelle loro cartelle.
+
+Cosa fa:
+- **Notifiche delle partite**: nuova partita o sondaggio, "si gioca" quando il sondaggio sceglie il giorno, invito di un amico, posto libero per chi era in lista d'attesa, partita cambiata o annullata, voto MVP aperto, promemoria 24 ore prima. Ognuno le spegne in Impostazioni → Notifiche (restano quelle dei messaggi). Toccando la notifica si apre la partita.
+- **Link e QR d'invito**: dal gruppo (Invita) e dalla partita (Link e QR). Con il link di un amministratore del gruppo si entra subito; con quello di un altro membro si chiede di entrare. "Rifai il link" cambia il codice: i link vecchi fanno solo chiedere di entrare. Chi non è iscritto si iscrive e poi arriva lì.
+- **Pronostici**: a squadre fatte, nei Dettagli della partita, fino all'inizio. Quelli degli altri si vedono a partita iniziata (li mostra il database, non si possono sbirciare). Classifica nello Storico → Classifiche → Pronostici: 3 punti il risultato esatto, 1 l'esito.
+
+Finché lo script non è eseguito, l'app funziona come prima: le parti nuove semplicemente non compaiono.
 
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.

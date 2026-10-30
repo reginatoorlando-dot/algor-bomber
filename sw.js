@@ -1,7 +1,7 @@
 // Service worker: permette l'installazione e l'apertura anche con rete debole,
 // e mostra le notifiche dei messaggi (anche ad app chiusa).
 // La pagina viene sempre scaricata nuova se c'è rete, così gli aggiornamenti arrivano da soli.
-const CACHE = 'algor-bomber-v15';
+const CACHE = 'algor-bomber-v16';
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', 'manifest.webmanifest', 'icon-192.png'])).catch(() => {}));
@@ -32,7 +32,7 @@ async function bumpBadge() {
   } catch (x) { /* non supportato */ }
 }
 
-// notifiche: le manda la funzione "notify" di Supabase a ogni messaggio nuovo
+// notifiche: le manda la funzione "notify" di Supabase (messaggi della chat e partite)
 // su iPhone, iPad e Mac (Safari) ogni notifica arrivata va mostrata, anche con l'app aperta
 const UA = self.navigator.userAgent || '';
 const isIOS = /iPad|iPhone|iPod|Macintosh/.test(UA) && !/Chrome|CriOS|Android|Firefox|FxiOS|Edg/.test(UA);
@@ -54,7 +54,8 @@ self.addEventListener('push', (e) => {
       tag: d.tag || 'algor-bomber',
       renotify: true,
       timestamp: d.t || Date.now(),
-      data: { url: './' + open },
+      /* toccandola si apre la chat o la partita (o il gruppo) */
+      data: { url: typeof d.url === 'string' && /^\.\/\?(chat|m|g)=[A-Za-z0-9_.~-]+$/.test(d.url) ? d.url : './' + open },
     });
   })());
 });
