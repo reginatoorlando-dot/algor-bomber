@@ -970,6 +970,10 @@ body.in-chat { overflow: hidden; overscroll-behavior: none; }
 .ci-top { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 4px 0; }
 .ci-media { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .ci-media .mimg { border-radius: 8px; }
+.fwd-l { display: flex; align-items: center; gap: 4px; margin: 0 0 2px; font: italic 400 12.5px/1.3 var(--f-body); color: var(--ch-meta); }
+.bub.media .fwd-l { padding: 2px 4px 0; }
+.fwd-ck { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: inline-flex; align-items: center; justify-content: center; color: var(--on-accent); }
+.fwd-ck.on { background: var(--accent); border-color: var(--accent); }
 .space-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
 .space-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
 .space-bar i.hi { background: var(--warn); }
@@ -2178,6 +2182,7 @@ const Demo = (() => {
       upload: (path, blob, o) => new Promise((res) => { let p = 0; const step = () => { p = Math.min(1, p + 0.34); if (o && o.onProgress) o.onProgress(p); if (p >= 1) { files.set(path, blob); res(true); } else setTimeout(step, 140); }; step(); }),
       download: async (path) => { const b = files.get(path); if (!b) throw { code: 'invalid_argument', message: 'File non trovato' }; return b; },
       remove: async (paths) => { (paths || []).forEach((x) => files.delete(x)); },
+      copy: async (from, to) => { const b = files.get(from); if (!b) throw { code: 'invalid_argument', message: 'File non trovato' }; files.set(to, b); },
       list: async () => [],
     };
     db.refreshDoc = () => {};
@@ -2763,6 +2768,7 @@ const ICONS = {
   phone: '<path d="M5 3.5h3.5l1.8 4.5-2.3 1.4a11 11 0 0 0 6.6 6.6l1.4-2.3 4.5 1.8V19a1.5 1.5 0 0 1-1.6 1.5A17 17 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5Z"/>',
   chat: '<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.2A8 8 0 1 1 20 12Z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/>',
   reply: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  fwd: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
   ban: '<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/>',
   mic: '<rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/>',
   play: '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/>',
@@ -7108,8 +7114,31 @@ function chatActions(C) {
       return null;
     }
   };
+  /* inoltra un messaggio in un'altra chat: testo, GIF, foto e vocali (i file si copiano nella chat nuova) */
+  const forward = async (target, m) => {
+    const id = newMsgId(C.uid), stem = fileStem(id);
+    const data = { by: C.uid, t: Date.now(), fwd: 1 };
+    const extOf = (p, d) => { const e = String(p || '').split('.').pop(); return /^[a-z0-9]{2,5}$/i.test(e) ? e : d; };
+    if (m.text) data.text = String(m.text).slice(0, 4000);
+    if (m.gif) data.gif = m.gif;
+    if (Array.isArray(m.media) && m.media.length) {
+      data.media = [];
+      for (let i = 0; i < m.media.length; i++) {
+        const it = m.media[i], to = target + '/' + C.uid + '/' + stem + '-' + i + '.' + extOf(it.p, 'jpg');
+        await db.storage.copy(it.p, to);
+        data.media.push({ k: it.k, p: to, w: it.w, h: it.h, s: it.s, b: it.b });
+      }
+    }
+    if (m.voice && m.voice.p) {
+      const to = target + '/' + C.uid + '/' + stem + '.' + extOf(m.voice.p, 'webm');
+      await db.storage.copy(m.voice.p, to);
+      data.voice = { p: to, d: m.voice.d, w: m.voice.w, s: m.voice.s, mime: m.voice.mime };
+    }
+    await writeMsg(target, id, data);
+    return id;
+  };
   return {
-    send,
+    send, forward,
     retry: (chat, id) => { const o = Outbox.get(chat, id); if (o && o.draft) send(chat, o.draft); },
     discard: (chat, id) => Outbox.drop(chat, id),
     react: async (path, e) => { const r = await rpc('chat_react', { p_path: path, p_emoji: e || '' }); if (r.ok) refreshDoc(path); return r.ok; },
@@ -7618,7 +7647,9 @@ function ChatScreen({ id }) {
       onEdit=${() => { const m = menu.m; setMenu(null); setReply(null); setEdit(m); }}
       onInfo=${() => { const m = menu.m; setMenu(null); setSheet({ k: 'info', m }); }}
       onDelete=${() => { const m = menu.m; setMenu(null); if (m._st === 'failed') { A.discard(id, m.id); return; } setSheet({ k: 'del', m }); }}
-      onMore=${() => { const m = menu.m; setMenu(null); setSheet({ k: 'rxPick', m }); }} />`}
+      onMore=${() => { const m = menu.m; setMenu(null); setSheet({ k: 'rxPick', m }); }}
+      onForward=${() => { const m = menu.m; setMenu(null); setSheet({ k: 'fwd', m }); }} />`}
+    ${sheet && sheet.k === 'fwd' && html`<${ForwardSheet} m=${sheet.m} from=${id} A=${A} onClose=${() => setSheet(null)} />`}
     ${sheet && sheet.k === 'rx' && html`<${ReactionsSheet} m=${byId.get(sheet.m.id) || sheet.m} onClose=${() => setSheet(null)} onRemove=${async (m) => { await A.react(pathOf(m), ''); setSheet(null); }} />`}
     ${sheet && sheet.k === 'rxPick' && html`<${Sheet} title="Reagisci" onClose=${() => setSheet(null)}><${EmojiGrid} onPick=${(e) => { const m = sheet.m; setSheet(null); pushRecentEmoji(e); toggleRx(m, e); }} /><//>`}
     ${sheet && sheet.k === 'info' && html`<${MsgInfoSheet} m=${byId.get(sheet.m.id) || sheet.m} dm=${dm} recipients=${recipients(sheet.m)} readsBy=${readsBy} onClose=${() => setSheet(null)} />`}
@@ -7701,6 +7732,7 @@ function MsgRow({ m, first, lastRun, ctx, hl, q }) {
       <div ref=${bubRef} class=${'bub' + (first && !naked ? ' tail' : '') + (naked ? ' naked' : '') + (media ? ' media' : '') + (kind === 'gif' ? ' gifb' : '') + (kind === 'voice' ? ' voiceb' : '') + (m._st === 'failed' ? ' failed' : '')}
         onPointerDown=${onDown} onPointerMove=${onMove} onPointerUp=${onUp} onPointerCancel=${(e) => { press.onPointerCancel(e); sw.current = null; setDx(0); }} onContextMenu=${press.onContextMenu}>
         ${showName && html`<button type="button" class="msg-name" style=${'--nh:' + nameHue(m.by)} onClick=${tap(() => p && ctx.player(m.by))}>${p ? dispName(p) : 'Ex giocatore'}</button>`}
+        ${m.fwd && !m.del && html`<span class="fwd-l"><${Icon} n="fwd" s="14" /> Inoltrato</span>`}
         ${m.re && !m.del && html`<${Quote} re=${m.re} C=${C} onClick=${tap(() => ctx.jump(m.re.id))} />`}
         ${kind === 'del' && html`<span class="del-t"><${Icon} n="ban" s="14" /> ${mine ? 'Hai eliminato questo messaggio' : 'Questo messaggio è stato eliminato'}</span>`}
         ${media && html`<${MediaGrid} media=${media} m=${m} onOpen=${(i) => (e) => { if (press.wasLong()) return; if (m.local) return; ctx.openViewer(m, i); }} />`}
@@ -8334,7 +8366,7 @@ function MediaViewer({ items, at, onClose, onReply }) {
 }
 
 /* ---------- pressione lunga: reazioni e azioni sul messaggio ---------- */
-function MsgMenu({ m, rect, ctx, canEdit, canDel, onClose, onReply, onEdit, onInfo, onDelete, onMore }) {
+function MsgMenu({ m, rect, ctx, canEdit, canDel, onClose, onReply, onEdit, onInfo, onDelete, onMore, onForward }) {
   const C = ctx.C;
   const mine = m.by === C.uid;
   const ref = useRef(null);
@@ -8360,12 +8392,49 @@ function MsgMenu({ m, rect, ctx, canEdit, canDel, onClose, onReply, onEdit, onIn
       <div class="mm-acts">
         ${ctx.canWrite && live && item('reply', 'Rispondi', onReply)}
         ${m.text && !m.del && item('copy', 'Copia', copy)}
+        ${ctx.full && live && onForward && (m.text || m.gif || (m.media && m.media.length) || m.voice) && item('fwd', 'Inoltra', onForward)}
         ${canEdit && item('edit', 'Modifica', onEdit)}
         ${mine && live && ctx.full && item('info', 'Info', onInfo)}
         ${(!m.local || m._st === 'failed') && item('trash', m._st === 'failed' ? 'Non inviare' : 'Elimina', onDelete, 'bad')}
       </div>
     </div>
   </div>`;
+}
+
+/* inoltra: si scelgono fino a 5 chat (gruppi e persone) */
+function ForwardSheet({ m, from, A, onClose }) {
+  const C = useContext(Ctx);
+  const [sel, setSel] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [q, setQ] = useState('');
+  const t = q.trim().toLowerCase();
+  const rows = C.chatRows.filter((r) => (r.dm ? C.canDm(r.other) : C.myGroups.some((g) => g.id === r.id)));
+  const known = new Set(rows.filter((r) => r.dm).map((r) => r.other));
+  const others = C.dmPeople().filter((p) => !known.has(p.id)).map((p) => ({ id: dmId(C.uid, p.id), dm: true, other: p.id, p }));
+  const all = rows.concat(others).filter((r) => !t || chatTitle(r).toLowerCase().includes(t));
+  const toggle = (id) => setSel((x) => (x.includes(id) ? x.filter((y) => y !== id) : x.length >= 5 ? (C.flash('Al massimo 5 chat alla volta'), x) : x.concat(id)));
+  const go = async () => {
+    if (!sel.length || busy) return;
+    setBusy(true);
+    let ok = 0;
+    for (const id of sel) { try { await A.forward(id, m); ok++; } catch (e) { C.flash((e && e.message) || 'Non sono riuscito a inoltrarlo', 'err'); } }
+    setBusy(false);
+    if (!ok) return;
+    onClose();
+    if (sel.length === 1 && sel[0] !== from) C.openChat(sel[0]);
+    else C.flash(ok === 1 ? 'Messaggio inoltrato' : 'Inoltrato in ' + ok + ' chat');
+  };
+  return html`<${Sheet} title="Inoltra a…" onClose=${onClose}>
+    <div class=${'mm-prev ' + (m.by === C.uid ? 'out' : 'in')}>${msgPreview(m).slice(0, 220)}</div>
+    <input class="input" type="search" placeholder="Cerca una chat o una persona" value=${q} onInput=${(e) => setQ(e.target.value)} aria-label="Cerca" />
+    ${all.length === 0 ? html`<div class="card empty small">${t ? 'Nessuna chat con questo nome.' : 'Nessuna chat in cui inoltrarlo.'}</div>`
+      : html`<div class="card pad0 divided">${all.map((r) => html`<button key=${r.id} class="row tap" style="padding:10px 14px" role="checkbox" aria-checked=${sel.includes(r.id)} onClick=${() => toggle(r.id)}>
+        <${ChatAvatar} row=${r} size=${40} />
+        <span class="row-main"><span class="row-t ell">${chatTitle(r)}</span>${r.dm ? '' : html`<span class="row-s">Gruppo</span>`}</span>
+        <span class=${'fwd-ck' + (sel.includes(r.id) ? ' on' : '')} aria-hidden="true">${sel.includes(r.id) && html`<${Icon} n="check" s="14" />`}</span>
+      </button>`)}</div>`}
+    <button class="btn accent block" disabled=${!sel.length || busy} onClick=${go}>${busy ? html`<span class="spin light sm"></span>` : html`<${Icon} n="fwd" s="16" />`} ${sel.length > 1 ? 'Inoltra in ' + sel.length + ' chat' : 'Inoltra'}</button>
+  <//>`;
 }
 
 function ReactionsSheet({ m, onClose, onRemove }) {
@@ -9060,7 +9129,7 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo. Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Nella vista "Nel gruppo" contano le partite del gruppo; in "Generali", e per chi non è nel tuo gruppo, tutte le partite in tutti i gruppi. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le ${VOCI.length} voci. La tua la puoi condividere come immagine.</p></div>
       <div><h3 class="h3">Locandina e risultato</h3><p class="muted">Nella scheda Campo di una partita c'è la locandina da mandare nel gruppo: giorno, campo e formazioni con i colori delle maglie. Dopo la partita, dai Dettagli si condivide il risultato con marcatori e MVP. Ci sono solo i soprannomi, senza foto.</p></div>
       <div><h3 class="h3">Numero di maglia</h3><p class="muted">Lo scegli in Modifica profilo, da 1 a 99: si vede sulla card, sul campo e nelle squadre.</p></div>
-      <div><h3 class="h3">Messaggi</h3><p class="muted">Nella scheda Messaggi ci sono la chat di ogni tuo gruppo e le chat private con i compagni di gruppo e gli amici: le private le leggete solo voi due. Puoi mandare foto, GIF e sticker, emoji e vocali (tieni premuto il microfono; scorri a sinistra per annullare, in su per continuare senza tenere). Tieni premuto un messaggio per reagire, rispondere, copiarlo, modificarlo nei primi 15 minuti o eliminarlo; trascinalo verso destra per rispondere al volo. Con @ chiami qualcuno del gruppo. Una spunta: inviato; due grigie: arrivato; due blu: letto da tutti (tenendo premuto un tuo messaggio, Info dice chi l'ha letto). Le notifiche si attivano da Impostazioni; una chat si silenzia toccando il suo nome in alto.</p></div>
+      <div><h3 class="h3">Messaggi</h3><p class="muted">Nella scheda Messaggi ci sono la chat di ogni tuo gruppo e le chat private con i compagni di gruppo e gli amici: le private le leggete solo voi due. Puoi mandare foto, GIF e sticker, emoji e vocali (tieni premuto il microfono; scorri a sinistra per annullare, in su per continuare senza tenere). Tieni premuto un messaggio per reagire, rispondere, copiarlo, inoltrarlo in un'altra chat, modificarlo nei primi 15 minuti o eliminarlo; trascinalo verso destra per rispondere al volo. Con @ chiami qualcuno del gruppo. Una spunta: inviato; due grigie: arrivato; due blu: letto da tutti (tenendo premuto un tuo messaggio, Info dice chi l'ha letto). Le notifiche si attivano da Impostazioni; una chat si silenzia toccando il suo nome in alto.</p></div>
       <div><h3 class="h3">Amici</h3><p class="muted">Chiedi l'amicizia dalla scheda di un giocatore: diventate amici quando l'altro accetta. Gli amici compaiono per primi nelle ricerche e puoi invitarli alle partite del tuo gruppo.</p></div>
       <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti.</p></div>
     </div>
@@ -9626,6 +9695,7 @@ function makeSupaDb(sb, cfg) {
       return data;
     },
     async remove(paths) { const { error } = await sb.storage.from('chat').remove(paths); if (error) throw storageErr(error.status, error.message); },
+    async copy(from, to) { const { error } = await sb.storage.from('chat').copy(from, to); if (error) throw storageErr(error.status, error.message); },
     async list(prefix) {
       const { data, error } = await sb.storage.from('chat').list(prefix, { limit: 1000 });
       if (error) throw storageErr(error.status, error.message);
