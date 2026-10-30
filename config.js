@@ -5,4 +5,6 @@ window.SC_CONFIG = {
   admins: ['reginatoorlando@gmail.com', 'lgmtortorelli@gmail.com'],
   url: 'https://zthftvseheazmorcvwno.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0aGZ0dnNlaGVhem1vcmN2d25vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDc3MDcsImV4cCI6MjEwODc4MzcwN30.32Zq6ydtqrwohlrpHL35RE8-_6AEIT7_nmuDtW4yRSI',
+  // GIF e sticker nella chat: chiave gratuita di KLIPY (partner.klipy.com → API Keys). Le chiavi KLIPY non sono segrete.
+  klipyKey: '',
 };
