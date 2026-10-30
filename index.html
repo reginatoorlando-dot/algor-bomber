@@ -305,6 +305,7 @@ input[type='range'].unset { --fill: var(--ink-3); opacity: 0.85; }
   max-width: min(92vw, 420px); box-shadow: var(--shadow); animation: up 0.2s ease; text-align: center;
 }
 .toast.err { background: var(--bad); color: #fff; }
+.toast.over-fab { bottom: calc(132px + env(safe-area-inset-bottom, 0px)); }
 @keyframes up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sk { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
@@ -1196,6 +1197,18 @@ button.pc-ovr { appearance: none; border: 0; background: none; padding: 0; margi
 .fifa-hint { position: relative; }
 .share-prev { display: block; width: auto; max-width: 100%; max-height: 52vh; margin: 0 auto; border-radius: 14px; box-shadow: var(--shadow); }
 .confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 200; }
+/* addobbi delle feste: accanto al titolo (toccandolo riparte l'effetto) e sul campo */
+:root { --festa-snow: #4f8fd6; }
+:root[data-theme='dark'] { --festa-snow: #cfe6ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) { --festa-snow: #cfe6ff; } }
+.ttl-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.festa-st { appearance: none; border: 0; background: none; padding: 0; margin: -4px 0; width: 34px; height: 34px; flex: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.festa-st svg { display: block; width: 100%; height: 100%; overflow: visible; }
+@media (prefers-reduced-motion: no-preference) {
+  .festa-st svg { transform-origin: 50% 85%; animation: festa-sway 4s ease-in-out infinite; }
+  .festa-st:active svg { animation: none; transform: scale(.88); }
+}
+@keyframes festa-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @media (prefers-reduced-motion: reduce) {
   .fifa-ov, .fifa-flip, .fifa-flip.enter, .fifa-flip .rv, .fifa-sh, .fifa-rays, .fifa-rays i, .fifa-flash, .fifa-tag, .fifa-flip.enter .fifa.front::after { animation: none !important; }
 }
@@ -3587,6 +3600,7 @@ function PitchView({ m, D, wx }) {
         <circle cx="50" cy="16" r="0.6" class="pt-dot" />
         <circle cx="50" cy="144" r="0.6" class="pt-dot" />
         <rect x="0" y="0" width="100" height="160" fill="url(#pt-vig)" pointer-events="none" />
+        ${C.festa && html`<${PitchFesta} f=${C.festa} />`}
         ${ptsB.map((pt) => dot(pt, cb, 'b'))}
         ${ptsA.map((pt) => dot(pt, ca, 'a'))}
       </svg>
@@ -4602,6 +4616,458 @@ function lastMvpMatch(C) {
   return best;
 }
 const isLastMvp = (C, pid) => { const m = C.gid && lastMvpMatch(C); return !!(m && C.stats.mvps[m.id].winners.includes(pid)); };
+
+/* ============================================================
+   APP: addobbi delle feste
+   Conta il giorno del telefono; Pasqua e Carnevale si calcolano anno per anno.
+   Un addobbo accanto al titolo delle schede principali (toccandolo riparte l'effetto),
+   il campo della scheda Campo addobbato e, una volta al giorno, gli auguri con un effetto breve.
+   Con "Riduci movimento" niente effetti; si spengono in Impostazioni.
+   ============================================================ */
+const Feste = (() => {
+  /* Pasqua nel calendario gregoriano (algoritmo di Meeus, Jones e Butcher) */
+  function easter(y) {
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+    const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const n = h + l - 7 * m + 114;
+    return new Date(y, Math.floor(n / 31) - 1, (n % 31) + 1);
+  }
+  const dayAt = (d, plus) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + (plus || 0)).getTime();
+  const F = {
+    halloween: { k: 'halloween', name: 'Halloween', art: 'zucca', hi: 'Buon Halloween!', fx: 'bats' },
+    inverno: { k: 'inverno', name: 'Neve', art: 'neve', fx: 'snow' },
+    natale: { k: 'natale', name: 'Natale', art: 'albero', hi: 'Buon Natale!', fx: 'sleigh' },
+    capodanno: { k: 'capodanno', name: 'Capodanno', art: 'fuochi', hi: 'Buon anno!', fx: 'fireworks' },
+    befana: { k: 'befana', name: 'Befana', art: 'calza', hi: 'L\'Epifania tutte le feste porta via!', fx: 'candies' },
+    carnevale: { k: 'carnevale', name: 'Carnevale', art: 'maschera', hi: 'A Carnevale ogni scherzo vale!', fx: 'confetti' },
+    valentino: { k: 'valentino', name: 'San Valentino', art: 'cuore', hi: 'Buon San Valentino!', fx: 'hearts' },
+    pasqua: { k: 'pasqua', name: 'Pasqua', art: 'uovo', hi: 'Buona Pasqua!', fx: 'eggs' },
+    ferragosto: { k: 'ferragosto', name: 'Ferragosto', art: 'sole', hi: 'Buon Ferragosto!', fx: 'balls' },
+  };
+  const withHi = (f, hi) => Object.assign({}, f, { hi });
+  /* la festa di quel giorno (o null) */
+  function on(when) {
+    const d = when instanceof Date ? when : new Date(when == null ? Date.now() : when);
+    const md = (d.getMonth() + 1) * 100 + d.getDate();
+    if (md === 1031) return F.halloween;
+    if (md === 1224) return withHi(F.natale, 'Buona Vigilia!');
+    if (md === 1225) return F.natale;
+    if (md === 1226) return withHi(F.natale, 'Buon Santo Stefano!');
+    if (md === 1231) return withHi(F.capodanno, 'Buona fine e buon principio!');
+    if (md === 101) return F.capodanno;
+    if (md === 106) return F.befana;
+    if (md >= 1208 || md <= 105) return md === 1208 ? withHi(F.inverno, 'Sul campo è arrivata la neve!') : F.inverno;
+    if (md === 214) return F.valentino;
+    if (md === 815) return F.ferragosto;
+    const t = dayAt(d), E = easter(d.getFullYear());
+    if (t === dayAt(E)) return F.pasqua;
+    if (t === dayAt(E, 1)) return withHi(F.pasqua, 'Buona Pasquetta!');
+    if (t >= dayAt(E, -52) && t <= dayAt(E, -47)) return F.carnevale; /* da giovedì a martedì grasso */
+    return null;
+  }
+  return { on, easter, list: F };
+})();
+
+/* tema scuro in uso (anche quello automatico del telefono) */
+const darkUI = () => {
+  try {
+    const c = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    const x = /^#([0-9a-f]{6})$/i.exec(c);
+    if (!x) return false;
+    const n = parseInt(x[1], 16);
+    return ((n >> 16) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114) < 128;
+  } catch (e) { return false; }
+};
+
+/* ---------- i disegni (32×32): accanto al titolo e sul campo ---------- */
+const fx2 = (v) => v.toFixed(2);
+function flakeD(cx, cy, r) {
+  let d = '';
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 2 + (i * Math.PI) / 3;
+    d += 'M' + fx2(cx) + ' ' + fx2(cy) + 'L' + fx2(cx + r * Math.cos(a)) + ' ' + fx2(cy - r * Math.sin(a));
+    const bx = cx + 0.58 * r * Math.cos(a), by = cy - 0.58 * r * Math.sin(a);
+    [0.8, -0.8].forEach((o) => { d += 'M' + fx2(bx) + ' ' + fx2(by) + 'l' + fx2(0.34 * r * Math.cos(a + o)) + ' ' + fx2(-0.34 * r * Math.sin(a + o)); });
+  }
+  return d;
+}
+function raysD(cx, cy, r1, r2, n, rot) {
+  let d = '';
+  for (let i = 0; i < n; i++) {
+    const a = (rot || 0) + (i * 2 * Math.PI) / n;
+    d += 'M' + fx2(cx + r1 * Math.cos(a)) + ' ' + fx2(cy + r1 * Math.sin(a)) + 'L' + fx2(cx + r2 * Math.cos(a)) + ' ' + fx2(cy + r2 * Math.sin(a));
+  }
+  return d;
+}
+/* pipistrello centrato in 0,0, largo 44: un'ala, il corpo, e l'ala specchiata */
+const BAT_WING = 'M -2 -1 C -6 -6 -14 -8.4 -21.5 -4.4 C -19 -2.8 -18.4 -0.2 -18.8 3 C -16.2 1.2 -13.2 1.6 -11.6 4.4 C -9.6 1.8 -6.2 1.8 -4.6 4.8 Z';
+const BAT_BODY = 'M -3 1 a 3 4.4 0 1 0 6 0 a 3 4.4 0 1 0 -6 0 Z M -2.5 -3.4 a 2.5 2.5 0 1 0 5 0 a 2.5 2.5 0 1 0 -5 0 Z M -2.3 -4.6 L -1.5 -8 L -0.5 -5.2 Z M 2.3 -4.6 L 1.5 -8 L 0.5 -5.2 Z';
+const BAT_ALL = BAT_WING + ' ' + BAT_WING.replace(/(-?\d*\.?\d+) (-?\d*\.?\d+)/g, (m0, x, y) => String(-Number(x)) + ' ' + y) + ' ' + BAT_BODY;
+const HEART_D = 'M16 28.2C7.2 22 3 17.4 3 11.9 3 8.1 5.9 5.2 9.6 5.2c2.6 0 4.9 1.4 6.4 3.7 1.5-2.3 3.8-3.7 6.4-3.7 3.7 0 6.6 2.9 6.6 6.7 0 5.5-4.2 10.1-13 16.3Z';
+const EGG_D = 'M16 3.2c5 0 9.6 8.2 9.6 15 0 6.1-4.3 10.6-9.6 10.6S6.4 24.3 6.4 18.2C6.4 11.4 11 3.2 16 3.2Z';
+const EGG_COLORS = [['#ffd166', '#ef476f', '#118ab2'], ['#a0e7c5', '#7b3fe4', '#ef476f'], ['#ffadc7', '#118ab2', '#ffd166'], ['#9bd0ff', '#ef476f', '#06a77d'], ['#d7c4ff', '#06a77d', '#ffb703']];
+const FESTA_ART = {
+  zucca: () => html`
+    <path d="M16.4 10c.1-2.7 1-4.8 2.8-6.3" stroke="#56772a" stroke-width="2.4" fill="none" stroke-linecap="round" />
+    <path d="M18.6 6.4c2.3-1.9 4.9-1.8 6.6-.1-2.4 1.6-4.7 1.6-6.6.1Z" fill="#76a336" />
+    <ellipse cx="10.6" cy="19.6" rx="7.9" ry="9.4" fill="#d9661a" />
+    <ellipse cx="21.4" cy="19.6" rx="7.9" ry="9.4" fill="#d9661a" />
+    <ellipse cx="16" cy="19.6" rx="7.2" ry="10" fill="#f58a2a" />
+    <path d="M9.8 10.8c-1.9 3.4-1.9 14.4 0 17.6M22.2 10.8c1.9 3.4 1.9 14.4 0 17.6" stroke="#b9530e" stroke-width=".9" fill="none" opacity=".6" />
+    <path d="M9.6 17.4l2.5-3.6 2.5 3.6ZM17.4 17.4l2.5-3.6 2.5 3.6ZM15 20.8l1-1.6 1 1.6Z" fill="#3a1904" />
+    <path d="M8.9 22.3c2.4 3.9 11.8 3.9 14.2 0l-2 .7-1.3-1-1.5 1.5-1.4-1.3-1.8 1.3-1.4-1.4-1.6 1.4-1.3-1-1.9.8Z" fill="#3a1904" />`,
+  neve: () => html`<path d=${flakeD(16, 16, 13)} stroke="var(--festa-snow)" stroke-width="2.4" stroke-linecap="round" fill="none" />`,
+  albero: () => html`
+    <rect x="14" y="26.5" width="4" height="4" rx="1" fill="#7a4a24" />
+    <path d="M16 4.5l-6.2 8.3h3.4L6.6 21h4l-6 7h22.8l-6-7h4l-6.6-8.2h3.4Z" fill="#2c8a4b" />
+    <path d="M10.6 20.8c3 1.5 7.9 1.3 10.8-.6M7.8 26.6c4.6 1.8 11.4 1.7 15.8-.5" stroke="#f4c430" stroke-width="1" fill="none" />
+    <circle cx="12.6" cy="23.4" r="1.4" fill="#e63946" /><circle cx="19.8" cy="16.4" r="1.3" fill="#4dabf7" />
+    <circle cx="14.2" cy="14.6" r="1.15" fill="#e63946" /><circle cx="20.4" cy="24.4" r="1.4" fill="#f4c430" />
+    <path d="M16 .9l1.1 2.3 2.5.3-1.8 1.7.5 2.5L16 6.5l-2.3 1.2.5-2.5-1.8-1.7 2.5-.3Z" fill="#f4c430" />`,
+  regalo: () => html`
+    <rect x="5" y="12.5" width="22" height="16" rx="2" fill="#e63946" />
+    <rect x="3.5" y="9" width="25" height="5.5" rx="1.6" fill="#c1121f" />
+    <rect x="14" y="9" width="4" height="19.5" fill="#f4c430" />
+    <path d="M16 9c-2.6-4.6-7.4-4.2-6.6-1.2.6 2 4.4 1.6 6.6 1.2Zm0 0c2.6-4.6 7.4-4.2 6.6-1.2-.6 2-4.4 1.6-6.6 1.2Z" fill="#f4c430" />`,
+  fuochi: () => html`
+    <path d=${raysD(16, 16, 4.5, 12, 12, 0)} stroke="#f4c430" stroke-width="2" stroke-linecap="round" />
+    <path d=${raysD(16, 16, 6.2, 10, 12, Math.PI / 12)} stroke="#ff6b6b" stroke-width="1.6" stroke-linecap="round" />
+    ${[0, 1, 2, 3, 4, 5].map((i) => { const a = (i * Math.PI) / 3 + 0.3; return html`<circle key=${i} cx=${fx2(16 + 14 * Math.cos(a))} cy=${fx2(16 + 14 * Math.sin(a))} r="1.4" fill=${['#4dabf7', '#b197fc', '#3ddc97'][i % 3]} />`; })}
+    <circle cx="16" cy="16" r="2.3" fill="#fff3b0" />`,
+  calza: () => html`
+    <path d="M11.2 9.5H21v8.2c0 1.5.8 2.6 2.1 3.2l2.2 1c2.6 1.2 2.8 4.8.3 6.1-1.3.7-2.9.6-4.2-.1l-7-3.6C12.4 23.2 11.2 21.2 11.2 18.8Z" fill="#d42f3b" />
+    <path d="M14 15.2l1.2 2.2 2.4.4-1.7 1.6.4 2.4-2.3-1.1-2.1 1.1" fill="#f4c430" opacity=".9" />
+    <rect x="9.6" y="4.5" width="13" height="6.2" rx="2.4" fill="#f6f2ea" />
+    <circle cx="22" cy="4.2" r="2.1" fill="#f6f2ea" />`,
+  maschera: () => html`
+    <path d="M2.8 12.2c4.4-2.8 8.8-2.5 13.2.8 4.4-3.3 8.8-3.6 13.2-.8-.3 6.9-4 10.6-8.6 10.6-2.4 0-3.7-1.4-4.6-3.3-.9 1.9-2.2 3.3-4.6 3.3-4.6 0-8.3-3.7-8.6-10.6Z" fill="#7b3fe4" />
+    <path d="M2.8 12.2c4.4-2.8 8.8-2.5 13.2.8 4.4-3.3 8.8-3.6 13.2-.8" stroke="#f4c430" stroke-width="1.4" fill="none" />
+    <path d="M7.2 16.2c1.2-1.9 4.3-2.1 5.8 0-1.5 1.7-4.4 1.8-5.8 0ZM19 16.2c1.5-2.1 4.6-1.9 5.8 0-1.4 1.8-4.3 1.7-5.8 0Z" fill="#1d0f33" />
+    <path d="M16 9.4l1.4 2.1-1.4 2.1-1.4-2.1Z" fill="#f4c430" />
+    <path d="M29.2 12.6c1.5 2.4 1.6 5.6.6 8.4M2.8 12.6c-1.5 2.4-1.6 5.6-.6 8.4" stroke="#ff6b6b" stroke-width="1.5" fill="none" stroke-linecap="round" />`,
+  cuore: () => html`
+    <path d=${HEART_D} fill="#e5383b" />
+    <path d="M8.4 9.4c-1.6.6-2.5 2-2.5 3.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none" opacity=".6" />`,
+  uovo: (c) => { const k = c || EGG_COLORS[0]; return html`
+    <path d=${EGG_D} fill=${k[0]} />
+    <path d="M7 15.6l2.9 2.3 3-2.3 3.1 2.3 3-2.3 3 2.3 2.9-2.3" stroke=${k[1]} stroke-width="1.8" fill="none" stroke-linejoin="round" />
+    <circle cx="12" cy="22.6" r="1.15" fill=${k[2]} /><circle cx="16" cy="24.3" r="1.15" fill=${k[2]} /><circle cx="20" cy="22.6" r="1.15" fill=${k[2]} /><circle cx="16" cy="10.2" r="1.15" fill=${k[2]} />`; },
+  sole: () => html`
+    <path d=${raysD(16, 16, 10.4, 14.6, 12, 0)} stroke="#ffb703" stroke-width="2" stroke-linecap="round" />
+    <circle cx="16" cy="16" r="8.4" fill="#ffc93c" />
+    <rect x="9.4" y="13.2" width="5.8" height="3.9" rx="1.6" fill="#1d1d1f" /><rect x="16.8" y="13.2" width="5.8" height="3.9" rx="1.6" fill="#1d1d1f" />
+    <path d="M15.2 14.4h1.6" stroke="#1d1d1f" stroke-width="1" />
+    <path d="M12.6 19.6c2 1.8 4.8 1.8 6.8 0" stroke="#9a5b00" stroke-width="1.2" fill="none" stroke-linecap="round" />`,
+  ombrellone: () => html`
+    <path d="M16 6V29.5" stroke="#8a6a46" stroke-width="1.8" stroke-linecap="round" />
+    <path d="M2.5 15C3.8 8.4 9.4 4 16 4s12.2 4.4 13.5 11Z" fill="#ef476f" />
+    <path d="M16 4c-3 2.5-4.5 6.6-4.6 11h9.2C20.5 10.6 19 6.5 16 4ZM2.5 15c1.2-4.9 4.1-8.5 8.1-10.1-1.6 3-2.4 6.4-2.6 10.1ZM29.5 15c-1.2-4.9-4.1-8.5-8.1-10.1 1.6 3 2.4 6.4 2.6 10.1Z" fill="#fff" />`,
+  pallone: () => html`
+    <circle cx="16" cy="16" r="12" fill="#fff" />
+    <path d="M16 4a12 12 0 0 1 10.4 6L16 16ZM26.4 22A12 12 0 0 1 16 28L16 16ZM5.6 22A12 12 0 0 1 5.6 10L16 16Z" fill="#ef476f" />
+    <path d="M26.4 22A12 12 0 0 1 16 28L16 16Z" fill="#ffd166" /><path d="M5.6 22A12 12 0 0 1 5.6 10L16 16Z" fill="#118ab2" />
+    <circle cx="16" cy="16" r="12" fill="none" stroke="rgba(0,0,0,.2)" stroke-width="1" />
+    <circle cx="16" cy="16" r="2" fill="#fff" stroke="rgba(0,0,0,.2)" stroke-width=".6" />`,
+};
+
+/* accanto al titolo: toccandolo riparte l'effetto del giorno */
+function FestaSticker({ f }) {
+  const art = FESTA_ART[f.art];
+  if (!art) return null;
+  return html`<button type="button" class="festa-st" aria-label=${f.name} title=${f.name} onClick=${() => festaFx(f.fx)}>
+    <svg viewBox="0 0 32 32" aria-hidden="true">${art()}</svg>
+  </button>`;
+}
+
+/* ---------- il campo addobbato (campo 100×160, sotto ai giocatori) ---------- */
+const putArt = (k, x, y, s, rot, arg) => html`<g transform=${rot ? 'rotate(' + rot + ' ' + x + ' ' + y + ')' : null}>
+  <svg x=${fx2(x - s / 2)} y=${fx2(y - s / 2)} width=${s} height=${s} viewBox="0 0 32 32" overflow="visible">${FESTA_ART[k](arg)}</svg>
+</g>`;
+const CORNERS = [null, 'translate(100 0) scale(-1 1)', 'translate(0 160) scale(1 -1)', 'translate(100 160) scale(-1 -1)'];
+const WEB_D = (() => {
+  const A = [0, 0.3927, 0.7854, 1.1781, 1.5708];
+  let d = '';
+  A.forEach((a) => { d += 'M0 0L' + fx2(17 * Math.cos(a)) + ' ' + fx2(17 * Math.sin(a)); });
+  [5, 9.5, 14].forEach((r) => {
+    for (let i = 0; i < A.length - 1; i++) {
+      const a1 = A[i], a2 = A[i + 1], am = (a1 + a2) / 2;
+      d += 'M' + fx2(r * Math.cos(a1)) + ' ' + fx2(r * Math.sin(a1)) + 'Q' + fx2(r * 0.82 * Math.cos(am)) + ' ' + fx2(r * 0.82 * Math.sin(am)) + ' ' + fx2(r * Math.cos(a2)) + ' ' + fx2(r * Math.sin(a2));
+    }
+  });
+  return d;
+})();
+function pitchSpecks(seed, n, colors, sizes) {
+  const rnd = seededRng(seed);
+  return Array.from({ length: n }, (_, i) => {
+    const x = rnd() * 100, y = rnd() * 160, r = sizes[0] + rnd() * (sizes[1] - sizes[0]), c = colors[i % colors.length];
+    return colors.length > 1
+      ? html`<rect key=${i} x=${fx2(x)} y=${fx2(y)} width=${fx2(r * 2)} height=${fx2(r * 0.9)} fill=${c} transform=${'rotate(' + Math.round(rnd() * 180) + ' ' + fx2(x) + ' ' + fx2(y) + ')'} opacity=".85" />`
+      : html`<circle key=${i} cx=${fx2(x)} cy=${fx2(y)} r=${fx2(r)} fill=${c} opacity=${fx2(0.55 + rnd() * 0.4)} />`;
+  });
+}
+const snowPitch = () => html`<g>
+  ${pitchSpecks('neve', 70, ['#fff'], [0.25, 0.7])}
+  ${CORNERS.map((t, i) => html`<path key=${i} transform=${t} d="M0 0H18C15 2.6 11.4 4 7.6 5.2 4.6 6.2 2 8.6 0 12.6Z" fill="#fff" opacity=".93" />`)}
+</g>`;
+const PITCH_FESTA = {
+  halloween: () => html`
+    <rect x="0" y="0" width="100" height="160" fill="#22093a" opacity=".22" />
+    ${[null, CORNERS[3]].map((t, i) => html`<g key=${i} transform=${t} stroke="rgba(255,255,255,.62)" stroke-width=".28" fill="none">
+      <path d=${WEB_D} />
+      <path d="M9 4.4V12.4" />
+      <g stroke="#120c16" stroke-width=".32"><path d="M8.1 12.6l-1-.7M8 13.1l-1.2 0M8.1 13.6l-1 .7M9.9 12.6l1-.7M10 13.1l1.2 0M9.9 13.6l1 .7" /></g>
+      <ellipse cx="9" cy="13.1" rx=".85" ry="1.05" fill="#120c16" stroke="none" />
+    </g>`)}
+    ${putArt('zucca', 92.4, 7.6, 11, -8)}
+    ${putArt('zucca', 7.6, 152.4, 11, 8)}
+    ${[[8.5, 64, 7, -14], [91.5, 98, 6, 12], [87, 36, 4.4, 8], [12, 122, 4.2, -6]].map(([x, y, s, r], i) => html`<path key=${i} d=${BAT_ALL} fill="#160f1c" transform=${'translate(' + x + ' ' + y + ') rotate(' + r + ') scale(' + fx2(s / 44) + ')'} />`)}`,
+  inverno: () => snowPitch(),
+  natale: () => html`${snowPitch()}${putArt('albero', 8.6, 8.4, 13)}${putArt('regalo', 91.6, 152.4, 8.5)}${putArt('regalo', 85.4, 154, 6, 8)}`,
+  capodanno: () => html`${snowPitch()}${pitchSpecks('capodanno', 40, ['#f4c430', '#e9ecef', '#ff6b6b', '#4dabf7'], [0.4, 0.8])}${putArt('fuochi', 91, 9, 13)}${putArt('fuochi', 9, 151, 10)}`,
+  befana: () => html`${snowPitch()}${putArt('calza', 8.2, 9, 12, -10)}${putArt('calza', 91.8, 151, 12, 10)}`,
+  carnevale: () => html`
+    ${pitchSpecks('carnevale', 90, ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#b197fc', '#fff'], [0.45, 0.9])}
+    ${['M2 34c3 1 2 5 5.5 5.5s3-4 6.5-3', 'M98 64c-3 1-2 5-5.5 5.5s-3-4-6.5-3', 'M2 104c3 1 2 5 5.5 5.5s3-4 6.5-3', 'M98 128c-3 1-2 5-5.5 5.5s-3-4-6.5-3'].map((d, i) => html`<path key=${i} d=${d} stroke=${['#ffd166', '#ef476f', '#06d6a0', '#b197fc'][i]} stroke-width=".9" fill="none" stroke-linecap="round" />`)}
+    ${putArt('maschera', 9.5, 8.5, 12, -10)}${putArt('maschera', 90.5, 151.5, 12, 10)}`,
+  valentino: () => html`
+    ${[[7.5, 8, -12], [92.5, 8, 12], [7.5, 152, 12], [92.5, 152, -12]].map(([x, y, r], i) => html`<g key=${i}>${putArt('cuore', x, y, 9, r)}</g>`)}
+    ${(() => { const rnd = seededRng('cuori'); return Array.from({ length: 16 }, (_, i) => { const x = 4 + rnd() * 92, y = 4 + rnd() * 152; return html`<path key=${i} d=${HEART_D} fill="#ff758f" opacity=".75" transform=${'translate(' + fx2(x) + ' ' + fx2(y) + ') scale(.09)'} />`; }); })()}`,
+  pasqua: () => html`${[[6.5, 30, -14], [93.5, 46, 12], [6.5, 70, 10], [93.5, 92, -10], [6.5, 112, -8], [93.5, 132, 14], [91.5, 9, 0], [8.5, 151, 0]].map(([x, y, r], i) => html`<g key=${i}>${putArt('uovo', x, y, 8, r, EGG_COLORS[i % EGG_COLORS.length])}</g>`)}`,
+  ferragosto: () => html`
+    <rect x="0" y="0" width="100" height="160" fill="#ffb703" opacity=".08" />
+    ${putArt('sole', 90.5, 9.5, 15)}${putArt('ombrellone', 9, 148.5, 15)}${putArt('pallone', 90, 151, 7)}`,
+};
+function PitchFesta({ f }) {
+  const draw = PITCH_FESTA[f.k];
+  return draw ? html`<g class="pt-festa" aria-hidden="true" pointer-events="none">${draw()}</g>` : null;
+}
+
+/* ---------- l'effetto breve (sopra tutto, poi sparisce da solo) ---------- */
+let festaFxOn = false;
+const FESTA_FX = {
+  /* pipistrelli che attraversano lo schermo sbattendo le ali */
+  bats: {
+    ms: 3600,
+    init: (W, H) => Array.from({ length: 8 }, (_, i) => {
+      const dir = i % 2 ? -1 : 1;
+      return { dir, x: dir > 0 ? -50 : W + 50, y0: H * (0.08 + Math.random() * 0.6), v: (W / 400) * (4 + Math.random() * 2.6), s: 0.85 + Math.random() * 0.75, ph: Math.random() * 6.28, delay: Math.random() * 1100 };
+    }),
+    frame: (ctx, ps, dt, el, W, H, dark) => {
+      const wing = new Path2D(BAT_WING), body = new Path2D(BAT_BODY);
+      for (const p of ps) {
+        if (el < p.delay) continue;
+        p.x += p.dir * p.v * dt;
+        const y = p.y0 + Math.sin(p.ph + el * 0.004) * 22;
+        const flap = 0.2 + 0.8 * Math.cos(p.ph + el * 0.034);
+        ctx.save();
+        ctx.translate(p.x, y);
+        ctx.scale(p.s * 1.25 * p.dir, p.s * 1.25);
+        ctx.fillStyle = '#1a1320';
+        if (dark) { ctx.strokeStyle = 'rgba(255,160,80,.8)'; ctx.lineWidth = 1.1; }
+        for (const side of [1, -1]) {
+          ctx.save(); ctx.scale(side, flap);
+          ctx.fill(wing); if (dark) ctx.stroke(wing);
+          ctx.restore();
+        }
+        ctx.fill(body); if (dark) ctx.stroke(body);
+        ctx.restore();
+      }
+    },
+  },
+  /* neve che scende */
+  snow: {
+    ms: 4200,
+    init: (W, H) => Array.from({ length: Math.max(50, Math.min(140, Math.round((W * H) / 9000))) }, () => ({
+      x: Math.random() * W, y: -Math.random() * H * 0.7 - 10, r: 1.3 + Math.random() * 2.4, v: (0.9 + Math.random() * 1.4) * Math.max(0.8, H / 800), sw: 0.6 + Math.random() * 1.4, ph: Math.random() * 6.28,
+    })),
+    frame: (ctx, ps, dt, el, W, H, dark) => {
+      ctx.fillStyle = dark ? '#ffffff' : '#7fa9d8';
+      for (const p of ps) {
+        p.y += p.v * dt;
+        const x = p.x + Math.sin(p.ph + el * 0.002) * 14 * p.sw;
+        ctx.beginPath(); ctx.arc(x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      }
+    },
+  },
+  /* la slitta con le renne, in mezzo alla neve */
+  sleigh: {
+    ms: 4400,
+    init: (W, H) => ({ snow: FESTA_FX.snow.init(W, H).slice(0, 60), sc: Math.min(1.5, Math.max(0.9, W / 340)), trail: [] }),
+    frame: (ctx, st, dt, el, W, H, dark, fade) => {
+      FESTA_FX.snow.frame(ctx, st.snow, dt, el, W, H, dark);
+      const col = dark ? '#f0d9a6' : '#4a3426';
+      const k = Math.min(1, el / 3600), sc = st.sc;
+      const x = W + 40 * sc - k * (W + 160 * sc), y = H * 0.17 + Math.sin(el * 0.003) * 10;
+      if (Math.random() < 0.7) st.trail.push({ x: x + 34 * sc, y: y + 2 * sc, life: 1 });
+      ctx.fillStyle = '#f4c430';
+      for (const s of st.trail) { s.life -= 0.02 * dt; if (s.life > 0) { ctx.globalAlpha = fade * Math.max(0, s.life); ctx.beginPath(); ctx.arc(s.x, s.y + (1 - s.life) * 10, 1.6, 0, Math.PI * 2); ctx.fill(); } }
+      ctx.globalAlpha = fade;
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+      ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      /* redini */
+      ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(4, -6); ctx.lineTo(-24, -6); ctx.lineTo(-52, -6); ctx.stroke();
+      [-30, -58].forEach((rx) => {
+        ctx.save(); ctx.translate(rx, 0);
+        ctx.beginPath(); ctx.ellipse(0, 0, 11, 5, -0.06, 0, Math.PI * 2); ctx.fill();
+        ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-8, -2); ctx.lineTo(-12.5, -9); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(-15, -10.5, 4, 2.6, -0.35, 0, Math.PI * 2); ctx.fill();
+        ctx.lineWidth = 1.3; ctx.beginPath();
+        ctx.moveTo(-13.2, -12.6); ctx.lineTo(-10.6, -18.6); ctx.moveTo(-12, -15.6); ctx.lineTo(-8.6, -16.8); ctx.moveTo(-11.4, -17); ctx.lineTo(-13.4, -20);
+        ctx.moveTo(-15.2, -12.8); ctx.lineTo(-15, -19.4); ctx.moveTo(-15.1, -16.6); ctx.lineTo(-18, -18.6);
+        ctx.stroke();
+        const g = Math.sin(el * 0.02 + rx) * 0.7;
+        ctx.lineWidth = 1.9; ctx.beginPath();
+        [[-7, 1], [-4, -1], [5, 1], [8, -1]].forEach(([lx, ph]) => { const a = g * ph; ctx.moveTo(lx, 3); ctx.lineTo(lx + Math.sin(a) * 7, 3 + Math.cos(a) * 7); });
+        ctx.stroke();
+        ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(10.5, -2); ctx.lineTo(13, -4.5); ctx.stroke();
+        ctx.restore();
+      });
+      /* la slitta, con Babbo Natale e il sacco */
+      ctx.beginPath(); ctx.moveTo(2, -2); ctx.quadraticCurveTo(3, -12, 10, -11.5); ctx.lineTo(29, -11.5); ctx.quadraticCurveTo(33, -11.5, 33, -6); ctx.lineTo(33, 2); ctx.lineTo(5, 2); ctx.closePath(); ctx.fill();
+      ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-2, 0.5); ctx.quadraticCurveTo(-5, 5, 0, 5.5); ctx.lineTo(35, 5.5); ctx.moveTo(10, 2); ctx.lineTo(10, 5.5); ctx.moveTo(27, 2); ctx.lineTo(27, 5.5); ctx.stroke();
+      ctx.beginPath(); ctx.arc(18, -15, 3.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(14.6, -16.6); ctx.quadraticCurveTo(19, -25, 24.5, -21); ctx.lineTo(21.4, -16); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(28.5, -14.5, 4.6, 5.6, 0.25, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    },
+  },
+  /* fuochi d'artificio */
+  fireworks: {
+    ms: 3800,
+    init: (W, H) => ({ bursts: [0, 380, 760, 1150, 1550, 1950].map((t0) => ({
+      t0, x: W * (0.15 + Math.random() * 0.7), y: H * (0.12 + Math.random() * 0.38), c: ['#f4c430', '#ff6b6b', '#4dabf7', '#b197fc', '#3ddc97', '#ffa94d'][Math.floor(Math.random() * 6)],
+      ps: Array.from({ length: 54 }, (_, i) => { const a = (i / 54) * Math.PI * 2 + Math.random() * 0.1, v = 2 + Math.random() * 2.8; return { a, v }; }),
+    })) }),
+    frame: (ctx, st, dt, el, W, H, dark, fade) => {
+      for (const b of st.bursts) {
+        const t = el - b.t0;
+        if (t < 0 || t > 1500) continue;
+        const k = t / 16.67, life = 1 - t / 1500;
+        ctx.globalAlpha = fade * Math.max(0, life);
+        ctx.fillStyle = b.c;
+        for (const p of b.ps) {
+          const r = p.v * k * Math.pow(0.985, k) * 1.4;
+          const px = b.x + Math.cos(p.a) * r, py = b.y + Math.sin(p.a) * r + 0.012 * k * k;
+          ctx.beginPath(); ctx.arc(px, py, 1.9, 0, Math.PI * 2); ctx.fill();
+        }
+        if (t < 220) { ctx.globalAlpha = fade * (1 - t / 220); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); ctx.fill(); }
+      }
+      ctx.globalAlpha = fade;
+    },
+  },
+  /* caramelle (e qualche pezzo di carbone) che cadono */
+  candies: {
+    ms: 4000,
+    init: (W, H) => Array.from({ length: 30 }, (_, i) => ({
+      coal: i % 5 === 4, x: Math.random() * W, y: -20 - Math.random() * H * 0.7, v: (2.2 + Math.random() * 2.2) * Math.max(0.8, H / 800),
+      rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.12, c: ['#ef476f', '#ffd166', '#06d6a0', '#4dabf7', '#b197fc'][i % 5], s: 0.9 + Math.random() * 0.5,
+    })),
+    frame: (ctx, ps, dt) => {
+      for (const p of ps) {
+        p.y += p.v * dt; p.rot += p.vr * dt;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(p.s, p.s);
+        if (p.coal) {
+          ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.moveTo(-6, -3); ctx.lineTo(-2, -6); ctx.lineTo(5, -4); ctx.lineTo(7, 2); ctx.lineTo(1, 6); ctx.lineTo(-6, 3); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#555'; ctx.beginPath(); ctx.moveTo(-2, -4); ctx.lineTo(3, -3); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
+        } else {
+          ctx.fillStyle = p.c;
+          ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(-12, -5); ctx.lineTo(-12, 5); ctx.closePath(); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(12, -5); ctx.lineTo(12, 5); ctx.closePath(); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(0, 0, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.ellipse(-2, -2, 2.4, 1.2, -0.4, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+      }
+    },
+  },
+  /* cuori che salgono */
+  hearts: {
+    ms: 4000,
+    init: (W, H) => Array.from({ length: 26 }, (_, i) => ({
+      x: Math.random() * W, y: H + 20 + Math.random() * H * 0.4, v: (1.6 + Math.random() * 1.8) * Math.max(0.8, H / 800), s: 0.35 + Math.random() * 0.5, ph: Math.random() * 6.28,
+      c: ['#e5383b', '#ff758f', '#ff4d6d', '#c9184a'][i % 4],
+    })),
+    frame: (ctx, ps, dt, el) => {
+      const hp = new Path2D(HEART_D);
+      for (const p of ps) {
+        p.y -= p.v * dt;
+        ctx.save(); ctx.translate(p.x + Math.sin(p.ph + el * 0.003) * 16, p.y); ctx.scale(p.s, p.s); ctx.translate(-16, -16);
+        ctx.fillStyle = p.c; ctx.fill(hp);
+        ctx.restore();
+      }
+    },
+  },
+  /* ovetti che cadono */
+  eggs: {
+    ms: 4000,
+    init: (W, H) => Array.from({ length: 22 }, (_, i) => ({
+      x: Math.random() * W, y: -30 - Math.random() * H * 0.7, v: (2 + Math.random() * 2) * Math.max(0.8, H / 800), rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.08,
+      s: 0.55 + Math.random() * 0.45, k: EGG_COLORS[i % EGG_COLORS.length],
+    })),
+    frame: (ctx, ps, dt) => {
+      const egg = new Path2D(EGG_D), band = new Path2D('M7 15.6l2.9 2.3 3-2.3 3.1 2.3 3-2.3 3 2.3 2.9-2.3');
+      for (const p of ps) {
+        p.y += p.v * dt; p.rot += p.vr * dt;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(p.s, p.s); ctx.translate(-16, -16);
+        ctx.fillStyle = p.k[0]; ctx.fill(egg);
+        ctx.strokeStyle = p.k[1]; ctx.lineWidth = 1.8; ctx.stroke(band);
+        ctx.restore();
+      }
+    },
+  },
+  /* palloni da spiaggia che rimbalzano */
+  balls: {
+    ms: 4200,
+    init: (W, H) => Array.from({ length: 7 }, () => ({
+      x: W * (0.08 + Math.random() * 0.84), y: -40 - Math.random() * H * 0.5, vy: 0, vx: (Math.random() - 0.5) * 2.2, r: 14 + Math.random() * 10, rot: Math.random() * 6.28,
+    })),
+    frame: (ctx, ps, dt, el, W, H) => {
+      for (const p of ps) {
+        p.vy += 0.42 * dt; p.y += p.vy * dt; p.x += p.vx * dt; p.rot += p.vx * 0.04 * dt;
+        if (p.y > H - p.r - 24 && p.vy > 0) { p.y = H - p.r - 24; p.vy *= -0.62; }
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        const cols = ['#ef476f', '#fff', '#ffd166', '#fff', '#118ab2', '#fff'];
+        cols.forEach((c, i) => { ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, p.r, (i * Math.PI) / 3, ((i + 1) * Math.PI) / 3); ctx.closePath(); ctx.fill(); });
+        ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+    },
+  },
+};
+function festaFx(kind) {
+  if (festaFxOn || reducedMotion() || typeof document === 'undefined') return;
+  if (kind === 'confetti') { fireConfetti({ n: 170, ms: 3000 }); return; }
+  const S = FESTA_FX[kind];
+  if (!S) return;
+  const cv = document.createElement('canvas');
+  cv.className = 'confetti';
+  cv.setAttribute('aria-hidden', 'true');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = window.innerWidth, H = window.innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  document.body.appendChild(cv);
+  const ctx = cv.getContext('2d');
+  if (!ctx) { cv.remove(); return; }
+  ctx.scale(dpr, dpr);
+  festaFxOn = true;
+  const dark = darkUI();
+  const st = S.init(W, H, dark);
+  let t0 = 0, last = 0;
+  const step = (t) => {
+    if (!t0) { t0 = t; last = t; }
+    const dt = Math.min(2.5, (t - last) / 16.67); last = t;
+    const el = t - t0, k = el / S.ms;
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    const fade = k > 0.8 ? Math.max(0, 1 - (k - 0.8) / 0.2) : 1;
+    ctx.globalAlpha = fade;
+    try { S.frame(ctx, st, dt, el, W, H, dark, fade); } catch (e) { /* un disegno non riuscito non ferma l'app */ }
+    ctx.restore();
+    if (k < 1) requestAnimationFrame(step); else { cv.remove(); festaFxOn = false; }
+  };
+  requestAnimationFrame(step);
+}
 
 
 /* ============================================================
@@ -6524,7 +6990,7 @@ function MainHead({ title, right, chip }) {
   return html`<div class="page-head">
     <button class="icon-btn" aria-label="Menu" onClick=${() => C.openSheet({ k: 'menu' })}><${Icon} n="menu" />${C.badges.menu > 0 && html`<span class="dot-badge" aria-hidden="true"></span>`}</button>
     <div class="ttl">
-      <h1 class="h1">${title}</h1>
+      <div class="ttl-row"><h1 class="h1">${title}</h1>${C.festa && html`<${FestaSticker} f=${C.festa} />`}</div>
       ${chip === false ? null : C.group ? html`<button class="group-chip" onClick=${() => C.openSheet({ k: 'groupSwitch' })} aria-label=${'Gruppo: ' + C.group.name + '. Cambia gruppo'}>
         <span class="ell">${C.group.name} · ${C.group.city}</span><${Icon} n="chevdown" s="14" />
       </button>` : C.me && html`<button class="group-chip none" onClick=${() => C.go({ t: 'groups' })}>
@@ -8743,6 +9209,7 @@ function SettingsScreen() {
     <section class="sec"><h2 class="h3">Aspetto</h2>
       <${Seg} value=${C.theme} onChange=${C.setTheme} options=${[{ v: 'auto', l: 'Automatico' }, { v: 'light', l: 'Chiaro' }, { v: 'dark', l: 'Scuro' }]} />
       <div class="tiny faint">Automatico segue il tema del telefono.</div>
+      <label class="check"><input id="set-feste" type="checkbox" checked=${C.feste !== 'off'} onChange=${(e) => C.setFeste(e.target.checked ? 'on' : 'off')} /><span>Addobbi delle feste</span></label>
     </section>
     <${PushSettings} />
     <section class="sec"><h2 class="h3">Profilo</h2>
@@ -9211,6 +9678,7 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo. Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Nella vista "Nel gruppo" contano le partite del gruppo; in "Generali", e per chi non è nel tuo gruppo, tutte le partite in tutti i gruppi. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le ${VOCI.length} voci. La tua la puoi condividere come immagine.</p></div>
       <div><h3 class="h3">Locandina e risultato</h3><p class="muted">Nella scheda Campo di una partita c'è la locandina da mandare nel gruppo: giorno, campo e formazioni con i colori delle maglie. Dopo la partita, dai Dettagli si condivide il risultato con marcatori e MVP. Ci sono solo i soprannomi, senza foto.</p></div>
       <div><h3 class="h3">Numero di maglia</h3><p class="muted">Lo scegli in Modifica profilo, da 1 a 99: si vede sulla card, sul campo e nelle squadre.</p></div>
+      <div><h3 class="h3">Addobbi delle feste</h3><p class="muted">Nei giorni di festa l'app si addobba: Halloween, la neve dall'8 dicembre al 6 gennaio, Natale, Capodanno, Befana, Carnevale, San Valentino, Pasqua e Pasquetta, Ferragosto. Il disegno accanto al titolo, se lo tocchi, rifà l'effetto. Si spengono in Impostazioni.</p></div>
       <div><h3 class="h3">Messaggi</h3><p class="muted">Nella scheda Messaggi ci sono la chat di ogni tuo gruppo e le chat private con i compagni di gruppo e gli amici: le private le leggete solo voi due. Puoi mandare foto, GIF e sticker, emoji e vocali (tieni premuto il microfono; scorri a sinistra per annullare, in su per continuare senza tenere). Tieni premuto un messaggio per reagire, rispondere, copiarlo, inoltrarlo in un'altra chat, modificarlo nei primi 15 minuti o eliminarlo; trascinalo verso destra per rispondere al volo. Con @ chiami qualcuno del gruppo. Una spunta: inviato; due grigie: arrivato; due blu: letto da tutti (tenendo premuto un tuo messaggio, Info dice chi l'ha letto). Le notifiche si attivano da Impostazioni; una chat si silenzia toccando il suo nome in alto.</p></div>
       <div><h3 class="h3">Amici</h3><p class="muted">Chiedi l'amicizia dalla scheda di un giocatore: diventate amici quando l'altro accetta. Gli amici compaiono per primi nelle ricerche e puoi invitarli alle partite del tuo gruppo.</p></div>
       <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti.</p></div>
@@ -9322,6 +9790,10 @@ function App() {
   const status = demoBe ? 'ready' : real.status;
   useEffect(() => { applyTheme(theme); }, [theme]);
   const setTheme = (t) => { setThemeS(t); writeLS('sc-theme', t === 'auto' ? null : t); };
+  /* addobbi delle feste: si spengono in Impostazioni (vale per questo telefono) */
+  const [feste, setFesteS] = useState(() => readLS('sc-feste', 'on'));
+  const setFeste = (v) => { setFesteS(v); writeLS('sc-feste', v === 'off' ? 'off' : null); };
+  const festa = feste === 'off' ? null : Feste.on(new Date());
 
   /* ogni minuto: chiusura dei voti MVP e scadenze senza bisogno di ricaricare */
   useEffect(() => {
@@ -9535,9 +10007,19 @@ function App() {
     matches, matchesById, allFields, fieldOf: (m) => fieldOfMatch(m, allFields), ratings: data.ratings || [], mvp: data.mvp || [],
     gid: validGid, group, groups: gdata.groups || [], groupsById, members, memberById, myGroups, switchGroup,
     be, inbox, chatRows, chatReady, refreshInbox, markChatRead, chatReadOf, lastTick, canDm, dmPeople, openChat,
-    help, markHelpSeen, badges, theme, setTheme,
+    help, markHelpSeen, badges, theme, setTheme, feste, setFeste, festa,
     go, back, goTab, openSheet: setSheet, closeSheet: () => setSheet(null), flash, startDemo, exitDemo,
   };
+
+  /* il giorno di una festa: una volta al giorno su questo telefono, gli auguri e un effetto breve */
+  const festaKey = festa ? festa.k + toYmd(new Date()) : '';
+  useEffect(() => {
+    if (!festa || status !== 'ready' || !loaded) return;
+    const today = toYmd(new Date());
+    if (readLS('sc-festa-seen', '') === today) return;
+    const t = setTimeout(() => { writeLS('sc-festa-seen', today); if (festa.hi) flash(festa.hi); festaFx(festa.fx); }, 900);
+    return () => clearTimeout(t);
+  }, [festaKey, status, loaded]);
 
   const autoTried = useRef(new Set());
   useEffect(() => {
@@ -9631,7 +10113,7 @@ function App() {
     </div></nav>`}
     ${showFab && html`<button class="fab" onClick=${() => setSheet({ k: 'newMatch' })}><${Icon} n="plus" /> Nuova partita</button>`}
     <${SheetHost} sheet=${sheet} onClose=${() => setSheet(null)} />
-    ${toast && html`<div class=${'toast' + (toast.kind === 'err' ? ' err' : '')} role="status">${toast.text}</div>`}
+    ${toast && html`<div class=${'toast' + (toast.kind === 'err' ? ' err' : '') + (showFab && !sheet ? ' over-fab' : '')} role="status">${toast.text}</div>`}
   <//>`;
 }
 
