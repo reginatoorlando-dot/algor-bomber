@@ -7498,6 +7498,7 @@ function ChatScreen({ id }) {
       const mine = readsBy[C.uid];
       if (t && (!mine || numOr(mine.r, 0) < t)) { A.seen([{ c: id, r: t, d: t }]).then(() => C.refreshInbox()); C.markChatRead(id); }
       else C.markChatRead(id);
+      try { if (navigator.serviceWorker && navigator.serviceWorker.ready) navigator.serviceWorker.ready.then((r) => (r.getNotifications ? r.getNotifications({ tag: 'chat-' + id }) : [])).then((ns) => ns.forEach((n) => n.close())).catch(() => {}); } catch (e) { /* niente da chiudere */ }
     };
     const tm = setTimeout(mark, 350);
     document.addEventListener('visibilitychange', mark);

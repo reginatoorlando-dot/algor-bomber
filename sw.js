@@ -33,7 +33,9 @@ async function bumpBadge() {
 }
 
 // notifiche: le manda la funzione "notify" di Supabase a ogni messaggio nuovo
-const isIOS = /iPad|iPhone|iPod/.test(self.navigator.userAgent) || (/Macintosh/.test(self.navigator.userAgent) && 'standalone' in self.navigator);
+// su iPhone, iPad e Mac (Safari) ogni notifica arrivata va mostrata, anche con l'app aperta
+const UA = self.navigator.userAgent || '';
+const isIOS = /iPad|iPhone|iPod|Macintosh/.test(UA) && !/Chrome|CriOS|Android|Firefox|FxiOS|Edg/.test(UA);
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { title: 'Algor Bomber', body: e.data ? e.data.text() : '' }; }
