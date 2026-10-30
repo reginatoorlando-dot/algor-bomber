@@ -297,6 +297,7 @@ input[type='range'].unset { --fill: var(--ink-3); opacity: 0.85; }
 }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px max(18px, env(safe-area-inset-right, 0px)) 8px max(18px, env(safe-area-inset-left, 0px)); }
 .sheet-body { overflow-y: auto; padding: 4px max(18px, env(safe-area-inset-right, 0px)) 22px max(18px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; overscroll-behavior: contain; }
+.sheet-body > *:not(.emg) { flex-shrink: 0; }
 @media (min-width: 720px) { .sheet-wrap { align-items: center; } .sheet { border-radius: 22px; } }
 .toast {
   position: fixed; z-index: 70; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px));
@@ -726,7 +727,7 @@ body.in-chat { overflow: hidden; overscroll-behavior: none; }
 :root[data-theme='dark'] .cv-start { background: #182229; color: #ffd279; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .cv-start { background: #182229; color: #ffd279; } }
 .cv-start .ic { vertical-align: -2px; }
-.cv-items { display: flex; flex-direction: column; min-height: 100%; justify-content: flex-end; }
+.cv-items { flex: none; display: flex; flex-direction: column; min-height: 100%; justify-content: flex-end; }
 .day { align-self: center; margin: 10px 0 6px; pointer-events: none; }
 .day-float { position: absolute; top: calc(66px + env(safe-area-inset-top, 0px)); left: 0; right: 0; z-index: 4; display: flex; justify-content: center; pointer-events: none; animation: fade 0.15s ease; }
 .day-float span { display: inline-block; padding: 5px 12px; border-radius: 8px; background: var(--ch-chip); color: var(--ch-chip-ink); font: 500 12.5px/1.2 var(--f-body); box-shadow: 0 1px 3px rgba(11, 20, 26, 0.18); }
@@ -974,6 +975,7 @@ body.in-chat { overflow: hidden; overscroll-behavior: none; }
 .bub.media .fwd-l { padding: 2px 4px 0; }
 .fwd-ck { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: inline-flex; align-items: center; justify-content: center; color: var(--on-accent); }
 .fwd-ck.on { background: var(--accent); border-color: var(--accent); }
+.sheet-cta { position: sticky; bottom: -22px; z-index: 2; margin: 0 -2px -22px; padding: 10px 2px 22px; background: linear-gradient(to top, var(--surface) 75%, transparent); }
 .space-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
 .space-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
 .space-bar i.hi { background: var(--warn); }
@@ -1060,11 +1062,18 @@ body.in-chat { overflow: hidden; overscroll-behavior: none; }
 .poll-mini { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
 .pm-row { display: grid; grid-template-columns: 86px 1fr auto; align-items: center; gap: 10px; }
 .pm-d { font: 600 13px/1.2 var(--f-body); color: var(--ink); white-space: nowrap; }
-.pm-row .bar, .poll-day .bar { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
-.pm-row .bar i, .poll-day .bar i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
+.pm-row .bar, .poll-day .bar, .poll-res .bar { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
+.pm-row .bar i, .poll-day .bar i, .poll-res .bar i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
 .pm-row .cnt { font: 600 12.5px/1 var(--f-body); color: var(--ink-2); }
 .poll-day { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
 .poll-day.past { opacity: 0.5; }
+.pd-main { appearance: none; border: 0; background: none; padding: 0; margin: 0; flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.pd-main > .grow { min-width: 0; display: flex; flex-direction: column; }
+.pd-main .ic { color: var(--ink-3); flex: none; }
+.pd-main .bar { display: block; }
+.poll-res .bar { display: block; }
+.poll-res.on { background: var(--accent-soft); }
+.pv-pos { flex: none; min-width: 26px; font: 600 13px/1 var(--f-body); color: var(--ink-3); text-align: right; }
 .poll-day.on { background: var(--accent-soft); }
 .pd-check { appearance: none; flex: none; width: 30px; height: 30px; border-radius: 9px; border: 2px solid var(--line); background: var(--surface); color: var(--on-accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .poll-day.on .pd-check { background: var(--accent); border-color: var(--accent); }
@@ -3672,13 +3681,17 @@ function PollScreen({ m }) {
       const vs = pollVoters(m, d), past = d < today, on = mine.includes(d);
       return html`<div key=${d} class=${'poll-day' + (past ? ' past' : '') + (on ? ' on' : '')}>
         <button type="button" class="pd-check" disabled=${past || !canVote || !!busy} aria-pressed=${on} aria-label=${(on ? 'Togli ' : 'Segna ') + ymdLabel(d, true)} onClick=${() => toggle(d)}>${busy === d ? html`<span class="spin"></span>` : on ? html`<${Icon} n="check" s="18" />` : ''}</button>
-        <div class="grow stack-4">
-          <div class="hs" style="justify-content:space-between;gap:8px"><b class="ell">${ymdLabel(d, 'mid')}</b><span class="hs" style="gap:8px;flex:none">${!past && html`<${WxBadge} w=${wxFor(wxd, d, m.time)} />`}<span class=${'chip num' + (vs.length >= need ? ' ok' : '')}>${vs.length}/${need}</span></span></div>
-          <div class="bar"><i style=${'width:' + Math.min(100, (vs.length / need) * 100) + '%'}></i></div>
-          <div class="tiny muted ell">${past ? 'Giorno passato' : vs.length ? vs.map((u) => (C.playersById[u] ? dispName(C.playersById[u]) : 'Ex giocatore')).join(', ') : 'Ancora nessuno'}</div>
-        </div>
+        <button type="button" class="pd-main" aria-label=${'Chi ha votato ' + ymdLabel(d, true) + ': ' + vs.length + ' su ' + need} onClick=${() => C.openSheet({ k: 'pollVoters', mid: m.id, day: d })}>
+          <span class="grow stack-4">
+            <span class="hs" style="justify-content:space-between;gap:8px"><b class="ell">${ymdLabel(d, 'mid')}</b><span class="hs" style="gap:8px;flex:none">${!past && html`<${WxBadge} w=${wxFor(wxd, d, m.time)} />`}<span class=${'chip num' + (vs.length >= need ? ' ok' : '')}>${vs.length}/${need}</span></span></span>
+            <span class="bar"><i style=${'width:' + Math.min(100, (vs.length / need) * 100) + '%'}></i></span>
+            <span class="tiny muted ell">${past ? (vs.length ? 'Giorno passato · ' + plural(vs.length, 'voto', 'voti') : 'Giorno passato') : vs.length ? vs.map((u) => (C.playersById[u] ? dispName(C.playersById[u]) : 'Ex giocatore')).join(', ') : 'Ancora nessuno'}</span>
+          </span>
+          <${Icon} n="chev" s="16" />
+        </button>
       </div>`;
     })}</div>
+    <div class="tiny faint">Tocca un giorno per vedere chi l'ha votato, in ordine di voto.</div>
     ${wxd && html`<${WxCredit} />`}
     ${!canVote && html`<div class="note">${C.me ? 'Hai accesso in sola lettura.' : 'Crea prima il tuo profilo per votare.'}</div>`}
     ${by && html`<div class="tiny faint">Sondaggio di ${dispName(by)}. ${m.teamMode === 'pick' ? 'Squadre scelte dai partecipanti.' : 'Squadre automatiche.'}</div>`}
@@ -3687,6 +3700,65 @@ function PollScreen({ m }) {
       <button class="btn ghost block" onClick=${cancel}>Annulla il sondaggio</button>
     </div>`}
   <//>`;
+}
+
+/* quando è stato dato un voto: oggi, ieri o il giorno, con l'ora */
+function fmtVoteTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts), a = new Date(ts), b = new Date();
+  a.setHours(0, 0, 0, 0); b.setHours(0, 0, 0, 0);
+  const k = Math.round((b - a) / 86400000);
+  const day = k === 0 ? 'oggi' : k === 1 ? 'ieri' : (DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]).toLowerCase();
+  return day + ' alle ' + fmtClock(ts);
+}
+function PollVotersSheet({ mid, day, onClose }) {
+  const C = useContext(Ctx);
+  const m = C.matchesById[mid];
+  if (!m || !m.poll) return null;
+  const need = pollNeed(m);
+  const v = pollVotes(m);
+  const vs = pollVoters(m, day);
+  const chosen = m.poll.closed && m.poll.closed.day === day;
+  const open = m.status === 'poll';
+  return html`<${Sheet} title=${ymdLabel(day, true)} onClose=${onClose}>
+    <div class="hs" style="gap:8px;flex-wrap:wrap">
+      <span class=${'chip num' + (vs.length >= need ? ' ok' : '')}>${vs.length}/${need}</span>
+      ${chosen && html`<span class="chip ok"><${Icon} n="check" s="14" /> Giorno scelto</span>`}
+      <span class="small muted">${vs.length ? (open ? (vs.length >= need ? 'Squadre piene' : 'Mancano ' + plural(need - vs.length, 'giocatore', 'giocatori')) : plural(vs.length, 'persona ha votato', 'persone hanno votato')) : ''}</span>
+    </div>
+    ${vs.length === 0 ? html`<div class="card empty small">Nessuno ha segnato questo giorno.</div>`
+      : html`<div class="card pad0 divided">${vs.map((u, i) => {
+        const p = C.playersById[u];
+        return html`<button key=${u} class="row tap" style="padding:10px 14px" disabled=${!p} onClick=${() => { onClose(); C.go({ t: 'player', id: u }); }}>
+          <span class="pv-pos num">${i + 1}°</span>
+          <${Avatar} p=${p || { id: u }} size=${36} />
+          <span class="row-main"><span class="row-t ell">${u === C.uid ? 'Tu' : p ? dispName(p) : 'Ex giocatore'} ${p && u !== C.uid && C.isFriend(u) && html`<${FriendChip} />`}</span><span class="row-s ell" style="display:block">${p ? fullName(p) + ' · ' : ''}${fmtVoteTime(numOr(v[u] && v[u][day], 0))}</span></span>
+        </button>`;
+      })}</div>`}
+    <div class="tiny faint">In ordine di voto: ${chosen ? (m.poll.closed.how === 'auto' ? 'la partita è nata con i primi ' + plural(need, 'giocatore', 'giocatori') + ' che hanno segnato questo giorno.' : 'la partita è nata con chi aveva segnato questo giorno.') : open ? 'se il giorno arriva a ' + need + ', la partita nasce con chi l\'ha votato.' : 'il sondaggio è chiuso.'}</div>
+  <//>`;
+}
+
+/* nella partita nata dal sondaggio: com'è andato, giorno per giorno */
+function PollResults({ m }) {
+  const C = useContext(Ctx);
+  if (!m.poll || !m.poll.closed) return null;
+  const days = pollDays(m);
+  if (!days.length) return null;
+  const need = pollNeed(m);
+  const total = Object.keys(pollVotes(m)).length;
+  return html`<section class="sec">
+    <div class="sec-h"><h2 class="h3">Com'è andato il sondaggio</h2><span class="small muted">${plural(total, 'persona', 'persone')}</span></div>
+    <div class="card pad0 divided">${days.map((d) => {
+      const n = pollVoters(m, d).length, chosen = m.poll.closed.day === d;
+      return html`<button key=${d} class=${'row tap poll-res' + (chosen ? ' on' : '')} style="padding:11px 14px" onClick=${() => C.openSheet({ k: 'pollVoters', mid: m.id, day: d })}>
+        <span class="row-main stack-4"><span class="hs" style="justify-content:space-between;gap:8px"><b class="ell">${ymdLabel(d, 'mid')}</b><span class=${'chip num' + (chosen ? ' ok' : '')}>${chosen ? 'Scelto · ' : ''}${n}/${need}</span></span>
+          <span class="bar"><i style=${'width:' + Math.min(100, (n / need) * 100) + '%'}></i></span></span>
+        <${Icon} n="chev" s="16" />
+      </button>`;
+    })}</div>
+    <div class="tiny faint">Tocca un giorno per vedere chi l'ha votato, in ordine di voto.</div>
+  </section>`;
 }
 
 function PollCloseSheet({ mid, onClose }) {
@@ -5841,7 +5913,7 @@ function MatchScreen({ id }) {
   } else if (tab === 'pitch' && phase !== 'cancelled') {
     body = hasLineup ? html`<${PitchView} m=${m} D=${D} wx=${wx} />` : html`<div class="card empty"><div class="h3">Ancora nessuno schieramento</div><div>${D.T && D.T.source === 'waiting' ? `Lo schieramento compare appena l'app fa le squadre: mancano ${plural(D.T.missing, 'giocatore', 'giocatori')}.` : pick ? 'Compare appena i giocatori scelgono la loro squadra.' : 'Compare quando ci sono le squadre.'}</div></div>`;
   } else if (phase === 'played') {
-    body = html`<${PlayedSections} m=${m} />`;
+    body = html`<${PlayedSections} m=${m} /><${PollResults} m=${m} />`;
   } else {
     body = html`
       <div class="card stack-8">
@@ -5900,6 +5972,8 @@ function MatchScreen({ id }) {
         onClick=${() => C.openSheet({ k: 'confirm', title: 'Partita finita?', text: `Le squadre di adesso diventano quelle definitive (potrai correggerle insieme al risultato). Si apre il voto MVP per i ${R.confirmed.filter((x) => !x.guest).length} iscritti che hanno giocato: resta aperto 24 ore.`, label: 'Sì, chiudi la partita', onYes: closeMatch })}>
         <${Icon} n="check" s="16" /> Partita finita: chiudi e scrivi il risultato
       </button>`}
+
+      <${PollResults} m=${m} />
     `;
   }
 
@@ -7327,6 +7401,8 @@ function ChatAvatar({ row, size }) {
   return html`<${GroupAvatar} g=${row.g} size=${size || 48} />`;
 }
 const chatTitle = (row) => (row.dm ? (row.p ? dispName(row.p) : 'Ex giocatore') : (row.g && row.g.name) || 'Gruppo');
+/* per cercare una chat: soprannome, nome e cognome (o il nome del gruppo) */
+const chatFind = (row) => (chatTitle(row) + ' ' + (row.dm && row.p ? fullName(row.p) + ' ' + (row.p.first || '') + ' ' + (row.p.last || '') : '')).toLowerCase();
 
 /* le spunte: una (inviato), due grigie (arrivato a tutti), due blu (letto da tutti) */
 function Ticks({ st }) {
@@ -7341,7 +7417,7 @@ function ChatListScreen() {
   const C = useContext(Ctx);
   const [q, setQ] = useState('');
   const t = q.trim().toLowerCase();
-  const rows = C.chatRows.filter((r) => !t || chatTitle(r).toLowerCase().includes(t));
+  const rows = C.chatRows.filter((r) => !t || chatFind(r).includes(t));
   return html`<div class="page chats-page">
     <${MainHead} title="Messaggi" chip=${false} />
     <${PushBanner} />
@@ -7544,9 +7620,13 @@ function ChatScreen({ id }) {
     const el = e.currentTarget;
     const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
     atBottom.current = gap < 80;
-    let lab = null;
-    for (const d of el.querySelectorAll('.day')) { if (d.offsetTop <= el.scrollTop + 8) lab = d.textContent; else break; }
-    if (lab) { setFloatDay(lab); clearTimeout(floatT.current); floatT.current = setTimeout(() => setFloatDay(null), 1300); }
+    let lab = null, near = false;
+    for (const d of el.querySelectorAll('.day')) {
+      if (d.offsetTop <= el.scrollTop + 8) lab = d.textContent;
+      else { near = d.offsetTop - el.scrollTop < 52; break; }
+    }
+    if (lab && !near) { setFloatDay(lab); clearTimeout(floatT.current); floatT.current = setTimeout(() => setFloatDay(null), 1300); }
+    else if (near) setFloatDay(null);
     setShowDown(gap > 400);
     if (atBottom.current && newBelow) setNewBelow(0);
     if (el.scrollTop < 300 && hasMore) { keepFrom.current = el.scrollHeight - el.scrollTop; const n = await more(); if (!n) keepFrom.current = null; }
@@ -8412,7 +8492,7 @@ function ForwardSheet({ m, from, A, onClose }) {
   const rows = C.chatRows.filter((r) => (r.dm ? C.canDm(r.other) : C.myGroups.some((g) => g.id === r.id)));
   const known = new Set(rows.filter((r) => r.dm).map((r) => r.other));
   const others = C.dmPeople().filter((p) => !known.has(p.id)).map((p) => ({ id: dmId(C.uid, p.id), dm: true, other: p.id, p }));
-  const all = rows.concat(others).filter((r) => !t || chatTitle(r).toLowerCase().includes(t));
+  const all = rows.concat(others).filter((r) => !t || chatFind(r).includes(t));
   const toggle = (id) => setSel((x) => (x.includes(id) ? x.filter((y) => y !== id) : x.length >= 5 ? (C.flash('Al massimo 5 chat alla volta'), x) : x.concat(id)));
   const go = async () => {
     if (!sel.length || busy) return;
@@ -8434,7 +8514,7 @@ function ForwardSheet({ m, from, A, onClose }) {
         <span class="row-main"><span class="row-t ell">${chatTitle(r)}</span>${r.dm ? '' : html`<span class="row-s">Gruppo</span>`}</span>
         <span class=${'fwd-ck' + (sel.includes(r.id) ? ' on' : '')} aria-hidden="true">${sel.includes(r.id) && html`<${Icon} n="check" s="14" />`}</span>
       </button>`)}</div>`}
-    <button class="btn accent block" disabled=${!sel.length || busy} onClick=${go}>${busy ? html`<span class="spin light sm"></span>` : html`<${Icon} n="fwd" s="16" />`} ${sel.length > 1 ? 'Inoltra in ' + sel.length + ' chat' : 'Inoltra'}</button>
+    <div class="sheet-cta"><button class="btn accent block" disabled=${!sel.length || busy} onClick=${go}>${busy ? html`<span class="spin light sm"></span>` : html`<${Icon} n="fwd" s="16" />`} ${sel.length > 1 ? 'Inoltra in ' + sel.length + ' chat' : 'Inoltra'}</button></div>
   <//>`;
 }
 
@@ -9124,6 +9204,7 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Da dove vengono i numeri</h3><p class="muted">Ogni voce è la media di tutte le valutazioni ricevute, autovalutazione compresa: la tua conta come quella di chiunque altro. Ogni area è la media delle sue voci. L'autovalutazione si fa una volta sola, all'iscrizione; le valutazioni agli altri invece le dai e le cambi quando vuoi, e conta l'ultima. Se un'area non la sai giudicare, la salti.</p></div>
       <div><h3 class="h3">Il punteggio</h3><p class="muted">Per chi gioca fuori dai pali è la media di Attacco, Centrocampo, Difesa e Generale: la Porta non conta. Per i portieri conta solo la Porta. Il colore della card segue il punteggio: bronzo sotto 65, argento da 65 a 74, oro da 75.</p></div>
       <div><h3 class="h3">Squadre e ruoli</h3><p class="muted">I ruoli li assegna l'app, insieme alle squadre. Prova tutte le divisioni possibili e per ogni squadra sceglie il modulo che le va meglio (a 5: 1-1-2-1, 1-2-1-1, 1-2-2; a 7: 1-2-3-1, 1-3-1-2, 1-3-2-1, dove 1-2-1-2-1 conta come 1-2-3-1; a 8: 1-3-3-1, 1-2-3-2, 1-3-2-2, 1-2-4-1). Nel tuo ruolo o nel secondo vali il tuo punteggio. In un ruolo vicino (difesa e centrocampo, centrocampo e attacco) vali ${CFG.MALUS_NEAR} punti in meno, in un ruolo lontano (difesa e attacco) ${CFG.MALUS_FAR} in meno. Se vai in porta senza essere portiere conta la tua Porta; un portiere fuori dai pali vale la media delle sue aree di movimento. Con il cerotto conti ${CFG.INJ_LIGHT} punti in meno, con la croce rossa ${CFG.INJ_BAD}. L'app cerca le squadre più vicine nel valore medio e area per area, tenendo fuori ruolo meno gente possibile. Puoi sempre cambiare ruoli e giocatori a mano.</p></div>
+      <div><h3 class="h3">Sondaggio sul giorno</h3><p class="muted">Se il giorno non è fissato, chi crea la partita propone qualche giorno e ognuno segna, col cerchio, tutti quelli in cui è libero. Il primo giorno che arriva al numero per due squadre piene fa nascere la partita da sola, con chi l'ha votato. Toccando un giorno vedi chi l'ha votato, in ordine di voto e con l'ora; quando la partita è fissata, nei suoi Dettagli resta «Com'è andato il sondaggio».</p></div>
       <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. Poi l'app ti propone di aggiornare le valutazioni dei compagni, anche più tardi.</p></div>
       <div><h3 class="h3">Gruppi e stats generali</h3><p class="muted">Partite, storico, messaggi e valutazioni sono di ogni gruppo. Puoi stare in più gruppi: cambi gruppo toccando il suo nome in alto. Nella scheda Giocatori vedi i membri del gruppo oppure tutti gli iscritti all'app. Le stats nel gruppo sono la media delle valutazioni date in quel gruppo; le stats generali sono la media di tutte le valutazioni ricevute in tutti i gruppi, autovalutazione compresa.</p></div>
       <div><h3 class="h3">Affinità</h3><p class="muted">Più partite due giocatori vincono (o pareggiano) nella stessa squadra, più cresce la loro affinità, piano piano: una vittoria vale 1, un pareggio mezzo, le sconfitte non tolgono niente. Si arriva a circa 28 dopo 10 partite positive insieme, 57 dopo 25, 81 dopo 50 (massimo 100). Una squadra di compagni affiatati prende fino a +${Engine.AFF_BONUS} punti sul valore medio, e l'app ne tiene conto quando fa le squadre.</p></div>
@@ -9158,6 +9239,7 @@ function SheetHost({ sheet, onClose }) {
     case 'fifa': return html`<${FifaOverlay} pid=${sheet.pid} all=${sheet.all} onClose=${onClose} />`;
     case 'badge': return html`<${BadgeSheet} pid=${sheet.pid} bk=${sheet.bk} scope=${sheet.scope} onClose=${onClose} />`;
     case 'pollClose': return html`<${PollCloseSheet} mid=${sheet.mid} onClose=${onClose} />`;
+    case 'pollVoters': return html`<${PollVotersSheet} mid=${sheet.mid} day=${sheet.day} onClose=${onClose} />`;
     case 'shareImg': return html`<${ShareImageSheet} key=${sheet.name} title=${sheet.title} make=${sheet.make} name=${sheet.name} onClose=${onClose} />`;
     case 'newChat': return html`<${NewChatSheet} onClose=${onClose} />`;
     case 'chatPick': return html`<${ChatPickSheet} blob=${sheet.blob} title=${sheet.title} onClose=${onClose} />`;
