@@ -535,6 +535,29 @@ a.btn { text-decoration: none; }
 .vb-bar { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
 .vb-bar i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
 .vb-v { font: 700 14px/1 var(--f-display); text-align: right; }
+.vb-c { font-style: normal; font-size: 11px; font-weight: 700; padding: 0 4px; border-radius: 6px; vertical-align: 1px; }
+.vb-c.up { color: var(--accent); background: var(--accent-soft); }
+.vb-c.down { color: var(--bad); background: var(--bad-soft); }
+/* Confronto: due figurine, una voce */
+.cmp-prog { height: 4px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.cmp-prog i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; }
+.cmp-head { text-align: center; padding: 6px 4px 2px; }
+.cmp-q { font: 800 24px/1.15 var(--f-display); letter-spacing: -0.01em; text-wrap: balance; }
+.cmp-v { margin-top: 6px; font-size: 13px; color: var(--ink-3); }
+.cmp-pair { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; animation: cmp-in 0.28s ease-out; }
+@keyframes cmp-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.cmp-card { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; padding: 20px 10px 16px; border-radius: 20px; background: var(--surface); border: 2px solid var(--line); box-shadow: var(--shadow); cursor: pointer; font: inherit; color: inherit; transition: transform 0.16s ease, border-color 0.16s ease, opacity 0.2s ease, background-color 0.16s ease; }
+.cmp-card:active { transform: scale(0.97); }
+.cmp-card.on { border-color: var(--accent); background: var(--accent-soft); transform: scale(1.04); }
+.cmp-card.off { opacity: 0.4; transform: scale(0.96); }
+.cmp-name { font: 700 17px/1.15 var(--f-display); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-full { font-size: 12px; color: var(--ink-3); max-width: 100%; }
+.cmp-vs { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--bg); font: 800 12px/1 var(--f-display); text-transform: uppercase; z-index: 1; pointer-events: none; }
+.cmp-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cmp-done-n { font: 800 48px/1 var(--f-display); color: var(--accent); }
+.cmp-invite { text-align: left; }
+.cmp-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
+@media (prefers-reduced-motion: reduce) { .cmp-pair { animation: none; } .cmp-card { transition: none; } }
 .stats.six { grid-template-columns: repeat(3, 1fr); }
 .mini span { min-width: 28px; }
 .res-chip { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font: 700 13px/1 var(--f-display); background: var(--surface-2); color: var(--ink-2); flex: none; }
@@ -1452,18 +1475,38 @@ const Engine = (() => {
   const outfieldOf = (areas) => mean(OUT_AREAS.map((k) => num(areas[k], VDEF)));
   const ovrOf = (areas, role) => (role === 'POR' ? num(areas.por, VDEF) : outfieldOf(areas));
 
-  /* Voce = media di tutte le valutazioni ricevute (autovalutazione compresa).
-     Area = media delle sue voci. Punteggio = media delle 4 aree di movimento, o la sola Porta per i portieri. */
-  function computeRatings(players, ratingDocs) {
-    const peerBy = {};
+  /* Quante valutazioni contano: per ogni voce le ultime 30 (l'autovalutazione è la più vecchia, quindi esce per prima).
+     Ogni salvataggio conta, ma la stessa persona può valutare lo stesso giocatore al massimo 3 volte in 7 giorni.
+     I confronti spostano una voce di ±2 (±1 con "Uguali"), in tutto al massimo di 10 punti, e invecchiano come le
+     valutazioni: contano finché non arrivano 30 valutazioni più nuove di loro. */
+  const WINDOW = 30, RATE_MAX = 3, RATE_DAYS = 7, CMP_CAP = 10;
+  /* le valutazioni date da una persona a un giocatore: l'ultima (v, t) e quelle di prima (h), dalla più recente */
+  function entriesOf(e) {
+    if (!e || typeof e !== 'object') return [];
+    const out = [];
+    const v0 = cleanVoci(e.v || legacyVoci(e));
+    if (Object.keys(v0).length) out.push({ v: v0, t: num(e.t, 0) });
+    for (const h of Array.isArray(e.h) ? e.h : []) {
+      const v = cleanVoci(h && h.v);
+      if (Object.keys(v).length) out.push({ v, t: num(h.t, 0) });
+    }
+    return out.sort((a, b) => b.t - a.t);
+  }
+
+  /* Voce = media delle ultime 30 valutazioni ricevute (autovalutazione compresa), più i confronti.
+     Area = media delle sue voci. Punteggio = media delle 4 aree di movimento, o la sola Porta per i portieri.
+     adj (facoltativo): i confronti { giocatore: { voce: [{ d, t }] } } */
+  function computeRatings(players, ratingDocs, adj) {
+    const peerBy = {}, allBy = {};
     for (const doc of ratingDocs || []) {
       const r = (doc && doc.r) || {};
       for (const target of Object.keys(r)) {
         if (target === doc.id) continue;
-        const e = r[target] || {};
-        const v = cleanVoci(e.v || legacyVoci(e));
-        if (!Object.keys(v).length) continue;
-        (peerBy[target] = peerBy[target] || []).push({ voter: doc.id, v, t: num(e.t, 0) });
+        const es = entriesOf(r[target]);
+        if (!es.length) continue;
+        (peerBy[target] = peerBy[target] || []).push({ voter: doc.id, v: es[0].v, t: es[0].t, n: es.length });
+        const all = (allBy[target] = allBy[target] || []);
+        for (const x of es) all.push({ voter: doc.id, v: x.v, t: x.t });
       }
     }
     const out = {};
@@ -1471,26 +1514,42 @@ const Engine = (() => {
       const self = cleanVoci(p.self);
       const hasSelf = Object.keys(self).length > 0;
       const peers = peerBy[p.id] || [];
+      const entries = (allBy[p.id] || []).sort((a, b) => b.t - a.t);
       /* nei conti, le voci aggiunte dopo prendono il valore di partenza; nei singoli voti restano come sono stati dati */
       const selfC = withLate(self);
-      const peersC = peers.map((pr) => withLate(pr.v));
-      const voci = {}, counts = {};
+      const entC = entries.map((x) => withLate(x.v));
+      const pa = (adj && adj[p.id]) || null;
+      const voci = {}, counts = {}, cmp = {};
+      let nIn = 0;
       for (const x of VOCI) {
         const arr = [];
-        if (okv(selfC[x.k])) arr.push(selfC[x.k]);
-        for (const v of peersC) if (okv(v[x.k])) arr.push(v[x.k]);
-        voci[x.k] = arr.length ? mean(arr) : VDEF;
+        let oldest = 0;
+        for (let i = 0; i < entC.length && arr.length < WINDOW; i++) {
+          if (okv(entC[i][x.k])) { arr.push(entC[i][x.k]); oldest = entries[i].t; }
+        }
+        nIn = Math.max(nIn, arr.length);
+        const full = arr.length >= WINDOW;
+        if (!full && okv(selfC[x.k])) arr.push(selfC[x.k]);
+        let val = arr.length ? mean(arr) : VDEF;
+        const evs = pa && pa[x.k];
+        if (evs && evs.length) {
+          let d = 0;
+          for (const ev of evs) if (!full || ev.t > oldest) d += ev.d;
+          d = clamp(d, -CMP_CAP, CMP_CAP);
+          if (d) { val = clamp(val + d, VMIN, VMAX); cmp[x.k] = d; }
+        }
+        voci[x.k] = val;
         counts[x.k] = arr.length;
       }
       const areas = areasOf(voci);
       const selfAreas = hasSelf ? areasOf(selfC) : null;
       out[p.id] = {
-        voci, counts, areas,
+        voci, counts, areas, cmp,
         outfield: outfieldOf(areas), porta: num(areas.por, VDEF),
         ovr: ovrOf(areas, p.role), gk: p.role === 'POR',
         self: hasSelf ? self : null, selfAreas,
         selfOvr: selfAreas ? ovrOf(selfAreas, p.role) : null,
-        peers, nPeers: peers.length,
+        peers, nPeers: peers.length, entries, nIn,
       };
     }
     return out;
@@ -1913,6 +1972,7 @@ const Engine = (() => {
     SCALE, scaleLabel, tierOf, TIER_NAME, CFG, MODULES,
     clamp, mean, num, okv, matchTime,
     cleanVoci, legacyVoci, hasNewSelf, withLate, missingSelfVoci, LATE_VOCI, areasOf, outfieldOf, ovrOf, computeRatings,
+    WINDOW, RATE_MAX, RATE_DAYS, CMP_CAP, entriesOf,
     partOf, roleMalus, injMalus, valueIn, natural,
     modulesFor, moduleLabel, bestLineup, evalTeam, evaluate, suggestTeams, bestSwap, balanceLabel,
     mvpResult, hasResult, matchStats, accuracy,
@@ -2069,19 +2129,18 @@ const Demo = (() => {
           refresh(a.p_gid); return 'added';
         }
         case 'global_votes': {
-          /* voti di tutti i gruppi, senza chi li ha dati; per ogni coppia conta il più recente */
-          const best = new Map();
+          /* voti di tutti i gruppi, senza chi li ha dati, con le valutazioni di prima (h) */
+          const out = [];
           for (const [p, d] of docs) {
             if (!p.startsWith('g/') || colOf(p).split('/').pop() !== 'ratings') continue;
             const rater = idOf(p), r = (d && d.r) || {};
             for (const target of Object.keys(r)) {
               const e = r[target];
               if (target === rater || !e || typeof e !== 'object') continue;
-              const k = rater + '|' + target, t = Number(e.t) || 0, cur = best.get(k);
-              if (!cur || t > cur.t) best.set(k, { t, target, vote: clone(e) });
+              out.push({ target, vote: clone(e) });
             }
           }
-          return [...best.values()].map((x) => ({ target: x.target, vote: x.vote }));
+          return out;
         }
         case 'poll_vote':
         case 'poll_close': {
@@ -2243,6 +2302,63 @@ const Demo = (() => {
           const rows = [...docs.entries()].map(([path, d]) => { const s = path.split('/'); return { path, col: s[s.length - 2], id: s[s.length - 1], gid: s[0] === 'g' ? s[1] : null, data: d }; });
           return clone(careerFromDocs(String(a.p_uid || ''), rows.filter((r) => r.col === 'matches' && r.gid), rows.filter((r) => (r.col === 'mvp' || r.col === 'mv') && r.gid)));
         }
+        case 'cmp_vote': case 'cmp_state': case 'rater_stats': {
+          /* confronti come nel database (aggiornamento-valutazioni.sql): chi ha scelto chi resta segreto */
+          const VK = Engine.VOCI.map((x) => x.k);
+          const isAct = (g, u) => { const m = docs.get('members/' + g + '~' + u); return !!m && m.status === 'active'; };
+          if (!db._cmps) {
+            /* qualche confronto già fatto dagli altri, per vedere come funziona */
+            db._cmps = [];
+            const rnd = seededRng('cmp-demo');
+            const mem = [...docs.keys()].filter((k) => k.startsWith('members/g_demo~') && docs.get(k).status === 'active').map((k) => k.split('~')[1]).filter((u) => u !== db.me);
+            const now = Date.now();
+            for (let i = 0; i < 60 && mem.length > 3; i++) {
+              const voter = i < 52 ? mem[1] : mem[Math.floor(rnd() * mem.length)];
+              const others = mem.filter((u) => u !== voter);
+              const x = others[Math.floor(rnd() * others.length)], y = others.filter((u) => u !== x)[Math.floor(rnd() * (others.length - 1))];
+              const k = VK[Math.floor(rnd() * 13)], r = rnd();
+              const da = r < 0.35 ? 0 : r < 0.6 ? 2 : r < 0.85 ? -2 : r < 0.93 ? 1 : -1;
+              db._cmps.push({ gid: 'g_demo', voter, a: x, b: y, voce: k, da, db: -da, t: now - Math.floor((60 - i) * 0.3 * 86400000) - Math.floor(rnd() * 3600000) });
+            }
+          }
+          const ms3 = (list, steps) => steps.map((k) => list[k - 1]).filter((x) => x != null);
+          if (fn === 'cmp_vote') {
+            const me = db.me, g = a.p_gid, x = a.p_a, y = a.p_b, k = a.p_voce, da = Number(a.p_da);
+            if (!isAct(g, me)) fail('Non sei in questo gruppo.');
+            if (!x || !y || x === y || me === x || me === y) fail('Confronto non valido.');
+            if (!VK.includes(k)) fail('Voce non valida.');
+            if (![-2, -1, 0, 1, 2].includes(da)) fail('Confronto non valido.');
+            if (!isAct(g, x) || !isAct(g, y)) fail('Uno dei due non è più nel gruppo.');
+            const now = Date.now(), same = (c) => c.gid === g && c.voter === me && c.voce === k && ((c.a === x && c.b === y) || (c.a === y && c.b === x));
+            if (db._cmps.some((c) => same(c) && c.t > now - 30 * 86400000)) fail('Hai già confrontato questi due su questa voce nell\'ultimo mese.');
+            if (db._cmps.filter((c) => c.voter === me && c.t > now - 86400000).length >= 150) fail('Per oggi hai fatto abbastanza confronti: riprendi domani.');
+            db._cmps.push({ gid: g, voter: me, a: x, b: y, voce: k, da, db: -da, t: now });
+            return { ok: true, n: db._cmps.filter((c) => c.gid === g && c.voter === me).length };
+          }
+          if (fn === 'rater_stats') {
+            const u = String(a.p_uid || '');
+            let times = [], nsum = 0;
+            for (const [path, d] of docs) {
+              if (!path.startsWith('g/') || colOf(path).split('/').pop() !== 'ratings' || idOf(path) !== u) continue;
+              times = times.concat(givenTimes(Object.assign({ id: u }, d)));
+              nsum += typeof d.n === 'number' ? d.n : 0;
+            }
+            times.sort((p1, p2) => p1 - p2);
+            const mineC = db._cmps.filter((c) => c.voter === u).sort((p1, p2) => p1.t - p2.t).map((c) => c.t);
+            return { rv: { n: Math.max(times.length, nsum), ms: ms3(times, [10, 50, 200]) }, cv: { n: mineC.length, ms: ms3(mineC, [50, 250, 1000]) } };
+          }
+          /* cmp_state */
+          const evOf = (list) => list.flatMap((c) => [c.da ? [c.a, c.voce, c.da, c.t] : null, c.db ? [c.b, c.voce, c.db, c.t] : null]).filter(Boolean).sort((p1, p2) => p1[3] - p2[3]);
+          if (!a.p_gid) return { ev: evOf(db._cmps) };
+          const g = a.p_gid;
+          if (!isAct(g, db.me)) return null;
+          const inG = db._cmps.filter((c) => c.gid === g);
+          const n = {}, byV = {};
+          inG.slice().sort((p1, p2) => p1.t - p2.t).forEach((c) => { n[c.voter] = (n[c.voter] || 0) + 1; (byV[c.voter] = byV[c.voter] || []).push(c.t); });
+          const ms = {};
+          Object.keys(byV).forEach((v) => { const l = ms3(byV[v], [50, 250, 1000]); if (l.length) ms[v] = l; });
+          return clone({ ev: evOf(inG), mine: inG.filter((c) => c.voter === db.me && c.t > Date.now() - 30 * 86400000).map((c) => [c.a, c.b, c.voce, c.t]), n, ms });
+        }
         case 'friend_count': {
           /* come la funzione del database: solo quanti amici, al massimo 5 */
           const u = String(a.p_uid || '');
@@ -2374,6 +2490,7 @@ const Demo = (() => {
     const now = Date.now();
     const DAY = 86400000, HOUR = 3600000;
     const ids = PEOPLE.map((_, i) => (i === 0 ? ME : 'demo-' + (i + 1)));
+    const rngH = seededRng('demo-storico');
     const cl = (v) => Math.max(1, Math.min(99, Math.round(v)));
     const noise = (s) => (rng() - 0.5) * 2 * s;
     const outfield = (sug) => (id) => sug.roles[id] !== 'POR';
@@ -2432,6 +2549,12 @@ const Demo = (() => {
           a.voci.forEach((x) => { v[x.k] = cl(truth[ti][x.k] + noise(8)); });
         });
         r[target] = { v, t: now - Math.floor(1 + rng() * 30) * DAY };
+        /* qualcuno l'aveva già valutato prima: ogni valutazione si aggiunge alle altre */
+        if (rngH() < 0.35) {
+          const old = {};
+          Object.keys(v).forEach((k) => { old[k] = cl(v[k] + (rngH() - 0.5) * 12); });
+          r[target].h = [{ v: old, t: r[target].t - Math.floor(4 + rngH() * 25) * DAY }];
+        }
       });
       ratingDocs.push({ id: voter, r });
       db.put(GP + 'ratings/' + voter, { r });
@@ -3284,10 +3407,23 @@ function makeActions(be, notify, dataRef, onDenied, gidRef) {
     setBooked: (mid, on) => upd(mid, { booked: on ? { by: be.uid, t: Date.now() } : null }),
     saveCassa: (mid, patch) => upd(mid, { cassa: Object.assign({}, patch, { t: Date.now() }) }),
     setPaid: (mid, id, on) => upd(mid, { cassa: { paid: { [id]: on ? { t: Date.now(), by: be.uid } : null } } }),
+    /* ogni salvataggio è una valutazione in più: le precedenti restano in h (al massimo 29, ne contano 30);
+       al massimo 3 valutazioni dello stesso giocatore in 7 giorni. Restituisce { n } (quante ne hai date nel gruppo) */
     saveRating: (target, v) => { const path = G() + 'ratings/' + be.uid; return run(path, () => {
-      const o = ov(); o.r[target] = { v, t: Date.now() };
-      return doc(path).set({ r: Object.assign({}, mine('ratings').r || {}, o.r) });
-    }); },
+      const o = ov(), cur = mine('ratings'), now = Date.now();
+      const snap = (cur.r || {})[target], over = o.r[target];
+      const prev = over && (!snap || numOr(over.t, 0) >= numOr(snap.t, 0)) ? over : snap;
+      const es = Engine.entriesOf(prev);
+      const until = rateBlockUntil(es, now);
+      if (until) throw new Error('Hai già valutato questo giocatore ' + Engine.RATE_MAX + ' volte in ' + Engine.RATE_DAYS + ' giorni: potrai rivalutarlo da ' + fmtWhen(until) + '.');
+      o.r[target] = { v, t: now, h: es.slice(0, Engine.WINDOW - 1).map((x) => ({ v: x.v, t: x.t })) };
+      /* le date delle valutazioni date (le prime 200 bastano per i traguardi) e quante in tutto */
+      const fromDoc = givenTimes(cur);
+      const known = Array.isArray(o.ts) && o.ts.length >= fromDoc.length ? o.ts : fromDoc;
+      o.ts = known.length < 200 ? known.concat([now]) : known;
+      o.n = Math.max(numOr(cur.n, 0), numOr(o.n, 0), known.length) + 1;
+      return doc(path).set({ r: Object.assign({}, cur.r || {}, o.r), ts: o.ts, n: o.n });
+    }).then((ok) => (ok ? { n: numOr(ov().n, 0) } : false)); },
     saveMvp: (mid, target) => { const path = G() + 'mvp/' + be.uid; return run(path, () => {
       const o = ov(); o.mvp[mid] = target;
       return doc(path).set({ v: Object.assign({}, mine('mvp').v || {}, o.mvp) });
@@ -4213,7 +4349,7 @@ function FifaOverlay({ pid, all, onClose }) {
             ${a.voci.map((x) => html`<div key=${x.k} class="fv-r"><span>${x.name}</span><b class="num">${r0(r.voci[x.k])}</b></div>`)}
           </div>`)}
         </div>
-        <div class="fifa-foot">${r.nPeers ? 'Media di ' + plural(r.nPeers, 'valutazione', 'valutazioni') + ' e dell\'autovalutazione' : 'Per ora solo l\'autovalutazione'}</div>`}
+        <div class="fifa-foot">${ratingsLine(r)}</div>`}
       </div>
     </div>
     ${tag && html`<div class=${'fifa-tag' + (fx.enter ? ' late' : '')}>${tag}</div>`}
@@ -4431,8 +4567,13 @@ const streak = (tl, pred, n) => {
 
 const BADGE_GROUPS = [
   { k: 'gol', l: 'Gol' }, { k: 'ass', l: 'Assist' }, { k: 'mvp', l: 'MVP' }, { k: 'pres', l: 'Presenze' },
-  { k: 'win', l: 'Vittorie' }, { k: 'gk', l: 'In porta' }, { k: 'team', l: 'Squadra e amici' },
+  { k: 'win', l: 'Vittorie' }, { k: 'gk', l: 'In porta' }, { k: 'team', l: 'Squadra e amici' }, { k: 'val', l: 'Valutazioni e confronti' },
 ];
+/* traguardi a soglie di chi valuta: x = { n, ms: [quando ha raggiunto la 1ª, la 2ª, la 3ª soglia] } */
+const stepBadge = (x, k, i) => {
+  const n = (x && Number(x.n)) || 0, t = x && Array.isArray(x.ms) ? Number(x.ms[i]) : NaN;
+  return { done: n >= k, at: n >= k && isFinite(t) && t > 0 ? toYmd(new Date(t)) : null, cur: Math.min(n, k), max: k };
+};
 /* ex: { aff (affinità migliore con un compagno, 0–100), org (giorni delle partite organizzate e giocate), friends (numero di amici, null se non si sa) } */
 const BADGES = [
   { k: 'gol1', g: 'gol', e: '⚽', n: 'Primo gol', d: 'Segna il tuo primo gol.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.g >= 1) },
@@ -4461,7 +4602,37 @@ const BADGES = [
   { k: 'organizzatore', g: 'team', e: '📣', n: 'Organizzatore', d: 'Organizza 5 partite che poi si giocano.', t: 'bronze', f: (tl, ex) => { const o = ex.org || []; const n = o.length; return { done: n >= 5, at: n >= 5 ? o[4] : null, cur: Math.min(n, 5), max: 5 }; } },
   { k: 'compagnia', g: 'team', e: '🤝', n: 'Compagnia', d: '5 amici sull\'app.', t: 'bronze', fr: true, f: (tl, ex) => { const n = ex.friends || 0; return { done: n >= 5, at: null, cur: Math.min(n, 5), max: 5 }; } },
   { k: 'ops', g: 'gol', e: '🙈', n: 'Ops!', d: 'Il primo autogol: capita anche ai migliori.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.og >= 1) },
+  /* chi valuta e chi fa i confronti */
+  { k: 'val10', g: 'val', e: '📝', n: 'Osservatore', d: 'Dai 10 valutazioni.', t: 'bronze', f: (tl, ex) => stepBadge(ex.rv, 10, 0) },
+  { k: 'val50', g: 'val', e: '🔎', n: 'Talent scout', d: 'Dai 50 valutazioni.', t: 'silver', f: (tl, ex) => stepBadge(ex.rv, 50, 1) },
+  { k: 'val200', g: 'val', e: '📋', n: 'Commissario tecnico', d: 'Dai 200 valutazioni.', t: 'gold', f: (tl, ex) => stepBadge(ex.rv, 200, 2) },
+  { k: 'cmp50', g: 'val', e: '⚖️', n: 'Occhio clinico', d: 'Fai 50 confronti.', t: 'bronze', f: (tl, ex) => stepBadge(ex.cv, 50, 0) },
+  { k: 'cmp250', g: 'val', e: '🎞️', n: 'Moviola', d: 'Fai 250 confronti.', t: 'silver', f: (tl, ex) => stepBadge(ex.cv, 250, 1) },
+  { k: 'cmp1000', g: 'val', e: '📺', n: 'VAR', d: 'Fai 1000 confronti.', t: 'gold', f: (tl, ex) => stepBadge(ex.cv, 1000, 2) },
 ];
+/* le soglie dei traguardi di chi valuta, per l'avviso appena raggiunte */
+const RATER = { val: { steps: [10, 50, 200], keys: ['val10', 'val50', 'val200'] }, cmp: { steps: [50, 250, 1000], keys: ['cmp50', 'cmp250', 'cmp1000'] } };
+/* valutazioni date e confronti fatti nel gruppo aperto, per i traguardi */
+function raterGroup(uid, C) {
+  const doc = C.ratings.find((x) => x.id === uid);
+  const times = givenTimes(doc);
+  const n = Math.max(times.length, numOr(doc && doc.n, 0));
+  return {
+    rv: { n, ms: [times[9], times[49], times[199]].filter((x) => x != null) },
+    cv: { n: numOr(C.cmp && C.cmp.n && Number(C.cmp.n[uid]), 0), ms: (C.cmp && C.cmp.ms && C.cmp.ms[uid]) || [] },
+  };
+}
+/* appena raggiunto un traguardo di chi valuta: coriandoli e avviso, una volta sola su questo telefono. true se l'ha mostrato */
+function raterMilestone(C, kind, n) {
+  const R = RATER[kind];
+  const i = R ? R.steps.indexOf(n) : -1;
+  if (i < 0 || !C.gid) return false;
+  const k = R.keys[i];
+  if (!celebrateOnce('sc-cf-badges-' + C.gid, [k]).length) return false;
+  const b = BADGES.find((x) => x.k === k);
+  setTimeout(() => { fireConfetti(); C.flash('Nuovo traguardo: ' + b.n + '!'); }, 250);
+  return true;
+}
 const friendsCount = (C) => Object.values(C.friendOf).filter((x) => x === 'friend').length;
 /* "Compagnia" vuole il numero di amici: i propri li conta l'app, quelli degli altri li dà il database (friend_count,
    solo il numero). Se non si sa (database non aggiornato), quel traguardo non si mostra. */
@@ -4471,11 +4642,11 @@ const friendsFor = (uid, C, nf) => (uid === C.uid ? friendsCount(C) : typeof nf 
 function badgesOf(uid, C, nf) {
   const top = C.aff.top(uid, 1)[0];
   const org = C.matches.filter((m) => m.by === uid && m.status === 'played').sort((x, y) => mStart(x) - mStart(y)).map((m) => m.date);
-  return badgesFrom(playerTimeline(uid, C), { aff: top ? top.v : 0, org, friends: friendsFor(uid, C, nf) });
+  return badgesFrom(playerTimeline(uid, C), Object.assign({ aff: top ? top.v : 0, org, friends: friendsFor(uid, C, nf) }, raterGroup(uid, C)));
 }
 /* in tutta la carriera */
-function careerBadges(uid, d, C, nf) {
-  return badgesFrom(careerTimeline(d), { aff: Engine.affLevel(nn(d && d.aff)), org: (d && d.org) || [], friends: friendsFor(uid, C, nf) });
+function careerBadges(uid, d, C, nf, rs) {
+  return badgesFrom(careerTimeline(d), { aff: Engine.affLevel(nn(d && d.aff)), org: (d && d.org) || [], friends: friendsFor(uid, C, nf), rv: rs && rs.rv, cv: rs && rs.cv });
 }
 const isNewBadge = (b) => { if (!b.done || !b.at) return false; const d = new Date(b.at + 'T12:00:00'); return Date.now() - d.getTime() < 8 * 86400000; };
 
@@ -4531,11 +4702,34 @@ function useFriendCount(pid) {
   }, [key]);
   return st && st.key === key ? st : null;
 }
+/* una funzione del database che legge soltanto, tenuta un minuto per non richiederla a ogni pagina */
+const rpcCache = new Map();
+function loadCached(C, key, fn, args) {
+  const hit = rpcCache.get(key);
+  if (hit && hit.p) return hit.p;
+  if (hit && Date.now() - hit.t < 60000) return Promise.resolve(hit.v);
+  const p = C.act.rpc(fn, args, { quiet: true }).then((r) => { const v = r.ok ? r.data : null; rpcCache.set(key, { t: Date.now(), v }); return v; });
+  rpcCache.set(key, { t: Date.now(), p });
+  return p;
+}
+function useCached(key, fn, args) {
+  const C = useContext(Ctx);
+  const [st, setSt] = useState(() => { const hit = key && rpcCache.get(key); return hit && !hit.p ? { key, v: hit.v } : null; });
+  useEffect(() => {
+    if (!key) return undefined;
+    let dead = false;
+    loadCached(C, key, fn, args).then((v) => { if (!dead) setSt((s) => (s && s.key === key && s.v === v ? s : { key, v })); });
+    return () => { dead = true; };
+  }, [key]);
+  return st && st.key === key ? st : null;
+}
 /* i traguardi da mostrare: del gruppo o di tutte le partite (se il database non è aggiornato, quelli del gruppo per i compagni) */
 function useBadges(pid, scope) {
   const C = useContext(Ctx);
   const all = scope === 'all' || !C.gid;
   const st = useCareer(all ? pid : null);
+  /* in tutte le partite: valutazioni date e confronti fatti in tutti i gruppi */
+  const rs = useCached(all && pid ? 'rs|' + pid : '', 'rater_stats', { p_uid: pid });
   const mine = pid === C.uid;
   /* per gli altri si aspetta anche il numero di amici, così il totale non cambia sotto gli occhi */
   const fc = useFriendCount(mine ? null : pid);
@@ -4543,12 +4737,12 @@ function useBadges(pid, scope) {
   const waitFriends = !!pid && !mine && !fc;
   const groupView = (note) => ({ list: badgesOf(pid, C, nf), ready: true, scope: 'group', where: C.group ? 'Nelle partite di ' + C.group.name : '', note });
   if (!all) return waitFriends ? { list: null, ready: false, scope: 'group' } : groupView();
-  if (!st || waitFriends) return { list: null, ready: false, scope: 'all' };
+  if (!st || waitFriends || (pid && !rs)) return { list: null, ready: false, scope: 'all' };
   if (!st.ok) {
     if (st.missing && C.gid && C.isInGroup(pid)) return groupView('Per ora solo quelli di questo gruppo: quelli di tutte le partite arrivano con il prossimo aggiornamento del database.');
     return { list: null, ready: true, scope: 'all', err: st.missing ? 'missing' : 'err' };
   }
-  return { list: careerBadges(pid, st.d, C, nf), ready: true, scope: 'all', where: mine ? 'In tutte le tue partite, in tutti i tuoi gruppi' : 'In tutte le sue partite, in tutti i suoi gruppi' };
+  return { list: careerBadges(pid, st.d, C, nf, rs && rs.v), ready: true, scope: 'all', where: mine ? 'In tutte le tue partite, in tutti i tuoi gruppi' : 'In tutte le sue partite, in tutti i suoi gruppi' };
 }
 
 function Emblem({ b, s }) {
@@ -5880,24 +6074,30 @@ function RateScreen({ id }) {
   const myAreas = Engine.areasOf(out);
   const counted = p.role === 'POR' ? ['por'] : OUT_AREAS;
   const myOvr = counted.every((k) => myAreas[k] != null) ? Engine.ovrOf(myAreas, p.role) : null;
+  /* al massimo 3 valutazioni dello stesso giocatore in 7 giorni */
+  const until = rateBlockUntil(Engine.entriesOf(mine), Date.now());
   const save = async () => {
-    if (!n || busy) return;
+    if (!n || busy || until) return;
     setBusy(true);
     const ok = await C.act.saveRating(id, out);
     setBusy(false);
-    if (ok) { C.flash('Valutazione di ' + dispName(p) + ' salvata'); C.back(); }
+    if (ok) {
+      C.back();
+      if (!raterMilestone(C, 'val', ok.n)) C.flash('Valutazione di ' + dispName(p) + ' salvata');
+    }
   };
   return html`<${Page} title=${'Valuta ' + dispName(p)} sub=${fullName(p)} onBack=${C.back}>
     <div class="card hs-12">
       <${Avatar} p=${p} size=${44} />
-      <div class="grow"><div class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} /></div><div class="small muted">Punteggio attuale, media di ${plural(r.nPeers + (r.self ? 1 : 0), 'valutazione', 'valutazioni')}</div></div>
+      <div class="grow"><div class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} /></div><div class="small muted">Punteggio attuale · ${ratingsLine(r).replace(/^M/, 'm')}</div></div>
       <${RoleChips} role=${p.role} role2=${p.role2} />
       <${Ovr} v=${r.ovr} />
     </div>
-    <div class="note"><${Icon} n="info" s="16" /><span>La tua valutazione la vedono tutti nel gruppo.</span></div>
+    ${until ? html`<div class="note warn"><${Icon} n="clock" s="16" /><span>L'hai già valutato ${Engine.RATE_MAX} volte negli ultimi ${Engine.RATE_DAYS} giorni: potrai rivalutarlo da ${fmtWhen(until).replace(/^./, (c) => c.toLowerCase())}.</span></div>`
+      : html`<div class="note"><${Icon} n="info" s="16" /><span>La tua valutazione la vedono tutti nel gruppo.</span></div>`}
     <div class="tiny faint">${SCALE_HINT}</div>
     <${RatingEditor} idp="rt" vals=${vals} setVals=${setVals} skip=${skip} setSkip=${setSkip} allowSkip role=${p.role} />
-    <div class="sticky-act"><button class="btn primary block" disabled=${!n || busy || !C.canWrite} onClick=${save}>${busy ? 'Salvo…' : !n ? 'Valuta almeno un\'area' : (mine ? 'Aggiorna valutazione' : 'Salva valutazione') + (myOvr != null ? ' · ' + r0(myOvr) : '')}</button></div>
+    <div class="sticky-act"><button class="btn primary block" disabled=${!n || busy || !C.canWrite || !!until} onClick=${save}>${busy ? 'Salvo…' : until ? 'Di nuovo da ' + fmtTs(until) : !n ? 'Valuta almeno un\'area' : 'Salva valutazione' + (myOvr != null ? ' · ' + r0(myOvr) : '')}</button></div>
   <//>`;
 }
 
@@ -6002,7 +6202,7 @@ function AreaDetail({ p, r }) {
         return html`<div key=${a.k} class="area-d">
           <div class="area-dh"><span class="area-n">${a.name}</span>${!counts && html`<span class="tiny faint">non conta nel punteggio</span>`}<span class="grow"></span><${Ovr} v=${r.areas[a.k]} size="sm" /></div>
           ${a.voci.map((x) => html`<div key=${x.k} class="vb">
-            <span class="vb-n">${x.name}</span>
+            <span class="vb-n">${x.name}${r.cmp && r.cmp[x.k] ? html` <em class=${'vb-c num' + (r.cmp[x.k] > 0 ? ' up' : ' down')} title=${'Dai confronti: ' + (r.cmp[x.k] > 0 ? '+' : '−') + Math.abs(r.cmp[x.k])}>${(r.cmp[x.k] > 0 ? '+' : '−') + Math.abs(r.cmp[x.k])}</em>` : null}</span>
             <span class="vb-bar"><i style=${'width:' + Math.max(1, r.voci[x.k]) + '%'}></i></span>
             <span class="vb-v num">${r0(r.voci[x.k])}</span>
           </div>`)}
@@ -6020,17 +6220,20 @@ function MiniAreas({ v }) {
 
 function ReceivedList({ p, r }) {
   const C = useContext(Ctx);
-  const rows = r.peers.slice().sort((a, b) => b.t - a.t);
+  /* ogni salvataggio è una valutazione: le ultime 30, dalla più recente, poi l'autovalutazione */
+  const all = r.entries || [];
+  const rows = all.slice(0, Engine.WINDOW).map((x) => ({ voter: x.voter, v: x.v, t: x.t }));
   if (r.self) rows.push({ voter: p.id, v: r.self, t: numOr(p.selfAt, 0), self: true });
   if (!rows.length) return html`<div class="card small muted">Nessuna valutazione ancora.</div>`;
   return html`<div class="card pad0 divided">${rows.map((x) => {
     const vp = C.playersById[x.voter];
-    return html`<button key=${x.voter + (x.self ? '-s' : '')} class="row tap" style="padding:10px 14px" onClick=${() => C.openSheet({ k: 'ratingDetail', pid: p.id, voter: x.voter, self: !!x.self })}>
+    return html`<button key=${x.voter + ':' + x.t + (x.self ? '-s' : '')} class="row tap" style="padding:10px 14px" onClick=${() => C.openSheet({ k: 'ratingDetail', pid: p.id, voter: x.voter, self: !!x.self, t: x.t })}>
       <${Avatar} p=${vp} size=${32} />
       <span class="row-main"><span class="row-t ell">${x.self ? 'Autovalutazione' : vp ? dispName(vp) : 'Ex giocatore'}</span><span class="row-s">${x.t ? fmtTs(x.t) : ''}</span></span>
       <${MiniAreas} v=${x.v} />
     </button>`;
-  })}</div>`;
+  })}</div>
+  ${all.length > Engine.WINDOW && html`<div class="tiny faint">Contano le ultime ${Engine.WINDOW}: le ${all.length - Engine.WINDOW} più vecchie non contano più.</div>`}`;
 }
 
 function RecentGames({ s }) {
@@ -6058,15 +6261,15 @@ function PlayerSections({ p, r, s }) {
     <${MaglieSection} pid=${p.id} />
     <section class="sec"><h2 class="h3">Compagni più affiatati</h2><${AffinityList} pid=${p.id} /></section>
     <section class="sec"><h2 class="h3">Stats</h2><${AreaDetail} p=${p} r=${r} /></section>
-    <section class="sec"><div class="sec-h"><h2 class="h3">Valutazioni ricevute</h2><span class="chip num">${r.nPeers + (r.self ? 1 : 0)}</span></div><${ReceivedList} p=${p} r=${r} /></section>
+    <section class="sec"><div class="sec-h"><h2 class="h3">Valutazioni ricevute</h2><span class="chip num">${Math.min((r.entries || []).length, Engine.WINDOW) + (r.self ? 1 : 0)}</span></div><${ReceivedList} p=${p} r=${r} /></section>
     <section class="sec"><h2 class="h3">Ultime partite</h2><${RecentGames} s=${s} /></section>`;
 }
 
-/* stats generali: la media di tutte le valutazioni ricevute in tutti i gruppi */
+/* stats generali: le ultime valutazioni ricevute e i confronti in tutti i gruppi */
 const STATS_SCOPE = [{ v: 'group', l: 'Nel gruppo' }, { v: 'all', l: 'Generali' }];
 function GeneralNote({ r, mine }) {
-  return html`<div class="note"><${Icon} n="info" s="16" /><span>${r.nPeers
-    ? `Media di ${plural(r.nPeers, 'valutazione', 'valutazioni')} da tutti i gruppi, autovalutazione compresa.`
+  return html`<div class="note"><${Icon} n="info" s="16" /><span>${r.nIn
+    ? ratingsLine(r) + ', da tutti i gruppi.'
     : `Per ora c'è solo l'autovalutazione.`}</span></div>`;
 }
 
@@ -6247,7 +6450,7 @@ function PlayersScreen() {
   };
   const SORTS = [{ v: 'lvl', l: 'Per punteggio' }, { v: 'name', l: 'Per nome' }].concat(from ? [{ v: 'km', l: 'Più vicini' }] : []);
   return html`<div class="page">
-    <${MainHead} title="Giocatori" />
+    <${MainHead} title="Giocatori" right=${C.cmp && C.cmp.ok && C.canWrite && C.me && html`<button class="btn sm" onClick=${() => C.go({ t: 'cmp' })}><${Icon} n="swap" s="16" /> Confronto</button>`} />
     ${C.gid && html`<${Seg} value=${scope} onChange=${setScope} options=${[{ v: 'group', l: 'Del gruppo' }, { v: 'all', l: 'Tutti gli iscritti' }]} />`}
     <div class="small muted">${all ? plural(base.length, 'iscritto', 'iscritti') + ' all\'app · stats generali' : plural(base.length, 'membro', 'membri') + ' nel gruppo'}${injured ? ' · ' + plural(injured, 'infortunato', 'infortunati') : ''}</div>
     <div class="stack-8">
@@ -6290,6 +6493,44 @@ function PlayersScreen() {
    ============================================================ */
 const fmtOf = (m) => FORMATS[m.format] || FORMATS[5];
 const myMvpVotes = (C) => (C.mvp.find((x) => x.id === C.uid) || {}).v || {};
+
+/* ---------- valutazioni: limite, date, testi ---------- */
+/* stessa persona, stesso giocatore: al massimo 3 valutazioni in 7 giorni; al limite, da quando si potrà di nuovo (0 = subito) */
+function rateBlockUntil(entries, now) {
+  const span = Engine.RATE_DAYS * 86400000;
+  const recent = (entries || []).map((x) => x.t).filter((t) => t > now - span).sort((a, b) => a - b);
+  if (recent.length < Engine.RATE_MAX) return 0;
+  return recent[recent.length - Engine.RATE_MAX] + span;
+}
+const myRatingOf = (C, pid) => ((C.ratings.find((x) => x.id === C.uid) || {}).r || {})[pid];
+/* le date delle valutazioni date in un gruppo (per i traguardi): quelle salvate dall'app o, nei documenti di prima, quelle delle valutazioni */
+function givenTimes(doc) {
+  if (!doc) return [];
+  if (Array.isArray(doc.ts)) return doc.ts.filter((x) => typeof x === 'number' && isFinite(x)).sort((a, b) => a - b);
+  const out = [], r = doc.r || {};
+  for (const k of Object.keys(r)) if (k !== doc.id) Engine.entriesOf(r[k]).forEach((x) => out.push(x.t));
+  return out.sort((a, b) => a - b);
+}
+const fmtWhen = (ts) => { const d = new Date(ts); return cap1(DOW[d.getDay()]) + ' ' + d.getDate() + ' ' + MON[d.getMonth()] + ' alle ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
+/* gli effetti dei confronti, per giocatore e voce: { giocatore: { voce: [{ d, t }] } } */
+function cmpAdj(ev) {
+  const out = {};
+  for (const e of ev || []) {
+    if (!Array.isArray(e) || e.length < 4) continue;
+    const who = String(e[0] || ''), k = String(e[1] || ''), d = Number(e[2]), t = Number(e[3]);
+    if (!who || !k || !isFinite(d) || !d) continue;
+    const m = (out[who] = out[who] || {});
+    (m[k] = m[k] || []).push({ d, t: isFinite(t) ? t : 0 });
+  }
+  return out;
+}
+/* da quante valutazioni nasce il punteggio */
+function ratingsLine(r) {
+  const n = (r && r.nIn) || 0;
+  if (!n) return r && r.self ? 'Per ora solo l\'autovalutazione' : 'Ancora nessuna valutazione';
+  if (n >= Engine.WINDOW) return 'Media delle ultime ' + n + ' valutazioni';
+  return 'Media di ' + plural(n, 'valutazione', 'valutazioni') + (r.self ? ' e dell\'autovalutazione' : '');
+}
 
 function scorersText(m, C, side) {
   const res = m.result, fin = m.final || {};
@@ -6377,8 +6618,11 @@ function HomeScreen() {
   const played = by(ms.filter((m) => phaseOf(m) === 'played' && m.final), -1);
   const myV = myMvpVotes(C);
   const iPlayed = (m) => (m.final.ids || []).includes(C.uid);
-  const mvpTodo = played.filter((m) => { const mv = C.stats.mvps[m.id]; return mv && !mv.closed && iPlayed(m) && !myV[m.id]; }).slice(0, 3);
-  const resTodo = played.filter((m) => !Engine.hasResult(m) && (iPlayed(m) || C.isAdmin) && canEditPlayed(m, C)).slice(0, 3);
+  /* riepilogo delle partite finite da poco che ho giocato: risultato, MVP e valutazioni insieme */
+  const recaps = C.me ? recapMatches(C).map((m) => ({ m, left: recapLeft(m, C) })).filter((x) => x.left).slice(0, 2) : [];
+  const inRecap = new Set(recaps.map((x) => x.m.id));
+  const mvpTodo = played.filter((m) => { const mv = C.stats.mvps[m.id]; return mv && !mv.closed && iPlayed(m) && !myV[m.id] && !inRecap.has(m.id); }).slice(0, 3);
+  const resTodo = played.filter((m) => !Engine.hasResult(m) && (iPlayed(m) || C.isAdmin) && canEditPlayed(m, C) && !inRecap.has(m.id)).slice(0, 3);
   const recent = played.slice(0, 2);
   const polls = ms.filter(pollVisible).sort((a, b) => numOr(b.created, 0) - numOr(a.created, 0));
   const invites = upcoming.filter((m) => m.invites && m.invites[C.uid] && !(m.rsvp && m.rsvp[C.uid] && m.rsvp[C.uid].s)).slice(0, 3);
@@ -6392,9 +6636,10 @@ function HomeScreen() {
 
   /* le sezioni, nell'ordine scelto in Impostazioni (Da fare e In programma ci sono sempre) */
   const secs = {
-    todo: (mvpTodo.length > 0 || resTodo.length > 0 || pollTodo.length > 0 || invites.length > 0 || debts.length > 0 || colls.length > 0 || bookTodo.length > 0 || predTodo.length > 0 || C.badges.requests > 0 || C.badges.friends > 0) && html`<section class="sec">
+    todo: (recaps.length > 0 || mvpTodo.length > 0 || resTodo.length > 0 || pollTodo.length > 0 || invites.length > 0 || debts.length > 0 || colls.length > 0 || bookTodo.length > 0 || predTodo.length > 0 || C.badges.requests > 0 || C.badges.friends > 0) && html`<section class="sec">
       <h2 class="h3">Da fare</h2>
       <div class="cards">
+        ${recaps.map(({ m, left }) => html`<${TodoCard} key=${'rc' + m.id} icon="star" title=${'Partita di ' + dayShort(m).toLowerCase() + ': com\'è andata?'} text=${cap1(joinE(left))} onClick=${() => C.go({ t: 'recap', id: m.id })} />`)}
         ${invites.map((m) => { const by = C.playersById[m.invites[C.uid].by]; return html`<${TodoCard} key=${'i' + m.id} icon="heart" title=${(by ? dispName(by) + ' ti invita' : 'Sei invitato') + ': ' + dayShort(m).toLowerCase() + (m.time ? ' alle ' + m.time : '')} text=${fmtOf(m).name + ' · ' + (m.field || 'campo da definire')} onClick=${() => C.go({ t: 'match', id: m.id })} />`; })}
         ${bookTodo.map((m) => html`<${TodoCard} key=${'b' + m.id} icon="pitch" title=${'Prenota il campo per ' + dayShort(m).toLowerCase()} text=${(m.field || 'Campo da definire') + (m.time ? ' · ' + m.time : '')} onClick=${() => C.go({ t: 'match', id: m.id })} />`)}
         ${debts.map((d) => { const to = C.playersById[d.to]; return html`<${TodoCard} key=${'d' + d.m.id} icon="euro" title=${'Devi ' + fmtEuro(d.amount) + ' a ' + (to ? dispName(to) : 'chi raccoglie')} text=${'Partita di ' + dayShort(d.m).toLowerCase() + (d.guests ? (d.guests === 1 ? ', anche per il tuo ospite' : ', anche per i tuoi ospiti') : '')} onClick=${() => C.go({ t: 'match', id: d.m.id })} />`; })}
@@ -6427,6 +6672,7 @@ function HomeScreen() {
       <div class="sec-h"><h2 class="h3">Ultime partite</h2><button class="link" onClick=${() => C.goTab('history')}>Storico e classifiche</button></div>
       <div class="cards">${recent.map((m) => html`<${MatchCard} key=${m.id} m=${m} />`)}</div>
     </section>`,
+    cmp: html`<${HomeCmp} />`,
     maglie: html`<${HomeMaglie} />`,
     pronostici: html`<${HomePronostici} />`,
   };
@@ -6914,7 +7160,7 @@ function PlayedSections({ m }) {
     ${iPlayed && C.canWrite && others.length > 0 && html`<section class="sec">
       <h2 class="h3">Valuta i compagni</h2>
       <button class="card" style="text-align:left" onClick=${() => C.go({ t: 'rateMatch', id: m.id })}>
-        <div class="hs-12"><${Icon} n="star" /><div class="grow"><div class="h3">${ratedN === 0 ? 'Aggiorna le valutazioni' : 'Valutati ' + ratedN + ' su ' + others.length}</div><div class="small muted">Per chi hai visto giocare oggi.</div></div><${Icon} n="chev" /></div>
+        <div class="hs-12"><${Icon} n="star" /><div class="grow"><div class="h3">${ratedN === 0 ? 'Valuta i giocatori della partita' : 'Valutati ' + ratedN + ' su ' + others.length}</div><div class="small muted">Ogni valutazione si aggiunge alle altre.</div></div><${Icon} n="chev" /></div>
       </button>
     </section>`}
 
@@ -7217,7 +7463,7 @@ function ResultScreen({ id }) {
 }
 
 /* ---------- voto MVP ---------- */
-function MvpScreen({ id }) {
+function MvpScreen({ id, from }) {
   const C = useContext(Ctx);
   const m = C.matchesById[id];
   const prev = myMvpVotes(C)[id];
@@ -7243,10 +7489,11 @@ function MvpScreen({ id }) {
     if (ok) {
       C.flash('Voto MVP salvato');
       C.back();
-      C.openSheet({
+      /* dal riepilogo si torna al riepilogo, che ha già le valutazioni */
+      if (from !== 'recap') C.openSheet({
         k: 'confirm', title: 'Valuti i giocatori della partita?',
         text: 'Le tue valutazioni aggiornano le stats dei compagni. Puoi farlo anche più tardi, dalla pagina della partita.',
-        label: 'Valuta adesso', cancelLabel: 'Più tardi', onYes: () => C.go({ t: 'rateMatch', id }),
+        label: 'Valuta adesso', cancelLabel: 'Più tardi', onYes: () => C.go({ t: 'recap', id }),
       });
     }
   };
@@ -7271,31 +7518,299 @@ function MvpScreen({ id }) {
   <//>`;
 }
 
-/* ---------- valutare i compagni dopo la partita ---------- */
+/* ---------- valutare i giocatori della partita ---------- */
+/* l'elenco dei giocatori di una partita da valutare: prima i compagni di squadra, poi gli avversari */
+function RateList({ m }) {
+  const C = useContext(Ctx);
+  const mine = (C.ratings.find((x) => x.id === C.uid) || {}).r || {};
+  const after = numOr(m.playedAt, 0), now = Date.now();
+  const fin = m.final || {};
+  const inA = (x) => (fin.a || []).includes(x), meA = inA(C.uid);
+  const ids = (fin.ids || []).filter((x) => x !== C.uid && C.playersById[x])
+    .sort((x, y) => ((inA(x) === meA ? 0 : 1) - (inA(y) === meA ? 0 : 1)) || dispName(C.playersById[x]).localeCompare(dispName(C.playersById[y]), 'it'));
+  if (!ids.length) return html`<div class="card small muted">Nessun altro giocatore in questa partita.</div>`;
+  return html`<div class="card pad0 divided">${ids.map((pid) => {
+    const p = C.playersById[pid], e = mine[pid];
+    const fresh = !!e && numOr(e.t, 0) >= after;
+    const until = rateBlockUntil(Engine.entriesOf(e), now);
+    return html`<button key=${pid} class="row tap" style="padding:10px 14px" disabled=${!!until && !fresh} onClick=${() => C.go({ t: 'rate', id: pid })}>
+      <${Avatar} p=${p} size=${36} />
+      <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} s="14" /></span><span class="row-s">${fresh ? 'Valutato dopo questa partita' : until ? 'Di nuovo da ' + fmtTs(until) : e ? 'Ultima valutazione: ' + fmtTs(e.t) : 'Mai valutato'}</span></span>
+      ${fresh ? html`<span class="chip ok"><${Icon} n="check" s="14" /> Fatto</span>` : until ? html`<span class="chip"><${Icon} n="clock" s="14" /></span>` : html`<span class="chip">Valuta</span>`}
+      <${Icon} n="chev" s="16" />
+    </button>`;
+  })}</div>`;
+}
+/* quanti giocatori della partita ho valutato dopo la partita (o non posso valutare per il limite di 3 in 7 giorni) */
+function rateProgress(m, C) {
+  const mine = (C.ratings.find((x) => x.id === C.uid) || {}).r || {};
+  const after = numOr(m.playedAt, 0), now = Date.now();
+  const ids = ((m.final && m.final.ids) || []).filter((x) => x !== C.uid && C.playersById[x]);
+  const done = ids.filter((x) => (mine[x] && numOr(mine[x].t, 0) >= after) || rateBlockUntil(Engine.entriesOf(mine[x]), now)).length;
+  return { done, total: ids.length };
+}
 function MatchRateScreen({ id }) {
   const C = useContext(Ctx);
   const m = C.matchesById[id];
   if (!m || !m.final) return html`<${Page} title="Valuta i compagni" onBack=${C.back}><div class="card empty">Partita non trovata.</div><//>`;
-  const myRatings = (C.ratings.find((x) => x.id === C.uid) || {}).r || {};
-  const after = numOr(m.playedAt, 0);
-  const ids = (m.final.ids || []).filter((x) => x !== C.uid && C.playersById[x]);
-  const done = ids.filter((x) => myRatings[x] && numOr(myRatings[x].t, 0) >= after).length;
+  const pr = rateProgress(m, C);
   return html`<${Page} title="Valuta i compagni" sub=${dayLong(m)} onBack=${C.back}>
-    <div class="sec-h"><h2 class="h3">Giocatori della partita</h2><span class=${'chip num ' + (done === ids.length ? 'ok' : '')}>${done}/${ids.length}</span></div>
-    <div class="card pad0 divided">${ids.map((pid) => {
-      const p = C.playersById[pid], mr = myRatings[pid];
-      const fresh = mr && numOr(mr.t, 0) >= after;
-      return html`<button key=${pid} class="row tap" style="padding:10px 14px" onClick=${() => C.go({ t: 'rate', id: pid })}>
-        <${Avatar} p=${p} size=${36} />
-        <span class="row-main"><span class="row-t"><span class="ell">${dispName(p)}</span><${InjuryMark} inj=${p.injury} s="14" /></span><span class="row-s">${fresh ? 'Aggiornata ora' : mr ? 'Ultima valutazione: ' + fmtTs(numOr(mr.t, 0)) : 'Mai valutato da te'}</span></span>
-        ${fresh ? html`<span class="chip ok"><${Icon} n="check" s="14" /> Fatto</span>` : html`<span class="chip">Valuta</span>`}
-        <${Icon} n="chev" s="16" />
-      </button>`;
-    })}</div>
-    <button class="btn ghost block" onClick=${C.back}>${done === ids.length ? 'Fatto' : 'Continuo più tardi'}</button>
+    <div class="sec-h"><h2 class="h3">Giocatori della partita</h2><span class=${'chip num ' + (pr.done === pr.total ? 'ok' : '')}>${pr.done}/${pr.total}</span></div>
+    <${RateList} m=${m} />
+    <button class="btn ghost block" onClick=${C.back}>${pr.done === pr.total ? 'Fatto' : 'Continuo più tardi'}</button>
   <//>`;
 }
 
+/* in home: l'invito al Confronto (solo se ci sono coppie da confrontare) */
+function HomeCmp() {
+  const C = useContext(Ctx);
+  if (!C.cmp || !C.cmp.ok || !C.canWrite || !C.me) return null;
+  if (!cmpCandidates(C).length) return null;
+  const n = numOr(Number(C.cmp.n && C.cmp.n[C.uid]), 0);
+  return html`<section class="sec">
+    <h2 class="h3">Confronto</h2>
+    <button class="card cmp-invite" onClick=${() => C.go({ t: 'cmp' })}>
+      <div class="hs-12"><span class="cmp-ic"><${Icon} n="swap" /></span><div class="grow"><div class="h3">Chi è più forte?</div><div class="small muted">Due compagni, una voce: scegli tu${n ? ' · ne hai fatti ' + n : ''}</div></div><${Icon} n="chev" /></div>
+    </button>
+  </section>`;
+}
+
+/* chiudere la partita: le squadre di adesso diventano definitive, si apre il voto MVP, poi si scrive il risultato */
+function askCloseMatch(C, m) {
+  const R = buildRoster(m, C);
+  C.openSheet({
+    k: 'confirm', title: 'Partita finita?',
+    text: `Le squadre di adesso diventano quelle definitive (potrai correggerle insieme al risultato). Si apre il voto MVP per i ${R.confirmed.filter((x) => !x.guest).length} iscritti che hanno giocato: resta aperto 24 ore.`,
+    label: 'Sì, chiudi la partita',
+    onYes: async () => {
+      const ok = await C.act.markPlayed(m.id, snapshotFinal(m, R, C.aff));
+      if (ok) { C.flash('Partita chiusa: il voto MVP è aperto per 24 ore'); C.go({ t: 'result', id: m.id }); }
+    },
+  });
+}
+
+/* ============================================================
+   APP: riepilogo di fine partita. A chi ha giocato si apre da solo una volta, entro 4 giorni dalla fine:
+   risultato e marcatori, voto MVP, valutazioni dei giocatori; in fondo l'invito al Confronto.
+   Si può saltare tutto; finché non si preme "Fatto" resta tra le cose da fare.
+   ============================================================ */
+const RECAP_DAYS = 4;
+const recapKey = (C, mid) => 'sc-recap-' + (C.gid || '') + '-' + mid;
+/* ho giocato questa partita? (chiusa: nelle squadre finali; da chiudere: tra gli iscritti) */
+function iPlayedIn(m, C) {
+  if (m.status === 'played') return !!(m.final && (m.final.ids || []).includes(C.uid));
+  if (phaseOf(m) !== 'toclose' || !(m.rsvp && m.rsvp[C.uid])) return false;
+  return buildRoster(m, C).confirmed.some((x) => x.id === C.uid);
+}
+/* le partite finite da poco che ho giocato, dalla più recente */
+function recapMatches(C) {
+  if (!C.uid || !C.me) return [];
+  const now = Date.now();
+  return C.matches
+    .filter((m) => (m.status === 'played' || phaseOf(m) === 'toclose') && mEnd(m) <= now && now - mEnd(m) < RECAP_DAYS * 86400000 && iPlayedIn(m, C))
+    .sort((a, b) => mStart(b) - mStart(a));
+}
+/* che cosa resta da fare nel riepilogo di una partita (null se niente) */
+function recapLeft(m, C) {
+  if (readLS(recapKey(C, m.id), '') === 'done') return null;
+  if (m.status !== 'played') return C.canWrite ? ['chiudi la partita'] : null;
+  const out = [];
+  if (!Engine.hasResult(m) && canEditPlayed(m, C)) out.push('risultato');
+  const mv = C.stats.mvps[m.id];
+  if (mv && !mv.closed && !myMvpVotes(C)[m.id]) out.push('MVP');
+  const pr = rateProgress(m, C);
+  if (C.canWrite && pr.done < pr.total) out.push('valutazioni');
+  return out.length ? out : null;
+}
+
+function RecapScreen({ id }) {
+  const C = useContext(Ctx);
+  const m = C.matchesById[id];
+  if (!m) return html`<${Page} title="Com'è andata?" onBack=${C.back}><div class="card empty">Partita non trovata.</div><//>`;
+  const played = m.status === 'played' && !!m.final;
+  const hasRes = played && Engine.hasResult(m);
+  const canEdit = played && canEditPlayed(m, C);
+  const mv = played ? C.stats.mvps[m.id] || Engine.mvpResult(m, C.mvp, Date.now()) : null;
+  const myVote = played ? myMvpVotes(C)[m.id] : null;
+  const pr = played ? rateProgress(m, C) : null;
+  const sA = hasRes ? scorersText(m, C, 'a') : null, sB = hasRes ? scorersText(m, C, 'b') : null;
+  const finish = () => { writeLS(recapKey(C, m.id), 'done'); C.back(); };
+  const winners = mv && mv.closed ? (mv.winners || []).map((x) => C.playersById[x]).filter(Boolean) : [];
+  return html`<${Page} title="Com'è andata?" sub=${dayLong(m) + (m.time ? ' · ' + m.time : '') + (m.field ? ' · ' + m.field : '')} onBack=${C.back}>
+    <section class="sec">
+      <h2 class="h3">Risultato e marcatori</h2>
+      ${!played ? html`<div class="card stack">
+          <div class="hs-12"><${Icon} n="clock" /><div class="grow"><div class="h3">La partita è finita</div><div class="small muted">Chiudila per scrivere il risultato e aprire il voto MVP.</div></div></div>
+          ${C.canWrite && C.me && html`<button class="btn primary" onClick=${() => askCloseMatch(C, m)}><${Icon} n="check" s="16" /> Chiudi e scrivi il risultato</button>`}
+        </div>`
+      : hasRes ? html`<div class="card stack">
+          <div class="score">
+            <div class="score-side a"><${TeamTag} m=${m} side="a" /><span class="score-n num">${m.result.a}</span></div>
+            <span class="score-dash">–</span>
+            <div class="score-side b"><span class="score-n num">${m.result.b}</span><${TeamTag} m=${m} side="b" /></div>
+          </div>
+          ${(sA.goals || sB.goals || sA.assists || sB.assists) ? html`<div class="scorers">
+            <div><div>${sA.goals || '–'}</div>${sA.assists && html`<div class="faint">Assist: ${sA.assists}</div>`}</div>
+            <div><div>${sB.goals || '–'}</div>${sB.assists && html`<div class="faint">Assist: ${sB.assists}</div>`}</div>
+          </div>` : html`<div class="small muted">Marcatori non inseriti.</div>`}
+          ${canEdit && html`<button class="btn sm" onClick=${() => C.go({ t: 'result', id: m.id })}><${Icon} n="edit" s="16" /> Correggi</button>`}
+        </div>`
+      : html`<div class="card stack">
+          <div class="hs-12"><${Icon} n="ball" /><div class="grow"><div class="h3">Manca il risultato</div><div class="small muted">${canEdit ? 'Scrivi il punteggio e chi ha segnato.' : 'Ormai può inserirlo solo l\'amministratore.'}</div></div></div>
+          ${canEdit && html`<button class="btn primary" onClick=${() => C.go({ t: 'result', id: m.id })}><${Icon} n="plus" s="16" /> Scrivi il risultato</button>`}
+        </div>`}
+    </section>
+    ${played && html`<section class="sec">
+      <h2 class="h3">MVP</h2>
+      ${mv.closed ? html`<div class="card hs-12"><${Icon} n="trophy" /><div class="grow"><div class="h3">${winners.length ? winners.map(dispName).join(', ') : 'Nessun voto'}</div><div class="small muted">${winners.length > 1 ? 'MVP a pari merito' : winners.length ? 'MVP della partita' : 'La votazione è chiusa'}</div></div></div>`
+        : html`<div class="card hs-12"><${Icon} n="trophy" /><div class="grow"><div class="h3">${myVote && C.playersById[myVote] ? 'Hai votato ' + dispName(C.playersById[myVote]) : 'Chi è stato il migliore?'}</div><div class="small muted">Si chiude tra ${fmtLeft(mv.closesAt - Date.now())}</div></div>
+          ${C.canWrite && html`<button class=${'btn sm ' + (myVote ? '' : 'primary')} onClick=${() => C.go({ t: 'mvp', id: m.id, from: 'recap' })}>${myVote ? 'Cambia' : 'Vota'}</button>`}</div>`}
+    </section>`}
+    ${played && C.canWrite && html`<section class="sec">
+      <div class="sec-h"><h2 class="h3">Valuta i giocatori</h2><span class=${'chip num ' + (pr.done === pr.total ? 'ok' : '')}>${pr.done}/${pr.total}</span></div>
+      <${RateList} m=${m} />
+    </section>`}
+    ${C.cmp && C.cmp.ok && C.canWrite && html`<button class="card cmp-invite" onClick=${() => C.go({ t: 'cmp' })}>
+      <div class="hs-12"><span class="cmp-ic"><${Icon} n="swap" /></span><div class="grow"><div class="h3">Fai qualche confronto</div><div class="small muted">Due compagni, una voce: chi è più forte?</div></div><${Icon} n="chev" /></div>
+    </button>`}
+    <div class="stack-8">
+      <button class="btn primary block" onClick=${finish}>Fatto</button>
+      <button class="btn ghost block" onClick=${C.back}>Più tardi</button>
+    </div>
+  <//>`;
+}
+
+/* ============================================================
+   APP: Confronto. Due compagni, una voce: chi è più forte? Senza punteggi.
+   Chi sceglie il più debole gli dà +2 e toglie 2 all'altro; se sceglie il più forte non cambia niente;
+   "Uguali" li avvicina di 1. Chi ha scelto chi resta segreto (aggiornamento-valutazioni.sql).
+   ============================================================ */
+const CMP_Q = {
+  tir: 'Chi tira meglio?', dri: 'Chi dribbla meglio?', pat: 'Chi si smarca meglio in attacco?',
+  pas: 'Chi passa meglio la palla?', vis: 'Chi ha più visione di gioco?', pce: 'Chi si posiziona meglio a centrocampo?',
+  con: 'Chi vince più contrasti?', sci: 'Chi entra meglio in scivolata?', pdi: 'Chi si posiziona meglio in difesa?',
+  vel: 'Chi è più veloce?', res: 'Chi ha più resistenza?', ele: 'Chi è più forte di testa?', cpz: 'Chi batte meglio i calci piazzati?',
+  rif: 'Chi ha i riflessi migliori?', usc: 'Chi esce meglio dai pali?', tuf: 'Chi si tuffa meglio?', lan: 'Chi rilancia meglio?',
+};
+const CMP_SESSION = 10;
+const pairKey = (a, b, k) => (a < b ? a + '|' + b : b + '|' + a) + '|' + k;
+const canGk = (p) => !!p && (p.role === 'POR' || p.role2 === 'POR');
+/* chi confrontare: i compagni del gruppo con cui ho giocato; se sono ancora pochi, tutto il gruppo */
+function cmpPeople(C) {
+  const mates = new Set();
+  for (const m of C.matches) {
+    if (m.status !== 'played' || !m.final || !(m.final.ids || []).includes(C.uid)) continue;
+    for (const x of m.final.ids) if (x !== C.uid && C.isInGroup(x) && C.playersById[x]) mates.add(x);
+  }
+  if (mates.size >= 4) return [...mates];
+  return C.players.filter((p) => p.id !== C.uid).map((p) => p.id);
+}
+/* tutte le coppie possibili: le voci della porta solo tra portieri, mai la stessa coppia sulla stessa voce entro un mese */
+function cmpCandidates(C) {
+  if (!C.cmp || !C.cmp.ok || !C.uid) return [];
+  const ids = cmpPeople(C).filter((id) => C.rated[id] && C.playersById[id]);
+  const done = new Set((C.cmp.mine || []).map((x) => pairKey(x[0], x[1], x[2])));
+  const out = [];
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+    const a = ids[i], b = ids[j], pa = C.playersById[a], pb = C.playersById[b];
+    const bothGk = canGk(pa) && canGk(pb), anyOnlyGk = pa.role === 'POR' || pb.role === 'POR';
+    for (const x of VOCI) {
+      if (x.area === 'por' ? !bothGk : anyOnlyGk) continue;
+      if (done.has(pairKey(a, b, x.k))) continue;
+      out.push({ a, b, k: x.k, gap: Math.abs(C.rated[a].voci[x.k] - C.rated[b].voci[x.k]) });
+    }
+  }
+  return out;
+}
+/* una serie: prima le coppie vicine in quella voce, giocatori e voci sempre diversi */
+function cmpPick(cands, n, rnd) {
+  const pool = cands.map((c) => Object.assign({ w: rnd() * 12 + Math.min(c.gap, 20) }, c)).sort((p, q) => p.w - q.w);
+  const out = [], pairs = new Set(), seen = {};
+  for (const c of pool) {
+    if (out.length >= n) break;
+    const pk = c.a < c.b ? c.a + '|' + c.b : c.b + '|' + c.a;
+    if (pairs.has(pk) || (seen[c.a] || 0) >= 2 || (seen[c.b] || 0) >= 2 || out.slice(-2).some((x) => x.k === c.k)) continue;
+    pairs.add(pk); seen[c.a] = (seen[c.a] || 0) + 1; seen[c.b] = (seen[c.b] || 0) + 1;
+    out.push(rnd() < 0.5 ? c : Object.assign({}, c, { a: c.b, b: c.a }));
+  }
+  return out;
+}
+
+function CmpCard({ p, state, onPick }) {
+  return html`<button type="button" class=${'cmp-card' + (state ? ' ' + state : '')} onClick=${onPick} aria-label=${'Scegli ' + dispName(p)}>
+    <${Avatar} p=${p} size=${84} />
+    <span class="cmp-name">${dispName(p)}</span>
+    <span class="cmp-full ell">${fullName(p)}</span>
+    <${RoleChips} role=${p.role} role2=${p.role2} />
+  </button>`;
+}
+
+function CmpScreen() {
+  const C = useContext(Ctx);
+  const [queue, setQueue] = useState(null);
+  const [i, setI] = useState(0);
+  const [pick, setPick] = useState(null);
+  const [made, setMade] = useState(0);
+  const ready = !!(C.cmp && C.cmp.ok);
+  useEffect(() => { if (ready && queue === null) setQueue(cmpPick(cmpCandidates(C), CMP_SESSION, Math.random)); }, [ready]);
+  const exit = () => C.back();
+  if (!C.cmp) return html`<${Page} title="Confronto" onBack=${exit}><div class="sk" style="height:320px"></div><//>`;
+  if (!ready) return html`<${Page} title="Confronto" onBack=${exit}><div class="card small muted">${C.isAdmin ? 'Per il Confronto va eseguito su Supabase lo script supabase/aggiornamento-valutazioni.sql.' : 'Il Confronto arriva con il prossimo aggiornamento del database.'}</div><//>`;
+  const q = queue && queue[i];
+  const total = queue ? queue.length : 0;
+  const myN = numOr(Number(C.cmp.n && C.cmp.n[C.uid]), 0);
+  if (!q) {
+    const next = RATER.cmp.steps.find((k) => k > myN);
+    const more = cmpCandidates(C).length > 0;
+    return html`<${Page} title="Confronto" onBack=${exit}>
+      <div class="card empty stack">
+        ${total ? html`<div class="cmp-done-n num">${made}</div><div class="h3">${made === 1 ? 'confronto fatto' : 'confronti fatti'}</div>` : html`<div class="h3">Per ora nessun confronto da fare</div><div class="small muted">Tornano dopo la prossima partita.</div>`}
+        ${next && html`<div class="small muted">${'Ne hai fatti ' + myN + ' in tutto: ' + (next - myN) + ' al traguardo «' + BADGES.find((b) => b.k === RATER.cmp.keys[RATER.cmp.steps.indexOf(next)]).n + '»'}</div>`}
+      </div>
+      <div class="stack-8">
+        ${more && html`<button class="btn primary block" onClick=${() => { setQueue(cmpPick(cmpCandidates(C), CMP_SESSION, Math.random)); setI(0); setMade(0); }}>Altri ${CMP_SESSION}</button>`}
+        <button class=${'btn block' + (more ? ' ghost' : ' primary')} onClick=${exit}>Fine</button>
+      </div>
+    <//>`;
+  }
+  const pa = C.playersById[q.a], pb = C.playersById[q.b];
+  const x = VOCI.find((v) => v.k === q.k);
+  const next = () => { setPick(null); setI((n) => n + 1); };
+  /* il più debole sale di 2 e l'altro scende di 2; il più forte resta com'è; "Uguali" li avvicina di 1 */
+  const choose = (c) => {
+    if (pick || !C.canWrite) return;
+    const va = C.rated[q.a].voci[q.k], vb = C.rated[q.b].voci[q.k];
+    const da = c === 'a' ? (va <= vb ? 2 : 0) : c === 'b' ? (vb <= va ? -2 : 0) : Math.abs(va - vb) >= 2 ? (va < vb ? 1 : -1) : 0;
+    setPick(c);
+    C.act.rpc('cmp_vote', { p_gid: C.gid, p_a: q.a, p_b: q.b, p_voce: q.k, p_da: da }, { quiet: true }).then((r) => {
+      if (r.ok) {
+        const n = r.data && Number(r.data.n);
+        C.addCmp(q.a, q.b, q.k, da, isFinite(n) ? n : undefined);
+        setMade((k) => k + 1);
+        if (isFinite(n)) raterMilestone(C, 'cmp', n);
+      } else C.flash((r.err && r.err.message) || 'Confronto non salvato, riprova.', 'err');
+    });
+    setTimeout(next, 420);
+  };
+  const st = (side) => (!pick ? '' : pick === 'eq' || pick === side ? 'on' : 'off');
+  return html`<${Page} title="Confronto" sub=${(i + 1) + ' di ' + total} onBack=${exit}>
+    <div class="cmp-prog" aria-hidden="true"><i style=${'width:' + Math.round((i / Math.max(1, total)) * 100) + '%'}></i></div>
+    <div class="cmp-head">
+      <div class="cmp-q">${CMP_Q[q.k] || x.name}</div>
+      <div class="cmp-v">${x.name} · ${x.hint}</div>
+    </div>
+    <div class="cmp-pair" key=${q.a + q.b + q.k}>
+      <${CmpCard} p=${pa} state=${st('a')} onPick=${() => choose('a')} />
+      <span class="cmp-vs" aria-hidden="true">vs</span>
+      <${CmpCard} p=${pb} state=${st('b')} onPick=${() => choose('b')} />
+    </div>
+    <div class="cmp-acts">
+      <button class="btn" disabled=${!!pick} onClick=${() => choose('eq')}>Uguali</button>
+      <button class="btn ghost" disabled=${!!pick} onClick=${next}>Salta</button>
+    </div>
+    <button class="btn ghost block" onClick=${exit}>Esci</button>
+  <//>`;
+}
 
 /* ============================================================
    APP: gruppi, menu, messaggi, help, sviluppatori, impostazioni, amministrazione
@@ -7310,6 +7825,7 @@ const HOME_SECS = [
   { k: 'todo', l: 'Da fare', fixed: true },
   { k: 'polls', l: 'Sondaggi' },
   { k: 'upcoming', l: 'In programma', fixed: true },
+  { k: 'cmp', l: 'Confronto' },
   { k: 'toclose', l: 'Da chiudere' },
   { k: 'recent', l: 'Ultime partite' },
   { k: 'maglie', l: 'Maglie del mese' },
@@ -10386,13 +10902,17 @@ function MatchMenuSheet({ id, onClose }) {
   <//>`;
 }
 
-function RatingDetailSheet({ pid, voter, self, onClose }) {
+function RatingDetailSheet({ pid, voter, self, t: at, onClose }) {
   const C = useContext(Ctx);
   const p = C.playersById[pid], vp = C.playersById[voter];
   const r = C.rated[pid];
   let v = null, t = 0;
   if (self) { v = r && r.self; t = numOr(p && p.selfAt, 0); }
-  else { const e = ((C.ratings.find((x) => x.id === voter) || {}).r || {})[pid]; v = e && Engine.cleanVoci(e.v); t = numOr(e && e.t, 0); }
+  else {
+    const es = Engine.entriesOf(((C.ratings.find((x) => x.id === voter) || {}).r || {})[pid]);
+    const e = (at != null && es.find((x) => x.t === at)) || es[0];
+    v = e && e.v; t = numOr(e && e.t, 0);
+  }
   if (!p || !v) return null;
   const areas = Engine.areasOf(v);
   /* voci arrivate dopo questo voto: nei conti valgono la media delle voci da cui nascono */
@@ -10424,14 +10944,15 @@ function HelpSheet({ onClose }) {
   return html`<${Sheet} title="Come funziona" onClose=${onClose}>
     <div class="stack">
       <div><h3 class="h3">Le stats</h3><p class="muted">Ogni giocatore ha ${VOCI.length} voci da 1 a 99, divise in ${AREAS.length} aree: ${joinE(AREAS.map((a) => a.name + ' (' + a.voci.map((x) => x.name.toLowerCase()).join(', ') + ')'))}. Riferimenti: ${SCALE_HINT}.</p></div>
-      <div><h3 class="h3">Da dove vengono i numeri</h3><p class="muted">Ogni voce è la media di tutte le valutazioni ricevute, autovalutazione compresa: la tua conta come quella di chiunque altro. Ogni area è la media delle sue voci. L'autovalutazione si fa una volta sola, all'iscrizione; le valutazioni agli altri invece le dai e le cambi quando vuoi, e conta l'ultima. Se un'area non la sai giudicare, la salti.</p></div>
+      <div><h3 class="h3">Da dove vengono i numeri</h3><p class="muted">Ogni voce è la media delle ultime ${Engine.WINDOW} valutazioni ricevute, autovalutazione compresa: la tua conta come quella di chiunque altro, ed essendo la più vecchia è la prima a uscire. Ogni area è la media delle sue voci. L'autovalutazione si fa una volta sola, all'iscrizione; le valutazioni agli altri le dai quando vuoi e ognuna si aggiunge alle altre, ma lo stesso giocatore lo puoi valutare al massimo ${Engine.RATE_MAX} volte in ${Engine.RATE_DAYS} giorni. Se un'area non la sai giudicare, la salti. A tutto questo si aggiungono i confronti (vedi Confronto).</p></div>
       <div><h3 class="h3">Il punteggio</h3><p class="muted">Per chi gioca fuori dai pali è la media di Attacco, Centrocampo, Difesa e Generale: la Porta non conta. Per i portieri conta solo la Porta. Il colore della card segue il punteggio: bronzo sotto 65, argento da 65 a 74, oro da 75.</p></div>
       <div><h3 class="h3">Squadre e ruoli</h3><p class="muted">I ruoli li assegna l'app, insieme alle squadre. Prova tutte le divisioni possibili e per ogni squadra sceglie il modulo che le va meglio (a 5: 1-1-2-1, 1-2-1-1, 1-2-2; a 7: 1-2-3-1, 1-3-1-2, 1-3-2-1, dove 1-2-1-2-1 conta come 1-2-3-1; a 8: 1-3-3-1, 1-2-3-2, 1-3-2-2, 1-2-4-1). Nel tuo ruolo o nel secondo vali il tuo punteggio. In un ruolo vicino (difesa e centrocampo, centrocampo e attacco) vali ${CFG.MALUS_NEAR} punti in meno, in un ruolo lontano (difesa e attacco) ${CFG.MALUS_FAR} in meno. Se vai in porta senza essere portiere conta la tua Porta; un portiere fuori dai pali vale la media delle sue aree di movimento. Con il cerotto conti ${CFG.INJ_LIGHT} punti in meno, con la croce rossa ${CFG.INJ_BAD}. L'app cerca le squadre più vicine nel valore medio e area per area, tenendo fuori ruolo meno gente possibile. Puoi sempre cambiare ruoli e giocatori a mano.</p></div>
       <div><h3 class="h3">Sondaggio sul giorno</h3><p class="muted">Se il giorno non è fissato, chi crea la partita propone qualche giorno e ognuno segna, col cerchio, tutti quelli in cui è libero. Il primo giorno che arriva al numero per due squadre piene fa nascere la partita da sola, con chi l'ha votato. Toccando un giorno vedi chi l'ha votato, in ordine di voto e con l'ora; quando la partita è fissata, nei suoi Dettagli resta «Com'è andato il sondaggio».</p></div>
-      <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. Poi l'app ti propone di aggiornare le valutazioni dei compagni, anche più tardi.</p></div>
-      <div><h3 class="h3">Gruppi e stats generali</h3><p class="muted">Partite, storico, messaggi e valutazioni sono di ogni gruppo. Puoi stare in più gruppi: cambi gruppo toccando il suo nome in alto. Nella scheda Giocatori vedi i membri del gruppo oppure tutti gli iscritti all'app. Le stats nel gruppo sono la media delle valutazioni date in quel gruppo; le stats generali sono la media di tutte le valutazioni ricevute in tutti i gruppi, autovalutazione compresa.</p></div>
+      <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. A chi ha giocato si apre una volta il riepilogo "Com'è andata?": risultato e marcatori (o il pulsante per chiudere la partita e scriverli), voto MVP e i giocatori della partita da valutare. Si può saltare tutto: finché non premi "Fatto" resta per qualche giorno tra le cose da fare.</p></div>
+      <div><h3 class="h3">Confronto</h3><p class="muted">Due compagni di gruppo e una voce, per esempio il Tiro: tocchi chi è più forte, senza vedere i punteggi. Se scegli quello che ha la voce più bassa, lui sale di 2 e l'altro scende di 2; se scegli quello già più alto non cambia niente. "Uguali" li avvicina di 1, "Salta" passa alla coppia dopo. La stessa coppia sulla stessa voce te la riproponiamo dopo un mese. In tutto i confronti spostano una voce al massimo di ${Engine.CMP_CAP} punti, e come le valutazioni invecchiano: contano finché quel giocatore non riceve ${Engine.WINDOW} valutazioni più nuove. Lo trovi in home, nella scheda Giocatori e alla fine del riepilogo della partita; nelle stats di ognuno un numerino accanto alla voce dice di quanto l'hanno spostata.</p></div>
+      <div><h3 class="h3">Gruppi e stats generali</h3><p class="muted">Partite, storico, messaggi e valutazioni sono di ogni gruppo. Puoi stare in più gruppi: cambi gruppo toccando il suo nome in alto. Nella scheda Giocatori vedi i membri del gruppo oppure tutti gli iscritti all'app. Le stats nel gruppo vengono dalle valutazioni e dai confronti di quel gruppo; le stats generali da quelli di tutti i gruppi, sempre con le ultime ${Engine.WINDOW} valutazioni per voce e l'autovalutazione.</p></div>
       <div><h3 class="h3">Affinità</h3><p class="muted">Più partite due giocatori vincono (o pareggiano) nella stessa squadra, più cresce la loro affinità, piano piano: una vittoria vale 1, un pareggio mezzo, le sconfitte non tolgono niente. Si arriva a circa 28 dopo 10 partite positive insieme, 57 dopo 25, 81 dopo 50 (massimo 100). Una squadra di compagni affiatati prende fino a +${Engine.AFF_BONUS} punti sul valore medio, e l'app ne tiene conto quando fa le squadre.</p></div>
-      <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo. Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Nella vista "Nel gruppo" contano le partite del gruppo; in "Generali", e per chi non è nel tuo gruppo, tutte le partite in tutti i gruppi. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le ${VOCI.length} voci. La tua la puoi condividere come immagine.</p></div>
+      <div><h3 class="h3">Traguardi e card</h3><p class="muted">Giocando si sbloccano gli stemmi (prima tripletta, 10 presenze, primo MVP, porta inviolata…), uno per ogni traguardo; altri arrivano valutando i compagni (10, 50, 200 valutazioni) e facendo i confronti (50, 250, 1000). Nel profilo di ciascuno si vedono i nuovi e i più importanti; con "Vedi tutti" ci sono tutti, divisi per tipo. Nella vista "Nel gruppo" contano le partite del gruppo; in "Generali", e per chi non è nel tuo gruppo, tutte le partite in tutti i gruppi. Toccando il numero grande della card si apre la card a tutto schermo; toccandola si gira e mostra le ${VOCI.length} voci. La tua la puoi condividere come immagine.</p></div>
       <div><h3 class="h3">Locandina e risultato</h3><p class="muted">Nella scheda Campo di una partita c'è la locandina da mandare nel gruppo: giorno, campo e formazioni con i colori delle maglie. Dopo la partita, dai Dettagli si condivide il risultato con marcatori e MVP. Ci sono solo i soprannomi, senza foto.</p></div>
       <div><h3 class="h3">Numero di maglia</h3><p class="muted">Lo scegli in Modifica profilo, da 1 a 99: si vede sulla card, sul campo e nelle squadre.</p></div>
       <div><h3 class="h3">Infortuni</h3><p class="muted">Segnalo dal tuo profilo: cerotto se è lieve, croce rossa se è grave. Lo vedono tutti gli iscritti e resta finché non lo togli tu; superata la data di rientro, l'app te lo ricorda. Nelle squadre conti ${CFG.INJ_LIGHT} punti in meno col cerotto e ${CFG.INJ_BAD} con la croce rossa.</p></div>
@@ -10444,7 +10965,7 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Addobbi delle feste</h3><p class="muted">Nei giorni di festa l'app si addobba: Halloween, la neve dall'8 dicembre al 6 gennaio, Natale, Capodanno, Befana, Carnevale, San Valentino, Pasqua e Pasquetta, Ferragosto. Il disegno accanto al titolo, se lo tocchi, rifà l'effetto. Si spengono in Impostazioni.</p></div>
       <div><h3 class="h3">Messaggi</h3><p class="muted">Nella scheda Messaggi ci sono la chat di ogni tuo gruppo e le chat private con i compagni di gruppo e gli amici: le private le leggete solo voi due. Puoi mandare foto, GIF e sticker, emoji e vocali (tieni premuto il microfono; scorri a sinistra per annullare, in su per continuare senza tenere). Tieni premuto un messaggio per reagire, rispondere, copiarlo, inoltrarlo in un'altra chat, modificarlo nei primi 15 minuti o eliminarlo; trascinalo verso destra per rispondere al volo. Con @ chiami qualcuno del gruppo. Una spunta: inviato; due grigie: arrivato; due blu: letto da tutti (tenendo premuto un tuo messaggio, Info dice chi l'ha letto). Le notifiche si attivano da Impostazioni; una chat si silenzia toccando il suo nome in alto.</p></div>
       <div><h3 class="h3">Amici</h3><p class="muted">Chiedi l'amicizia dalla scheda di un giocatore: diventate amici quando l'altro accetta. Gli amici compaiono per primi nelle ricerche e puoi invitarli alle partite del tuo gruppo.</p></div>
-      <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti.</p></div>
+      <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti. I confronti sono sempre anonimi: si vede solo di quanto hanno spostato le voci.</p></div>
     </div>
   <//>`;
 }
@@ -10459,7 +10980,7 @@ function SheetHost({ sheet, onClose }) {
     case 'member': return html`<${MemberSheet} key=${sheet.id} mid=${sheet.mid} id=${sheet.id} onClose=${onClose} />`;
     case 'confirm': return html`<${ConfirmSheet} sheet=${sheet} onClose=${onClose} />`;
     case 'matchMenu': return html`<${MatchMenuSheet} id=${sheet.id} onClose=${onClose} />`;
-    case 'ratingDetail': return html`<${RatingDetailSheet} pid=${sheet.pid} voter=${sheet.voter} self=${sheet.self} onClose=${onClose} />`;
+    case 'ratingDetail': return html`<${RatingDetailSheet} pid=${sheet.pid} voter=${sheet.voter} self=${sheet.self} t=${sheet.t} onClose=${onClose} />`;
     case 'help': return html`<${HelpSheet} onClose=${onClose} />`;
     case 'photo': return html`<${PhotoSheet} pid=${sheet.pid} onClose=${onClose} />`;
     case 'menu': return html`<${MenuSheet} onClose=${onClose} />`;
@@ -10660,7 +11181,36 @@ function App() {
   const matches = data.matches || [];
   const playersById = useMemo(() => Object.fromEntries(allPlayers.map((p) => [p.id, p])), [gdata.players]);
   const matchesById = useMemo(() => Object.fromEntries(matches.map((m) => [m.id, m])), [data.matches]);
-  const rated = useMemo(() => Engine.computeRatings(allPlayers, data.ratings || []), [gdata.players, data.ratings]);
+  /* confronti: gli effetti sulle voci (senza chi li ha causati), i miei dell'ultimo mese, quanti ne ha fatti ognuno */
+  const [cmpG, setCmpG] = useState(null);
+  const [cmpAll, setCmpAll] = useState(null);
+  const cmpSeq = useRef(0);
+  const loadCmp = async () => {
+    if (!be || !be.db || typeof be.db.rpc !== 'function' || !validGid) return;
+    const db0 = be.db, my = ++cmpSeq.current, g0 = validGid;
+    try {
+      const r = await db0.rpc('cmp_state', { p_gid: g0 });
+      if (my !== cmpSeq.current) return;
+      const o = r && typeof r === 'object' ? r : {};
+      setCmpG({ gid: g0, ok: true, ev: Array.isArray(o.ev) ? o.ev : [], mine: Array.isArray(o.mine) ? o.mine : [], n: o.n || {}, ms: o.ms || {} });
+    } catch (e) { if (my === cmpSeq.current) setCmpG({ gid: g0, ok: false, ev: [], mine: [], n: {}, ms: {} }); }
+  };
+  /* un mio confronto: si vede subito, senza aspettare il database */
+  const addCmp = (a, b, k, da, n) => {
+    const t = Date.now();
+    setCmpG((c) => (!c || c.gid !== validGid ? c : Object.assign({}, c, {
+      ev: da ? c.ev.concat([[a, k, da, t], [b, k, -da, t]]) : c.ev,
+      mine: c.mine.concat([[a, b, k, t]]),
+      n: Object.assign({}, c.n, { [uid]: typeof n === 'number' ? n : numOr(c.n[uid], 0) + 1 }),
+    })));
+    if (da) setCmpAll((x) => (Array.isArray(x) ? x.concat([[a, k, da, t], [b, k, -da, t]]) : x));
+  };
+  useEffect(() => { setCmpG(null); if (be && validGid && loaded) loadCmp(); }, [be, validGid, loaded]);
+  useEffect(() => { if (tick > 0 && tick % 5 === 0 && be && validGid && loaded) loadCmp(); }, [tick]);
+  const cmpNow = cmpG && cmpG.gid === validGid ? cmpG : null;
+  const adjG = useMemo(() => cmpAdj(cmpNow ? cmpNow.ev : []), [cmpNow]);
+  const adjAll = useMemo(() => (Array.isArray(cmpAll) ? cmpAdj(cmpAll) : adjG), [cmpAll, adjG]);
+  const rated = useMemo(() => Engine.computeRatings(allPlayers, data.ratings || [], adjG), [gdata.players, data.ratings, adjG]);
 
   /* stats generali: i voti di tutti i gruppi, senza chi li ha dati (finché non arrivano, quelli del gruppo attuale) */
   const loadGlobal = async (force) => {
@@ -10672,10 +11222,14 @@ function App() {
       const rows = await db0.rpc('global_votes');
       if (be && be.db === db0) setGvotes(Array.isArray(rows) ? rows : []);
     } catch (e) { /* funzione non ancora nel database: restano le stats del gruppo */ }
+    try {
+      const c = await db0.rpc('cmp_state', {});
+      if (be && be.db === db0) setCmpAll(c && Array.isArray(c.ev) ? c.ev : null);
+    } catch (e) { /* confronti non ancora nel database */ }
   };
   useEffect(() => { if (be && globalsLoaded) loadGlobal(true); }, [be, globalsLoaded, data.ratings]);
   const globalDocs = useMemo(() => (gvotes ? gvotes.map((x, i) => ({ id: '~' + i, r: { [x.target]: x.vote } })) : (data.ratings || [])), [gvotes, data.ratings]);
-  const ratedAll = useMemo(() => Engine.computeRatings(allPlayers, globalDocs), [gdata.players, globalDocs]);
+  const ratedAll = useMemo(() => Engine.computeRatings(allPlayers, globalDocs, adjAll), [gdata.players, globalDocs, adjAll]);
   const stats = useMemo(() => Engine.matchStats(players, matches, data.mvp || [], Date.now()), [players, data.matches, data.mvp, tick]);
   /* affinità tra compagni: dalle partite giocate in questo gruppo */
   const aff = useMemo(() => Engine.affinityFrom(matches), [data.matches]);
@@ -10742,7 +11296,7 @@ function App() {
   /* ogni 5 minuti e quando si torna sull'app: all'inizio di una partita compaiono quelli degli altri */
   useEffect(() => { if (tick > 0 && tick % 5 === 0 && be && validGid && loaded) loadPreds(); }, [tick]);
   useEffect(() => {
-    const vis = () => { if (document.visibilityState === 'visible' && be && validGid) loadPreds(); };
+    const vis = () => { if (document.visibilityState === 'visible' && be && validGid) { loadPreds(); loadCmp(); } };
     document.addEventListener('visibilitychange', vis);
     return () => document.removeEventListener('visibilitychange', vis);
   }, [be, validGid]);
@@ -10804,6 +11358,7 @@ function App() {
     gid: validGid, group, groups: gdata.groups || [], groupsById, members, memberById, myGroups, switchGroup,
     be, inbox, chatRows, chatReady, refreshInbox, markChatRead, chatReadOf, lastTick, canDm, dmPeople, openChat,
     help, markHelpSeen, badges, theme, setTheme, feste, setFeste, festa, maglie, accent, setAccent, home, setHome, start, setStart, preds, loadPreds,
+    cmp: cmpNow, loadCmp, addCmp,
     go, back, goTab, openSheet: setSheet, closeSheet: () => setSheet(null), flash, startDemo, exitDemo,
   };
 
@@ -10881,6 +11436,20 @@ function App() {
   followRef.current = followLink;
   const appReady = status === 'ready' && loaded && !needsProfile && !needsSelf && !needsLate;
   useEffect(() => { if (!appReady) return; const L = takeLink(); if (L) followRef.current(L); }, [appReady]);
+  /* riepilogo di fine partita: si apre da solo una volta per partita, a chi ha giocato, se c'è ancora qualcosa da fare */
+  const recapSig = appReady && validGid && me && canWrite ? matches.filter((m) => m.status === 'played' || phaseOf(m) === 'toclose').map((m) => m.id + ':' + m.status).join(',') : '';
+  useEffect(() => {
+    if (!recapSig || stack.length || sheet || tab !== 'matches' || pendingLink.current) return undefined;
+    /* una volta a partita da chiudere e, se intanto qualcuno l'ha chiusa, un'altra con il risultato */
+    const fresh = (x) => { const v = readLS(recapKey(ctx, x.id), ''); return !v || (v === 'seen-open' && x.status === 'played'); };
+    const m = recapMatches(ctx).find((x) => fresh(x) && recapLeft(x, ctx));
+    if (!m) return undefined;
+    const t = setTimeout(() => {
+      writeLS(recapKey(ctx, m.id), m.status === 'played' ? 'seen-played' : 'seen-open');
+      setStack((st) => (st.length ? st : [{ t: 'recap', id: m.id }]));
+    }, 900);
+    return () => clearTimeout(t);
+  }, [recapSig, stack.length, !!sheet, tab]);
   /* entrati con il link: quando l'iscrizione arriva si passa al gruppo e si apre la partita */
   useEffect(() => {
     const L = pendingLink.current;
@@ -10927,7 +11496,9 @@ function App() {
   else if (!noGroup && top && top.t === 'group') view = html`<${GroupScreen} key="group" />`;
   else if (!noGroup && top && top.t === 'addMembers') view = html`<${AddMembersScreen} key="addm" />`;
   else if (!noGroup && top && top.t === 'match') view = html`<${MatchScreen} key=${'m' + top.id} id=${top.id} />`;
-  else if (!noGroup && top && top.t === 'mvp') view = html`<${MvpScreen} key=${'v' + top.id} id=${top.id} />`;
+  else if (!noGroup && top && top.t === 'mvp') view = html`<${MvpScreen} key=${'v' + top.id} id=${top.id} from=${top.from} />`;
+  else if (!noGroup && top && top.t === 'recap') view = html`<${RecapScreen} key=${'rc' + top.id} id=${top.id} />`;
+  else if (!noGroup && top && top.t === 'cmp') view = html`<${CmpScreen} key="cmp" />`;
   else if (!noGroup && top && top.t === 'result') view = html`<${ResultScreen} key=${'r' + top.id} id=${top.id} />`;
   else if (!noGroup && top && top.t === 'rateMatch') view = html`<${MatchRateScreen} key=${'rm' + top.id} id=${top.id} />`;
   else if (!noGroup && top && top.t === 'rate') view = html`<${RateScreen} key=${'rt' + top.id} id=${top.id} />`;
@@ -10992,6 +11563,8 @@ function parsePath(path) {
 const READ_ONLY_FN = new Set(['is_app_admin', 'global_votes', 'player_career', 'friend_count',
   /* pronostici, preferenze delle notifiche e codici d'invito stanno in tabelle loro: le partite non cambiano */
   'pred_list', 'pred_set', 'push_prefs_get', 'push_prefs_set', 'invite_code',
+  /* confronti: stanno in una tabella loro */
+  'cmp_state', 'cmp_vote', 'rater_stats',
   /* chat: i cambiamenti arrivano col tempo reale, non serve ricaricare tutto */
   'chat_inbox', 'chat_react', 'chat_edit', 'chat_delete', 'chat_seen', 'chat_mute', 'push_register', 'push_unregister', 'push_devices']);
 
