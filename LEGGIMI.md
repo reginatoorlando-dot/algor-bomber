@@ -5,7 +5,7 @@ Il sito è la cartella `web` (questa). Il resto dello zip (`sorgenti`) serve sol
 
 ## 1. Il database (Supabase)
 1. Vai su supabase.com → **New project**. Scegli un nome (es. `algor-bomber`), una password per il database (salvala) e una regione europea.
-2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) con `supabase/aggiornamento-amici.sql` (amicizie) con `supabase/aggiornamento-traguardi.sql` (traguardi di tutti), con `supabase/aggiornamento-chat.sql` (chat come WhatsApp; per le notifiche serve anche la funzione `notify`, vedi più sotto) e con `supabase/aggiornamento-notifiche.sql` (notifiche delle partite, link d'invito, pronostici).
+2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) con `supabase/aggiornamento-amici.sql` (amicizie) con `supabase/aggiornamento-traguardi.sql` (traguardi di tutti), con `supabase/aggiornamento-chat.sql` (chat come WhatsApp; per le notifiche serve anche la funzione `notify`, vedi più sotto) con `supabase/aggiornamento-notifiche.sql` (notifiche delle partite, link d'invito, pronostici) e con `supabase/aggiornamento-valutazioni.sql` (valutazioni che si sommano, Confronto, traguardi di chi valuta).
 3. **Authentication → Providers → Email**: lascia attivo l'accesso con email e **disattiva "Confirm email"** (così gli amici entrano subito senza aspettare la mail).
 4. **Project Settings → API**: copia **Project URL** e la chiave **anon public**.
 5. Apri il file `config.js` di questa cartella e incolla i due valori al posto delle scritte `INCOLLA_QUI_…`. (La chiave anon può stare nel sito: la sicurezza la fanno le regole del database.)
@@ -97,6 +97,18 @@ Cosa fa:
 - **Pronostici**: a squadre fatte, nei Dettagli della partita, fino all'inizio. Quelli degli altri si vedono a partita iniziata (li mostra il database, non si possono sbirciare). Classifica nello Storico → Classifiche → Pronostici: 3 punti il risultato esatto, 1 l'esito.
 
 Finché lo script non è eseguito, l'app funziona come prima: le parti nuove semplicemente non compaiono.
+
+## Valutazioni, riepilogo di fine partita e Confronto (supabase/aggiornamento-valutazioni.sql)
+1. **Database** (una volta sola): Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-valutazioni.sql` e premi **Run**. Deve comparire "Aggiornamento valutazioni completato". Non sposta e non cancella dati; si può rieseguire.
+2. **Sito**: carica su GitHub `index.html` e `sw.js` (nella cartella principale), più questo file e lo script nella cartella `supabase`.
+
+Cosa cambia:
+- **Media sulle ultime 30**: ogni voce è la media delle ultime 30 valutazioni ricevute; l'autovalutazione conta come la più vecchia, quindi esce per prima. Ogni salvataggio è una valutazione in più (le precedenti restano nel documento di chi vota, campo `h`), ma lo stesso giocatore si può valutare al massimo 3 volte in 7 giorni. Le stats generali fanno lo stesso con le valutazioni di tutti i gruppi.
+- **Riepilogo di fine partita** ("Com'è andata?"): a chi ha giocato si apre da solo una volta (e un'altra quando la partita viene chiusa), entro 4 giorni: risultato e marcatori, voto MVP, giocatori da valutare, invito al Confronto. Finché non si preme "Fatto" resta tra le cose da fare.
+- **Confronto**: due compagni di gruppo e una voce, senza punteggi. Chi sceglie il più debole gli dà +2 e toglie 2 all'altro; il più forte non cambia niente; "Uguali" li avvicina di 1. Anonimo (tabella `cmp_votes`, si legge solo con le funzioni). La stessa coppia sulla stessa voce una volta al mese a persona, al massimo 150 confronti al giorno; in tutto una voce si sposta al massimo di 10 punti e i confronti invecchiano come le valutazioni. In home, nella scheda Giocatori e in fondo al riepilogo.
+- **Traguardi di chi valuta**: 10, 50, 200 valutazioni date e 50, 250, 1000 confronti (in tutto 32 traguardi).
+
+Finché lo script non è eseguito: il Confronto non compare, le valutazioni si sommano lo stesso (le stats generali usano solo le ultime di ogni gruppo) e i traguardi di chi valuta nella vista "Generali" restano a zero.
 
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.

@@ -1,7 +1,7 @@
 // Service worker: permette l'installazione e l'apertura anche con rete debole,
 // e mostra le notifiche dei messaggi (anche ad app chiusa).
 // La pagina viene sempre scaricata nuova se c'è rete, così gli aggiornamenti arrivano da soli.
-const CACHE = 'algor-bomber-v17';
+const CACHE = 'algor-bomber-v18';
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', 'manifest.webmanifest', 'icon-192.png'])).catch(() => {}));
