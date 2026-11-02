@@ -1,6 +1,6 @@
 -- Algor Bomber: traguardi di chiunque, dal suo profilo.
 -- Da incollare nell'editor SQL di Supabase dopo gli altri aggiornamenti. Si può eseguire più volte.
--- Non modifica né cancella nessun dato: aggiunge solo una funzione di lettura.
+-- Non modifica né cancella nessun dato: aggiunge solo due funzioni di lettura.
 --
 -- player_career(persona) restituisce, solo per quella persona e in tutti i suoi gruppi, le partite giocate:
 -- giorno e ora, com'è finita per la sua squadra, gol subiti, i suoi gol, assist e autogol, se era in porta,
@@ -90,5 +90,20 @@ $$;
 
 revoke all on function public.player_career(text) from public, anon;
 grant execute on function public.player_career(text) to authenticated;
+
+-- friend_count(persona): quanti amici ha sull'app, per il traguardo "Compagnia" (5 amici) visto da chiunque.
+-- Solo il numero, e al massimo 5: le amicizie restano private, non dice chi sono gli amici.
+-- Conta come l'app conta i propri: le amicizie accettate in cui c'è quella persona.
+create or replace function public.friend_count(p_uid text) returns int
+language sql stable security definer set search_path = public as $$
+  select least(count(*), 5)::int
+  from docs
+  where col = 'friends' and gid is null
+    and data ->> 'status' = 'active'
+    and p_uid in (split_part(id, '~', 1), split_part(id, '~', 2));
+$$;
+
+revoke all on function public.friend_count(text) from public, anon;
+grant execute on function public.friend_count(text) to authenticated;
 
 select 'Aggiornamento traguardi completato' as esito;

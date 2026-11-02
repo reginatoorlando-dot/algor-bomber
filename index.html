@@ -2243,6 +2243,13 @@ const Demo = (() => {
           const rows = [...docs.entries()].map(([path, d]) => { const s = path.split('/'); return { path, col: s[s.length - 2], id: s[s.length - 1], gid: s[0] === 'g' ? s[1] : null, data: d }; });
           return clone(careerFromDocs(String(a.p_uid || ''), rows.filter((r) => r.col === 'matches' && r.gid), rows.filter((r) => (r.col === 'mvp' || r.col === 'mv') && r.gid)));
         }
+        case 'friend_count': {
+          /* come la funzione del database: solo quanti amici, al massimo 5 */
+          const u = String(a.p_uid || '');
+          let n = 0;
+          for (const [p, d] of docs) if (p.startsWith('friends/') && d && d.status === 'active' && p.slice(8).split('~').includes(u)) n++;
+          return Math.min(n, 5);
+        }
         default: fail('Funzione non disponibile nella demo.');
       }
       return null;
@@ -4426,7 +4433,7 @@ const BADGE_GROUPS = [
   { k: 'gol', l: 'Gol' }, { k: 'ass', l: 'Assist' }, { k: 'mvp', l: 'MVP' }, { k: 'pres', l: 'Presenze' },
   { k: 'win', l: 'Vittorie' }, { k: 'gk', l: 'In porta' }, { k: 'team', l: 'Squadra e amici' },
 ];
-/* ex: { aff (affinità migliore con un compagno, 0–100), org (giorni delle partite organizzate e giocate), friends } */
+/* ex: { aff (affinità migliore con un compagno, 0–100), org (giorni delle partite organizzate e giocate), friends (numero di amici, null se non si sa) } */
 const BADGES = [
   { k: 'gol1', g: 'gol', e: '⚽', n: 'Primo gol', d: 'Segna il tuo primo gol.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.g >= 1) },
   { k: 'doppietta', g: 'gol', e: '✌️', n: 'Doppietta', d: '2 gol nella stessa partita.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.g >= 2) },
@@ -4452,20 +4459,23 @@ const BADGES = [
   { k: 'inviolata', g: 'gk', e: '🔒', n: 'Porta inviolata', d: 'In porta, nessun gol subito.', t: 'gold', f: (tl) => firstWhere(tl, (x) => x.gk && x.conceded === 0) },
   { k: 'coppia', g: 'team', e: '💞', n: 'Coppia d\'oro', d: 'Affinità 50 o più con un compagno dello stesso gruppo.', t: 'silver', f: (tl, ex) => { const v = Math.round(ex.aff || 0); return { done: v >= 50, at: null, cur: Math.min(v, 50), max: 50 }; } },
   { k: 'organizzatore', g: 'team', e: '📣', n: 'Organizzatore', d: 'Organizza 5 partite che poi si giocano.', t: 'bronze', f: (tl, ex) => { const o = ex.org || []; const n = o.length; return { done: n >= 5, at: n >= 5 ? o[4] : null, cur: Math.min(n, 5), max: 5 }; } },
-  { k: 'compagnia', g: 'team', e: '🤝', n: 'Compagnia', d: '5 amici sull\'app.', t: 'bronze', own: true, f: (tl, ex) => { const n = ex.friends || 0; return { done: n >= 5, at: null, cur: Math.min(n, 5), max: 5 }; } },
+  { k: 'compagnia', g: 'team', e: '🤝', n: 'Compagnia', d: '5 amici sull\'app.', t: 'bronze', fr: true, f: (tl, ex) => { const n = ex.friends || 0; return { done: n >= 5, at: null, cur: Math.min(n, 5), max: 5 }; } },
   { k: 'ops', g: 'gol', e: '🙈', n: 'Ops!', d: 'Il primo autogol: capita anche ai migliori.', t: 'bronze', f: (tl) => firstWhere(tl, (x) => x.og >= 1) },
 ];
 const friendsCount = (C) => Object.values(C.friendOf).filter((x) => x === 'friend').length;
-const badgesFrom = (tl, ex, own) => BADGES.filter((b) => !b.own || own).map((b) => Object.assign({}, b, b.f(tl, ex)));
+/* "Compagnia" vuole il numero di amici: i propri li conta l'app, quelli degli altri li dà il database (friend_count,
+   solo il numero). Se non si sa (database non aggiornato), quel traguardo non si mostra. */
+const badgesFrom = (tl, ex) => BADGES.filter((b) => !b.fr || typeof ex.friends === 'number').map((b) => Object.assign({}, b, b.f(tl, ex)));
+const friendsFor = (uid, C, nf) => (uid === C.uid ? friendsCount(C) : typeof nf === 'number' ? nf : null);
 /* nel gruppo aperto */
-function badgesOf(uid, C) {
+function badgesOf(uid, C, nf) {
   const top = C.aff.top(uid, 1)[0];
   const org = C.matches.filter((m) => m.by === uid && m.status === 'played').sort((x, y) => mStart(x) - mStart(y)).map((m) => m.date);
-  return badgesFrom(playerTimeline(uid, C), { aff: top ? top.v : 0, org, friends: uid === C.uid ? friendsCount(C) : 0 }, uid === C.uid);
+  return badgesFrom(playerTimeline(uid, C), { aff: top ? top.v : 0, org, friends: friendsFor(uid, C, nf) });
 }
 /* in tutta la carriera */
-function careerBadges(uid, d, C) {
-  return badgesFrom(careerTimeline(d), { aff: Engine.affLevel(nn(d && d.aff)), org: (d && d.org) || [], friends: uid === C.uid ? friendsCount(C) : 0 }, uid === C.uid);
+function careerBadges(uid, d, C, nf) {
+  return badgesFrom(careerTimeline(d), { aff: Engine.affLevel(nn(d && d.aff)), org: (d && d.org) || [], friends: friendsFor(uid, C, nf) });
 }
 const isNewBadge = (b) => { if (!b.done || !b.at) return false; const d = new Date(b.at + 'T12:00:00'); return Date.now() - d.getTime() < 8 * 86400000; };
 
@@ -4494,20 +4504,51 @@ function useCareer(pid) {
   }, [pid, C.matches]);
   return pid ? st : null;
 }
+/* quanti amici ha un altro giocatore (solo il numero, fino a 5: funzione friend_count del database), tenuto un minuto.
+   La chiave cambia quando cambia l'amicizia con me, così il conto si aggiorna subito. null = non si sa. */
+const friendCache = new Map();
+function loadFriendCount(C, key, pid) {
+  const hit = friendCache.get(key);
+  if (hit && hit.p) return hit.p;
+  if (hit && Date.now() - hit.t < 60000) return Promise.resolve(hit.n);
+  const p = C.act.rpc('friend_count', { p_uid: pid }, { quiet: true }).then((r) => {
+    const n = r.ok && r.data != null && isFinite(Number(r.data)) ? Number(r.data) : null;
+    friendCache.set(key, { t: Date.now(), n });
+    return n;
+  });
+  friendCache.set(key, { t: Date.now(), p });
+  return p;
+}
+function useFriendCount(pid) {
+  const C = useContext(Ctx);
+  const key = pid ? pid + '|' + (C.friendOf[pid] || '') : '';
+  const [st, setSt] = useState(() => { const hit = key && friendCache.get(key); return hit && !hit.p ? { key, n: hit.n } : null; });
+  useEffect(() => {
+    if (!key) return undefined;
+    let dead = false;
+    loadFriendCount(C, key, pid).then((n) => { if (!dead) setSt((s) => (s && s.key === key && s.n === n ? s : { key, n })); });
+    return () => { dead = true; };
+  }, [key]);
+  return st && st.key === key ? st : null;
+}
 /* i traguardi da mostrare: del gruppo o di tutte le partite (se il database non è aggiornato, quelli del gruppo per i compagni) */
 function useBadges(pid, scope) {
   const C = useContext(Ctx);
   const all = scope === 'all' || !C.gid;
   const st = useCareer(all ? pid : null);
   const mine = pid === C.uid;
-  const groupView = (note) => ({ list: badgesOf(pid, C), ready: true, scope: 'group', where: C.group ? 'Nelle partite di ' + C.group.name : '', note });
-  if (!all) return groupView();
-  if (!st) return { list: null, ready: false, scope: 'all' };
+  /* per gli altri si aspetta anche il numero di amici, così il totale non cambia sotto gli occhi */
+  const fc = useFriendCount(mine ? null : pid);
+  const nf = fc ? fc.n : null;
+  const waitFriends = !!pid && !mine && !fc;
+  const groupView = (note) => ({ list: badgesOf(pid, C, nf), ready: true, scope: 'group', where: C.group ? 'Nelle partite di ' + C.group.name : '', note });
+  if (!all) return waitFriends ? { list: null, ready: false, scope: 'group' } : groupView();
+  if (!st || waitFriends) return { list: null, ready: false, scope: 'all' };
   if (!st.ok) {
     if (st.missing && C.gid && C.isInGroup(pid)) return groupView('Per ora solo quelli di questo gruppo: quelli di tutte le partite arrivano con il prossimo aggiornamento del database.');
     return { list: null, ready: true, scope: 'all', err: st.missing ? 'missing' : 'err' };
   }
-  return { list: careerBadges(pid, st.d, C), ready: true, scope: 'all', where: mine ? 'In tutte le tue partite, in tutti i tuoi gruppi' : 'In tutte le sue partite, in tutti i suoi gruppi' };
+  return { list: careerBadges(pid, st.d, C, nf), ready: true, scope: 'all', where: mine ? 'In tutte le tue partite, in tutti i tuoi gruppi' : 'In tutte le sue partite, in tutti i suoi gruppi' };
 }
 
 function Emblem({ b, s }) {
@@ -10948,7 +10989,9 @@ function parsePath(path) {
 }
 
 /* funzioni che leggono soltanto: dopo non serve ricaricare niente */
-const READ_ONLY_FN = new Set(['is_app_admin', 'global_votes', 'player_career',
+const READ_ONLY_FN = new Set(['is_app_admin', 'global_votes', 'player_career', 'friend_count',
+  /* pronostici, preferenze delle notifiche e codici d'invito stanno in tabelle loro: le partite non cambiano */
+  'pred_list', 'pred_set', 'push_prefs_get', 'push_prefs_set', 'invite_code',
   /* chat: i cambiamenti arrivano col tempo reale, non serve ricaricare tutto */
   'chat_inbox', 'chat_react', 'chat_edit', 'chat_delete', 'chat_seen', 'chat_mute', 'push_register', 'push_unregister', 'push_devices']);
 
