@@ -5,7 +5,7 @@ Il sito è la cartella `web` (questa). Il resto dello zip (`sorgenti`) serve sol
 
 ## 1. Il database (Supabase)
 1. Vai su supabase.com → **New project**. Scegli un nome (es. `algor-bomber`), una password per il database (salvala) e una regione europea.
-2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) con `supabase/aggiornamento-amici.sql` (amicizie) con `supabase/aggiornamento-traguardi.sql` (traguardi di tutti), con `supabase/aggiornamento-chat.sql` (chat come WhatsApp; per le notifiche serve anche la funzione `notify`, vedi più sotto) con `supabase/aggiornamento-notifiche.sql` (notifiche delle partite, link d'invito, pronostici) e con `supabase/aggiornamento-valutazioni.sql` (valutazioni che si sommano, Confronto, traguardi di chi valuta).
+2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) con `supabase/aggiornamento-amici.sql` (amicizie) con `supabase/aggiornamento-traguardi.sql` (traguardi di tutti), con `supabase/aggiornamento-chat.sql` (chat come WhatsApp; per le notifiche serve anche la funzione `notify`, vedi più sotto) con `supabase/aggiornamento-notifiche.sql` (notifiche delle partite, link d'invito, pronostici) con `supabase/aggiornamento-valutazioni.sql` (valutazioni che si sommano, Confronto, traguardi di chi valuta) e con `supabase/aggiornamento-panchina.sql` (notifica a chi va in panchina dal Campo).
 3. **Authentication → Providers → Email**: lascia attivo l'accesso con email e **disattiva "Confirm email"** (così gli amici entrano subito senza aspettare la mail).
 4. **Project Settings → API**: copia **Project URL** e la chiave **anon public**.
 5. Apri il file `config.js` di questa cartella e incolla i due valori al posto delle scritte `INCOLLA_QUI_…`. (La chiave anon può stare nel sito: la sicurezza la fanno le regole del database.)
@@ -109,6 +109,18 @@ Cosa cambia:
 - **Traguardi di chi valuta**: 10, 50, 200 valutazioni date e 50, 250, 1000 confronti (in tutto 32 traguardi).
 
 Finché lo script non è eseguito: il Confronto non compare, le valutazioni si sommano lo stesso (le stats generali usano solo le ultime di ogni gruppo) e i traguardi di chi valuta nella vista "Generali" restano a zero.
+
+## Il Campo: squadre trascinando, panchina e formazioni (supabase/aggiornamento-panchina.sql)
+1. **Database** (una volta sola, dopo `aggiornamento-notifiche.sql`): Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-panchina.sql` e premi **Run**. Aggiorna solo la funzione `match_push` (le notifiche delle partite); non sposta dati e si può rieseguire. Sul database del gruppo è già stato eseguito il 5 novembre 2026.
+2. **Sito**: carica su GitHub `index.html` (nella cartella principale), più questo file e lo script nella cartella `supabase`.
+
+Cosa cambia:
+- **Il Campo è dove si fanno le squadre** (prima della chiusura): tenendo premuto un giocatore e trascinandolo su un altro si scambiano posto, ruolo e, se serve, squadra; su un posto libero il giocatore si sposta lì. Pressione lunga senza trascinare: il giocatore resta selezionato e poi si tocca dove va. Dopo ogni modifica, "Annulla" per qualche secondo. La scheda Squadre resta per il confronto; la vecchia modifica a elenco non c'è più.
+- **Formazioni**: toccando il modulo di una squadra (o con "Formazioni") si sceglie tra i moduli del formato; l'app mette ognuno nel ruolo in cui rende di più. Il modulo scelto sta nella partita, in `teams.mods`.
+- **Panchina**: linguetta sul bordo destro del campo con la lista d'attesa e chi non è ancora in squadra. Chi organizza (chi ha creato la partita, gli amministratori del gruppo e dell'app) fa entrare uno della lista d'attesa al posto di chi è in campo, dopo una conferma: i due si scambiano anche l'orario della risposta, quindi chi esce prende il numero in lista d'attesa di chi entra. Con le squadre scelte dai giocatori l'ordine sul campo sta in `teams.order`.
+- **Notifiche**: chi entra riceve "Si è liberato un posto: giochi tu"; con lo script chi esce riceve "X ti ha messo in panchina per …: sei n° N in lista d'attesa". Dopo l'inizio della partita entrate e uscite non mandano più notifiche (sono correzioni).
+
+Finché lo script non è eseguito: tutto funziona, ma chi va in panchina non riceve la notifica.
 
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
