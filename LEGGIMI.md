@@ -122,7 +122,7 @@ Cosa cambia:
 
 Finché lo script non è eseguito: tutto funziona, ma chi va in panchina non riceve la notifica.
 
-Stili del campo (solo app, nessuno script): il tastino in alto a sinistra sul Campo (e Impostazioni → Aspetto) apre la scelta tra erba a strisce, erba a scacchi, sintetico, campetto in terra, spiaggia, neve, sull'acqua, Marte, palazzetto, lavagna, calcio balilla e sotto i riflettori. Vale per quel telefono (`sc-campo`); con "Riduci movimento" neve e onde stanno ferme. Locandina e risultato da condividere restano col prato a strisce.
+Stili del campo (solo app, nessuno script): il tastino in alto a sinistra sul Campo (e Impostazioni → Aspetto) apre la scelta tra erba a strisce, erba a scacchi, sintetico, campetto in terra, spiaggia, neve, sull'acqua, Marte, palazzetto, lavagna, calcio balilla e sotto i riflettori. Vale per quel telefono (`sc-campo`); con "Riduci movimento" neve e onde stanno ferme. Anche la locandina da condividere usa lo stile scelto (lo stesso disegno dello schermo; se il telefono non riesce a disegnarlo, usa il prato a strisce). Il risultato da condividere non ha il campo.
 
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
