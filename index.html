@@ -6537,23 +6537,75 @@ async function drawCardImage({ p, r, pal, sub, label }) {
   return cv;
 }
 
+/* ---------- il campo nello stile scelto, per la locandina ----------
+   È lo stesso disegno dello schermo (terreno, porte, linee, dettagli): l'SVG diventa un'immagine con dentro i suoi
+   stili e si copia sulla locandina. Se il telefono non ci riesce (o "sporca" l'immagine), resta il prato a strisce. */
+let campoCssCache = null;
+function campoCss() {
+  if (campoCssCache != null) return campoCssCache;
+  const out = [];
+  try {
+    Array.from(document.styleSheets).forEach((sh) => {
+      let rules = null;
+      try { rules = sh.cssRules; } catch (e) { rules = null; }
+      Array.from(rules || []).forEach((r) => { if (r.selectorText && /\.(pt|st)-/.test(r.selectorText)) out.push(r.cssText); });
+    });
+  } catch (e) { /* senza stili resta il disegno di base */ }
+  campoCssCache = out.join('\n');
+  return campoCssCache;
+}
+async function campoCanvas(v, W, H) {
+  try {
+    const cs = campoOf(v);
+    const host = document.createElement('div');
+    render(html`<svg viewBox="0 0 100 160" width=${Math.round(W)} height=${Math.round(H)} class=${'pitch pt-static st-' + cs.v}>
+      <style>${campoCss()}</style>
+      <defs><pattern id="lc-net" width="1.2" height="1.2" patternUnits="userSpaceOnUse"><path d="M0 0H1.2M0 0V1.2" stroke="rgba(255,255,255,.55)" stroke-width="0.18" fill="none" /></pattern></defs>
+      ${cs.ground('lc')}
+      <rect x="42" y="0.4" width="16" height="2.6" fill="url(#lc-net)" class="pt-goal" />
+      <rect x="42" y="157" width="16" height="2.6" fill="url(#lc-net)" class="pt-goal" />
+      <g class="pt-l">${PITCH_LINES.map((d) => html`<path key=${d} d=${d} />`)}<circle cx="50" cy="80" r="11" /></g>
+      <circle cx="50" cy="80" r="0.8" class="pt-dot" /><circle cx="50" cy="16" r="0.6" class="pt-dot" /><circle cx="50" cy="144" r="0.6" class="pt-dot" />
+      ${cs.top && cs.top('lc')}
+    </svg>`, host);
+    const svg = host.querySelector('svg');
+    let xml = svg ? new XMLSerializer().serializeToString(svg) : '';
+    render(null, host);
+    if (!xml) return null;
+    if (!/^<svg[^>]*xmlns=/.test(xml)) xml = xml.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    const im = await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml));
+    if (!im) return null;
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(W); cv.height = Math.round(H);
+    const g = cv.getContext('2d');
+    g.drawImage(im, 0, 0, cv.width, cv.height);
+    g.getImageData(0, 0, 1, 1);
+    return cv;
+  } catch (e) { return null; }
+}
+
 /* ---------- il campo, per la locandina ---------- */
-function drawPitch(ctx, fonts, X, Y, s, m, D) {
+async function drawPitch(ctx, fonts, X, Y, s, m, D, st) {
   const W = 100 * s, H = 160 * s;
+  const ground = st && st !== 'classico' ? await campoCanvas(st, W, H) : null;
   ctx.save();
   rrect(ctx, X, Y, W, H, 34); ctx.clip();
-  ctx.fillStyle = '#2c8a4b'; ctx.fillRect(X, Y, W, H);
-  ctx.fillStyle = '#349a57';
-  for (let k = 0; k < 10; k += 2) ctx.fillRect(X, Y + k * 16 * s, W, 16 * s);
-  ctx.save();
-  ctx.translate(X, Y); ctx.scale(s, s);
-  ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.lineWidth = 0.55; ctx.lineJoin = 'round';
-  if (typeof Path2D !== 'undefined') PITCH_LINES.forEach((d) => ctx.stroke(new Path2D(d)));
-  ctx.beginPath(); ctx.arc(50, 80, 11, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  [[50, 80, 0.8], [50, 16, 0.6], [50, 144, 0.6]].forEach(([x, y, rr]) => { ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill(); });
-  ctx.lineWidth = 0.35; ctx.strokeRect(42, 0.4, 16, 2.6); ctx.strokeRect(42, 157, 16, 2.6);
-  ctx.restore();
+  if (ground) ctx.drawImage(ground, X, Y, W, H);
+  else {
+    /* il prato a strisce di sempre */
+    ctx.fillStyle = '#2c8a4b'; ctx.fillRect(X, Y, W, H);
+    ctx.fillStyle = '#349a57';
+    for (let k = 0; k < 10; k += 2) ctx.fillRect(X, Y + k * 16 * s, W, 16 * s);
+    ctx.save();
+    ctx.translate(X, Y); ctx.scale(s, s);
+    ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.lineWidth = 0.55; ctx.lineJoin = 'round';
+    if (typeof Path2D !== 'undefined') PITCH_LINES.forEach((d) => ctx.stroke(new Path2D(d)));
+    ctx.beginPath(); ctx.arc(50, 80, 11, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    [[50, 80, 0.8], [50, 16, 0.6], [50, 144, 0.6]].forEach(([x, y, rr]) => { ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill(); });
+    ctx.lineWidth = 0.35; ctx.strokeRect(42, 0.4, 16, 2.6); ctx.strokeRect(42, 157, 16, 2.6);
+    ctx.restore();
+  }
   const vg = ctx.createRadialGradient(X + W / 2, Y + H / 2, W * 0.35, X + W / 2, Y + H / 2, H * 0.75);
   vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.3)');
   ctx.fillStyle = vg; ctx.fillRect(X, Y, W, H);
@@ -6603,7 +6655,7 @@ async function drawMatchPoster({ m, C, D, wx }) {
   const ev = Engine.evaluate(pa, pb, D.roles, C.aff);
   const s = 6.94, PW = 100 * s, X = (IMG_W - PW) / 2, Y = 560;
   teamLabel(ctx, fonts, m, 'b', X, 528, ev.b.label || '');
-  drawPitch(ctx, fonts, X, Y, s, m, D);
+  await drawPitch(ctx, fonts, X, Y, s, m, D, C.campo);
   teamLabel(ctx, fonts, m, 'a', X, Y + 160 * s + 74, ev.a.label || '');
   if (D.A.length && D.B.length) {
     const pA = Math.round(winProb(ev.a.mean, ev.b.mean) * 100);
@@ -11690,7 +11742,7 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Da dove vengono i numeri</h3><p class="muted">Ogni voce è la media delle ultime ${Engine.WINDOW} valutazioni ricevute, autovalutazione compresa: la tua conta come quella di chiunque altro, ed essendo la più vecchia è la prima a uscire. Ogni area è la media delle sue voci. L'autovalutazione si fa una volta sola, all'iscrizione; le valutazioni agli altri le dai quando vuoi e ognuna si aggiunge alle altre, ma lo stesso giocatore lo puoi valutare al massimo ${Engine.RATE_MAX} volte in ${Engine.RATE_DAYS} giorni. Se un'area non la sai giudicare, la salti. A tutto questo si aggiungono i confronti (vedi Confronto).</p></div>
       <div><h3 class="h3">Il punteggio</h3><p class="muted">Per chi gioca fuori dai pali è la media di Attacco, Centrocampo, Difesa e Generale: la Porta non conta. Per i portieri conta solo la Porta. Il colore della card segue il punteggio: bronzo sotto 65, argento da 65 a 74, oro da 75.</p></div>
       <div><h3 class="h3">Squadre e ruoli</h3><p class="muted">I ruoli li assegna l'app, insieme alle squadre. Prova tutte le divisioni possibili e per ogni squadra sceglie il modulo che le va meglio (a 5: 1-1-2-1, 1-2-1-1, 1-2-2; a 7: 1-2-3-1, 1-3-1-2, 1-3-2-1, dove 1-2-1-2-1 conta come 1-2-3-1; a 8: 1-3-3-1, 1-2-3-2, 1-3-2-2, 1-2-4-1). Nel tuo ruolo o nel secondo vali il tuo punteggio. In un ruolo vicino (difesa e centrocampo, centrocampo e attacco) vali ${CFG.MALUS_NEAR} punti in meno, in un ruolo lontano (difesa e attacco) ${CFG.MALUS_FAR} in meno. Se vai in porta senza essere portiere conta la tua Porta; un portiere fuori dai pali vale la media delle sue aree di movimento. Con il cerotto conti ${CFG.INJ_LIGHT} punti in meno, con la croce rossa ${CFG.INJ_BAD}. L'app cerca le squadre più vicine nel valore medio e area per area, tenendo fuori ruolo meno gente possibile. Puoi sempre cambiare ruoli e giocatori a mano, nel Campo.</p></div>
-      <div><h3 class="h3">Il Campo</h3><p class="muted">Prima della partita le squadre si fanno e si sistemano nella scheda Campo. Tieni premuto un giocatore e trascinalo su un altro: si scambiano posto, ruolo e, se sono in squadre diverse, squadra; su un posto libero si sposta lì. Se lo tieni premuto senza trascinarlo resta selezionato: poi tocchi dove deve andare. Toccando il modulo di una squadra, o con Formazioni, scegli la formazione: l'app mette ognuno nel ruolo in cui rende di più. Dopo ogni modifica c'è Annulla per qualche secondo. Nella tendina Panchina, sul bordo destro del campo, ci sono la lista d'attesa e chi non è ancora in squadra. Chi organizza fa entrare uno della lista d'attesa al posto di chi è in campo: chi esce prende il suo numero in lista d'attesa e a tutti e due arriva una notifica. Con le squadre scelte dai giocatori, spostare qualcuno da una squadra all'altra lo fa chi organizza. Chiusa la partita, il Campo mostra la formazione che ha giocato. Con il tastino in alto a sinistra sul campo ne cambi lo stile (erba a scacchi, sintetico, terra, spiaggia, neve, sull'acqua, Marte, palazzetto, lavagna, calcio balilla, sotto i riflettori): vale per il tuo telefono.</p></div>
+      <div><h3 class="h3">Il Campo</h3><p class="muted">Prima della partita le squadre si fanno e si sistemano nella scheda Campo. Tieni premuto un giocatore e trascinalo su un altro: si scambiano posto, ruolo e, se sono in squadre diverse, squadra; su un posto libero si sposta lì. Se lo tieni premuto senza trascinarlo resta selezionato: poi tocchi dove deve andare. Toccando il modulo di una squadra, o con Formazioni, scegli la formazione: l'app mette ognuno nel ruolo in cui rende di più. Dopo ogni modifica c'è Annulla per qualche secondo. Nella tendina Panchina, sul bordo destro del campo, ci sono la lista d'attesa e chi non è ancora in squadra. Chi organizza fa entrare uno della lista d'attesa al posto di chi è in campo: chi esce prende il suo numero in lista d'attesa e a tutti e due arriva una notifica. Con le squadre scelte dai giocatori, spostare qualcuno da una squadra all'altra lo fa chi organizza. Chiusa la partita, il Campo mostra la formazione che ha giocato. Con il tastino in alto a sinistra sul campo ne cambi lo stile (erba a scacchi, sintetico, terra, spiaggia, neve, sull'acqua, Marte, palazzetto, lavagna, calcio balilla, sotto i riflettori): vale per il tuo telefono, anche nella locandina che condividi.</p></div>
       <div><h3 class="h3">Sondaggio sul giorno</h3><p class="muted">Se il giorno non è fissato, chi crea la partita propone qualche giorno e ognuno segna, col cerchio, tutti quelli in cui è libero. Il primo giorno che arriva al numero per due squadre piene fa nascere la partita da sola, con chi l'ha votato. Toccando un giorno vedi chi l'ha votato, in ordine di voto e con l'ora; quando la partita è fissata, nei suoi Dettagli resta «Com'è andato il sondaggio».</p></div>
       <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. A chi ha giocato si apre una volta il riepilogo "Com'è andata?": risultato e marcatori (o il pulsante per chiudere la partita e scriverli), voto MVP e i giocatori della partita da valutare. Si può saltare tutto: finché non premi "Fatto" resta per qualche giorno tra le cose da fare.</p></div>
       <div><h3 class="h3">Confronto</h3><p class="muted">Due compagni di gruppo e una voce, per esempio il Tiro: tocchi chi è più forte, senza vedere i punteggi. Se scegli quello che ha la voce più bassa, lui sale di 2 e l'altro scende di 2; se scegli quello già più alto non cambia niente. "Uguali" li avvicina di 1, "Salta" passa alla coppia dopo. La stessa coppia sulla stessa voce te la riproponiamo dopo un mese. In tutto i confronti spostano una voce al massimo di ${Engine.CMP_CAP} punti, e come le valutazioni invecchiano: contano finché quel giocatore non riceve ${Engine.WINDOW} valutazioni più nuove. Lo trovi in home, nella scheda Giocatori e alla fine del riepilogo della partita; nelle stats di ognuno un numerino accanto alla voce dice di quanto l'hanno spostata.</p></div>
