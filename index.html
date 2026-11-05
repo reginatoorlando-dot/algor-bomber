@@ -1498,8 +1498,8 @@ const Engine = (() => {
   const tierOf = (v) => (v >= 75 ? 'gold' : v >= 65 ? 'silver' : 'bronze');
   const TIER_NAME = { gold: 'Oro', silver: 'Argento', bronze: 'Bronzo' };
 
-  /* Parametri del valore in partita */
-  const CFG = { MALUS_NEAR: 3, MALUS_FAR: 6, INJ_LIGHT: 5, INJ_BAD: 10, MVP_HOURS: 24 };
+  /* Parametri del valore in partita (REPARTO: quanto conta, in campo, l'area del reparto in cui si gioca) */
+  const CFG = { MALUS_NEAR: 3, MALUS_FAR: 6, INJ_LIGHT: 5, INJ_BAD: 10, MVP_HOURS: 24, REPARTO: 2 };
 
   /* Moduli: [portiere, difensori, centrocampisti, attaccanti]. 1-2-1-2-1 a 7 coincide con 1-2-3-1. */
   const MODULES = {
@@ -1680,9 +1680,32 @@ const Engine = (() => {
     return best;
   }
   const injMalus = (part) => (part.inj === 'grave' ? CFG.INJ_BAD : part.inj === 'lieve' ? CFG.INJ_LIGHT : 0);
-  /* in porta conta la Porta; fuori conta la media delle aree di movimento meno l'eventuale malus */
+  /* l'area di ogni reparto: in campo conta CFG.REPARTO volte (il doppio) per chi gioca lì */
+  const ROLE_AREA = { DIF: 'dif', CEN: 'cen', ATT: 'att' };
+  const areaW = (role, k) => (ROLE_AREA[role] === k ? CFG.REPARTO : 1);
+  /* fuori dai pali, nel ruolo dato: media delle 4 aree di movimento con quella del reparto che conta il doppio
+     (attaccante: (2 × Attacco + Centrocampo + Difesa + Generale) / 5) */
+  function roleBase(part, role) {
+    if (!part.areas || !ROLE_AREA[role]) return part.outfield;
+    let s = 0, w = 0;
+    for (const k of OUT_AREAS) { const wk = areaW(role, k); s += wk * num(part.areas[k], VDEF); w += wk; }
+    return s / w;
+  }
+  /* le aree di movimento di una squadra: media di chi gioca fuori dai pali, in cui conta il doppio chi gioca in quel reparto
+     (nella riga Attacco gli attaccanti, in Difesa i difensori, a Centrocampo i centrocampisti; il Generale è una media semplice).
+     list: [{ areas, r }] con r il ruolo in campo */
+  function teamAreas(list) {
+    const out = {};
+    for (const k of OUT_AREAS) {
+      let s = 0, w = 0;
+      for (const o of list) { const wk = areaW(o.r, k); s += wk * num(o.areas && o.areas[k], VDEF); w += wk; }
+      out[k] = w ? s / w : 0;
+    }
+    return out;
+  }
+  /* in porta conta la Porta; fuori conta il valore nel ruolo (il reparto conta il doppio) meno l'eventuale malus */
   function valueIn(part, role) {
-    const base = role === 'POR' ? part.porta : part.outfield - roleMalus(part, role);
+    const base = role === 'POR' ? part.porta : roleBase(part, role) - roleMalus(part, role);
     return base - injMalus(part);
   }
   const natural = (part) => valueIn(part, part.pref);
@@ -1847,13 +1870,13 @@ const Engine = (() => {
       const v = valueIn(x, r);
       vals[x.id] = v;
       total += v;
-      loss += natural(x) - v;
+      /* quanto si perde rispetto al proprio ruolo (chi rende di più altrove non toglie niente) */
+      loss += Math.max(0, natural(x) - v);
       if (r === 'POR') gkVal = gkVal == null ? v : Math.max(gkVal, v);
-      else outs.push(x);
+      else outs.push({ areas: x.areas, r });
     }
     const n = parts.length;
-    const areas = {};
-    for (const k of OUT_AREAS) areas[k] = outs.length ? mean(outs.map((x) => x.areas[k])) : 0;
+    const areas = teamAreas(outs);
     const affB = affBonusOf(parts.map((x) => x.id), aff);
     return { n, rc, total, base: n ? total / n : 0, aff: affB, mean: n ? total / n + affB : 0, loss, areas, gkVal, vals, label: moduleLabel(rc) };
   }
@@ -1890,11 +1913,11 @@ const Engine = (() => {
       if (x.pref === 'POR') gks.push(x);
       else { outs.push(x); cnt[RIDX[x.pref]]++; }
     }
-    let loss = 0;
+    let loss = 0, inGoal = null;
     if (!gks.length) {
       let m = Infinity, who = null;
       for (const x of outs) if (x.conv < m) { m = x.conv; who = x; }
-      if (who) { loss += m; cnt[RIDX[who.pref]]--; }
+      if (who) { loss += m; cnt[RIDX[who.pref]]--; inGoal = who; }
     } else if (gks.length > 1) {
       const s = gks.slice().sort((x, y) => y.porta - x.porta);
       for (let k = 1; k < s.length; k++) loss += s[k].gkOut;
@@ -1907,9 +1930,10 @@ const Engine = (() => {
       mis = Math.min(mis, over);
     }
     loss += (isFinite(mis) ? mis : 0) * CFG.MALUS_NEAR;
-    const src = outs.length ? outs : idx.map((i) => P[i]);
-    const areas = {};
-    for (const k of OUT_AREAS) areas[k] = mean(src.map((x) => x.areas[k]));
+    /* aree come nel calcolo vero, ognuno nel suo ruolo (chi va in porta non conta) */
+    const field = outs.filter((x) => x !== inGoal);
+    const src = field.length ? field : idx.map((i) => P[i]);
+    const areas = teamAreas(src.map((x) => ({ areas: x.areas, r: x.pref })));
     let affB = 0;
     if (M && idx.length > 1) {
       let s = 0, c = 0;
@@ -1977,7 +2001,9 @@ const Engine = (() => {
     };
     rec(0);
     cands.sort((x, y) => x.q - y.q);
-    const top = cands.slice(0, 120).map((c) => exactSplit(P, c.mask, format, aff));
+    /* le più promettenti si rifanno con il calcolo vero: fino a 12 giocatori tutte, da 13 a 16 le prime 480
+       (con le 120 di prima, a 7 e a 8 la migliore sfuggiva circa una volta su sette) */
+    const top = cands.slice(0, 480).map((c) => exactSplit(P, c.mask, format, aff));
     top.forEach((r) => { r.k = r.cost + rng() * 1e-7; });
     top.sort((x, y) => x.k - y.k);
     const best = top[0].cost;
@@ -2098,7 +2124,7 @@ const Engine = (() => {
     clamp, mean, num, okv, matchTime,
     cleanVoci, legacyVoci, hasNewSelf, withLate, missingSelfVoci, LATE_VOCI, areasOf, outfieldOf, ovrOf, computeRatings,
     WINDOW, RATE_MAX, RATE_DAYS, CMP_CAP, entriesOf,
-    partOf, roleMalus, injMalus, valueIn, natural,
+    partOf, roleMalus, injMalus, roleBase, teamAreas, valueIn, natural,
     modulesFor, moduleLabel, bestLineup, fitLineup, evalTeam, evaluate, suggestTeams, bestSwap, balanceLabel,
     mvpResult, hasResult, matchStats, accuracy,
     affinityFrom, affBonusOf, affLevel, AFF_BONUS,
@@ -2980,6 +3006,8 @@ const { h, render, createContext } = preact;
 const { useState, useEffect, useMemo, useRef, useContext } = preactHooks;
 const html = htm.bind(h);
 const { ROLES, ROLE_NAME, FORMATS, AREAS, OUT_AREAS, VOCI, CFG } = Engine;
+/* quanto conta l'area del reparto, a parole ("il doppio") */
+const REP_TXT = { 2: 'il doppio', 3: 'il triplo', 4: 'il quadruplo' }[CFG.REPARTO] || CFG.REPARTO + ' volte';
 const ROLE_SHORT = { POR: 'Portiere', DIF: 'Difensore', CEN: 'Centrocampo', ATT: 'Attaccante' };
 const Ctx = createContext(null);
 
@@ -11740,8 +11768,8 @@ function HelpSheet({ onClose }) {
     <div class="stack">
       <div><h3 class="h3">Le stats</h3><p class="muted">Ogni giocatore ha ${VOCI.length} voci da 1 a 99, divise in ${AREAS.length} aree: ${joinE(AREAS.map((a) => a.name + ' (' + a.voci.map((x) => x.name.toLowerCase()).join(', ') + ')'))}. Riferimenti: ${SCALE_HINT}.</p></div>
       <div><h3 class="h3">Da dove vengono i numeri</h3><p class="muted">Ogni voce è la media delle ultime ${Engine.WINDOW} valutazioni ricevute, autovalutazione compresa: la tua conta come quella di chiunque altro, ed essendo la più vecchia è la prima a uscire. Ogni area è la media delle sue voci. L'autovalutazione si fa una volta sola, all'iscrizione; le valutazioni agli altri le dai quando vuoi e ognuna si aggiunge alle altre, ma lo stesso giocatore lo puoi valutare al massimo ${Engine.RATE_MAX} volte in ${Engine.RATE_DAYS} giorni. Se un'area non la sai giudicare, la salti. A tutto questo si aggiungono i confronti (vedi Confronto).</p></div>
-      <div><h3 class="h3">Il punteggio</h3><p class="muted">Per chi gioca fuori dai pali è la media di Attacco, Centrocampo, Difesa e Generale: la Porta non conta. Per i portieri conta solo la Porta. Il colore della card segue il punteggio: bronzo sotto 65, argento da 65 a 74, oro da 75.</p></div>
-      <div><h3 class="h3">Squadre e ruoli</h3><p class="muted">I ruoli li assegna l'app, insieme alle squadre. Prova tutte le divisioni possibili e per ogni squadra sceglie il modulo che le va meglio (a 5: 1-1-2-1, 1-2-1-1, 1-2-2; a 7: 1-2-3-1, 1-3-1-2, 1-3-2-1, dove 1-2-1-2-1 conta come 1-2-3-1; a 8: 1-3-3-1, 1-2-3-2, 1-3-2-2, 1-2-4-1). Nel tuo ruolo o nel secondo vali il tuo punteggio. In un ruolo vicino (difesa e centrocampo, centrocampo e attacco) vali ${CFG.MALUS_NEAR} punti in meno, in un ruolo lontano (difesa e attacco) ${CFG.MALUS_FAR} in meno. Se vai in porta senza essere portiere conta la tua Porta; un portiere fuori dai pali vale la media delle sue aree di movimento. Con il cerotto conti ${CFG.INJ_LIGHT} punti in meno, con la croce rossa ${CFG.INJ_BAD}. L'app cerca le squadre più vicine nel valore medio e area per area, tenendo fuori ruolo meno gente possibile. Puoi sempre cambiare ruoli e giocatori a mano, nel Campo.</p></div>
+      <div><h3 class="h3">Il punteggio</h3><p class="muted">Per chi gioca fuori dai pali è la media di Attacco, Centrocampo, Difesa e Generale: la Porta non conta. Per i portieri conta solo la Porta. Il colore della card segue il punteggio: bronzo sotto 65, argento da 65 a 74, oro da 75. In partita il valore dipende anche dal ruolo in cui giochi (vedi Squadre e ruoli).</p></div>
+      <div><h3 class="h3">Squadre e ruoli</h3><p class="muted">I ruoli li assegna l'app, insieme alle squadre. Prova tutte le divisioni possibili e per ogni squadra sceglie il modulo che le va meglio (a 5: 1-1-2-1, 1-2-1-1, 1-2-2; a 7: 1-2-3-1, 1-3-1-2, 1-3-2-1, dove 1-2-1-2-1 conta come 1-2-3-1; a 8: 1-3-3-1, 1-2-3-2, 1-3-2-2, 1-2-4-1). In campo l'area del tuo reparto conta ${REP_TXT}: da attaccante vali (${CFG.REPARTO} × Attacco + Centrocampo + Difesa + Generale) / ${CFG.REPARTO + 3}, da difensore conta ${REP_TXT} la Difesa, da centrocampista il Centrocampo. Così chi è forte in attacco ma debole in difesa vale meno se lo metti dietro. Nel tuo ruolo o nel secondo non perdi altro; in un ruolo vicino (difesa e centrocampo, centrocampo e attacco) perdi altri ${CFG.MALUS_NEAR} punti, in uno lontano (difesa e attacco) ${CFG.MALUS_FAR}. In porta conta la Porta, anche se non sei portiere; un portiere fuori dai pali vale come gli altri nel reparto in cui gioca. Con il cerotto conti ${CFG.INJ_LIGHT} punti in meno, con la croce rossa ${CFG.INJ_BAD}. Il valore medio di una squadra è la media dei valori di chi gioca. Nel confronto, la riga Attacco è la media dell'Attacco di chi gioca fuori dai pali, con gli attaccanti che contano ${REP_TXT}; lo stesso per Centrocampo (i centrocampisti) e Difesa (i difensori). L'app cerca le squadre più vicine nel valore medio e area per area, tenendo fuori ruolo meno gente possibile. Puoi sempre cambiare ruoli e giocatori a mano, nel Campo.</p></div>
       <div><h3 class="h3">Il Campo</h3><p class="muted">Prima della partita le squadre si fanno e si sistemano nella scheda Campo. Tieni premuto un giocatore e trascinalo su un altro: si scambiano posto, ruolo e, se sono in squadre diverse, squadra; su un posto libero si sposta lì. Se lo tieni premuto senza trascinarlo resta selezionato: poi tocchi dove deve andare. Toccando il modulo di una squadra, o con Formazioni, scegli la formazione: l'app mette ognuno nel ruolo in cui rende di più. Dopo ogni modifica c'è Annulla per qualche secondo. Nella tendina Panchina, sul bordo destro del campo, ci sono la lista d'attesa e chi non è ancora in squadra. Chi organizza fa entrare uno della lista d'attesa al posto di chi è in campo: chi esce prende il suo numero in lista d'attesa e a tutti e due arriva una notifica. Con le squadre scelte dai giocatori, spostare qualcuno da una squadra all'altra lo fa chi organizza. Chiusa la partita, il Campo mostra la formazione che ha giocato. Con il tastino in alto a sinistra sul campo ne cambi lo stile (erba a scacchi, sintetico, terra, spiaggia, neve, sull'acqua, Marte, palazzetto, lavagna, calcio balilla, sotto i riflettori): vale per il tuo telefono, anche nella locandina che condividi.</p></div>
       <div><h3 class="h3">Sondaggio sul giorno</h3><p class="muted">Se il giorno non è fissato, chi crea la partita propone qualche giorno e ognuno segna, col cerchio, tutti quelli in cui è libero. Il primo giorno che arriva al numero per due squadre piene fa nascere la partita da sola, con chi l'ha votato. Toccando un giorno vedi chi l'ha votato, in ordine di voto e con l'ora; quando la partita è fissata, nei suoi Dettagli resta «Com'è andato il sondaggio».</p></div>
       <div><h3 class="h3">Dopo la partita</h3><p class="muted">Chiunque può scrivere il risultato; marcatori, assist e autogol sono facoltativi. Tutti possono correggere fino all'inizio della partita successiva, poi solo gli amministratori del gruppo e dell'app. Chi ha giocato vota l'MVP: un voto, per chiunque tranne sé stesso, entro 24 ore. Il premio non tocca le stats. A chi ha giocato si apre una volta il riepilogo "Com'è andata?": risultato e marcatori (o il pulsante per chiudere la partita e scriverli), voto MVP e i giocatori della partita da valutare. Si può saltare tutto: finché non premi "Fatto" resta per qualche giorno tra le cose da fare.</p></div>
