@@ -122,6 +122,8 @@ Cosa cambia:
 
 Finché lo script non è eseguito: tutto funziona, ma chi va in panchina non riceve la notifica.
 
+Stili del campo (solo app, nessuno script): il tastino in alto a sinistra sul Campo (e Impostazioni → Aspetto) apre la scelta tra erba a strisce, erba a scacchi, sintetico, campetto in terra, spiaggia, neve, sull'acqua, Marte, palazzetto, lavagna, calcio balilla e sotto i riflettori. Vale per quel telefono (`sc-campo`); con "Riduci movimento" neve e onde stanno ferme. Locandina e risultato da condividere restano col prato a strisce.
+
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
 - I progetti gratuiti di Supabase vengono messi in pausa dopo qualche giorno senza uso: se succede, dal sito di Supabase si riattiva con un clic. Verifica le condizioni attuali del piano gratuito.
