@@ -1072,11 +1072,17 @@ body.in-chat { overflow: hidden; overscroll-behavior: none; }
 .pitch { display: block; width: 100%; height: auto; }
 .pt-bg { fill: #2c8a4b; }
 .pt-stripe { fill: #349a57; }
-.pt-goal { stroke: rgba(255, 255, 255, 0.9); stroke-width: 0.35; }
+.pt-gin { fill: rgba(0, 0, 0, 0.2); }
+.pt-net { fill: none; stroke: rgba(255, 255, 255, 0.5); stroke-width: 0.13; }
+.pt-nf { fill: none; stroke: rgba(255, 255, 255, 0.8); stroke-width: 0.26; stroke-linejoin: round; }
+.pt-bsh { fill: none; stroke: rgba(0, 0, 0, 0.3); stroke-width: 0.75; stroke-linecap: round; }
+.pt-bar { fill: none; stroke: #fff; stroke-width: 0.8; stroke-linecap: round; }
+.pt-post { fill: #fff; stroke: rgba(0, 0, 0, 0.4); stroke-width: 0.18; }
 .pt-l { fill: none; stroke: rgba(255, 255, 255, 0.88); stroke-width: 0.55; stroke-linejoin: round; }
 .pt-dot { fill: rgba(255, 255, 255, 0.9); }
 .pd { cursor: pointer; }
-.pd-shirt { stroke: rgba(0, 0, 0, 0.42); stroke-width: 0.9; stroke-linejoin: round; filter: drop-shadow(0 0.6px 0.6px rgba(0, 0, 0, 0.35)); }
+.pd-shirt { stroke: rgba(0, 0, 0, 0.42); stroke-width: 0.9; stroke-linejoin: round; }
+.pd-sh { fill: rgba(0, 0, 0, 0.26); }
 .pd-i { font: 700 3.7px/1 var(--f-body); }
 .pd-big { font: 800 5.6px/1 var(--f-display); letter-spacing: -0.02em; }
 .pd-e { font-size: 4.6px; }
@@ -1166,18 +1172,31 @@ body.in-chat { overflow: hidden; overscroll-behavior: none; }
 .pt-static .pt-snow circle, .pt-static .pt-waves { animation: none; }
 .pt-chalk { fill: none; stroke: rgba(240, 240, 232, 0.42); stroke-width: 0.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2.2 1.1; }
 .st-terra .pt-l { stroke: rgba(255, 246, 228, 0.78); stroke-width: 0.6; }
-.st-spiaggia .pt-l, .st-spiaggia .pt-goal { stroke: #2f74c4; }
+.st-spiaggia .pt-l, .st-spiaggia .pt-bar { stroke: #2f74c4; }
+.st-spiaggia .pt-post { fill: #2f74c4; }
+.st-spiaggia .pt-net, .st-spiaggia .pt-nf { stroke: rgba(47, 116, 196, 0.5); }
+.st-spiaggia .pt-gin { fill: rgba(120, 85, 40, 0.14); }
 .st-spiaggia .pt-l { stroke-width: 0.7; }
 .st-spiaggia .pt-dot { fill: #2f74c4; }
 .st-neve .pt-l { stroke: #d33a4b; stroke-width: 0.6; }
 .st-neve .pt-dot { fill: #d33a4b; }
-.st-neve .pt-goal { stroke: #8fa1b3; }
+.st-neve .pt-bar { stroke: #d33a4b; }
+.st-neve .pt-post { fill: #d33a4b; stroke: rgba(90, 20, 28, 0.5); }
+.st-neve .pt-net, .st-neve .pt-nf { stroke: rgba(60, 85, 115, 0.5); }
+.st-neve .pt-gin { fill: rgba(60, 85, 115, 0.12); }
+.st-neve .pd-sh { fill: rgba(40, 70, 110, 0.22); }
 .st-marte .pt-l { stroke: rgba(255, 226, 196, 0.82); }
 .st-marte .pt-dot { fill: rgba(255, 226, 196, 0.85); }
-.st-palazzetto .pt-l, .st-palazzetto .pt-goal { stroke: #183c8c; }
+.st-palazzetto .pt-l, .st-palazzetto .pt-bar { stroke: #183c8c; }
+.st-palazzetto .pt-post { fill: #183c8c; }
+.st-palazzetto .pt-net, .st-palazzetto .pt-nf { stroke: rgba(24, 60, 140, 0.45); }
+.st-palazzetto .pt-gin { fill: rgba(90, 50, 15, 0.16); }
 .st-palazzetto .pt-l { stroke-width: 0.6; }
 .st-palazzetto .pt-dot { fill: #183c8c; }
 .st-lavagna .pt-l { stroke: rgba(244, 244, 236, 0.86); stroke-dasharray: 5 0.35 2.6 0.3; stroke-linecap: round; }
+.st-lavagna .pt-bar { stroke: rgba(244, 244, 236, 0.9); }
+.st-lavagna .pt-post { fill: rgba(244, 244, 236, 0.9); stroke: none; }
+.st-lavagna .pt-net, .st-lavagna .pt-nf { stroke: rgba(240, 240, 232, 0.38); }
 /* sui campi chiari posti liberi e anelli scuri */
 .st-neve .pslot path, .st-spiaggia .pslot path, .st-palazzetto .pslot path { fill: rgba(20, 40, 60, 0.08); stroke: rgba(20, 40, 60, 0.6); }
 .st-neve .pslot text, .st-spiaggia .pslot text, .st-palazzetto .pslot text { fill: rgba(20, 40, 60, 0.78); }
@@ -1256,6 +1275,16 @@ button.pc-ovr { appearance: none; border: 0; background: none; padding: 0; margi
 .fifa.silver { --ink: #1c2125; --line: rgba(28, 33, 37, 0.3); }
 .fifa.bronze { --ink: #2e1c0d; --line: rgba(46, 28, 13, 0.32); }
 .fifa.mvpc { --ink: #f0dca0; --line: rgba(240, 220, 160, 0.35); }
+/* rilievo da moneta coniata: luce in alto a sinistra (emb-hi), ombra in basso a destra (emb-lo) */
+.fifa { --emb-hi: rgba(255, 246, 214, 0.7); --emb-lo: rgba(60, 42, 10, 0.38); }
+.fifa.silver { --emb-hi: rgba(255, 255, 255, 0.85); --emb-lo: rgba(40, 48, 56, 0.35); }
+.fifa.bronze { --emb-hi: rgba(255, 236, 214, 0.65); --emb-lo: rgba(70, 38, 16, 0.4); }
+.fifa.mvpc { --emb-hi: rgba(255, 240, 200, 0.22); --emb-lo: rgba(0, 0, 0, 0.55); }
+.fifa-ovr b { text-shadow: -1px -1px 0 var(--emb-hi), 1.5px 2px 0 var(--emb-lo), 2px 4px 6px rgba(0, 0, 0, 0.16); }
+.fifa-ovr span, .fifa-name, .fifa-stats .fs b, .fifa-bh b, .fv-h b { text-shadow: -0.6px -0.6px 0 var(--emb-hi), 1px 1.2px 0 var(--emb-lo); }
+.fifa-no { box-shadow: inset 1px 1px 0 var(--emb-lo), 1px 1px 0 var(--emb-hi); }
+.fifa-stats { box-shadow: inset 0 1px 0 var(--emb-hi); }
+.fifa-bh { box-shadow: 0 1px 0 var(--emb-hi); }
 .fifa > * { position: relative; z-index: 1; }
 /* il retro non deve trasparire: anche i figli nascondono il lato girato (servono per ombre e animazioni) */
 .fifa-flip .fifa > *, .fifa-flip .fifa::after { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
@@ -1268,7 +1297,7 @@ button.pc-ovr { appearance: none; border: 0; background: none; padding: 0; margi
 .fifa-ovr span { font: 800 clamp(13px, 4.2vw, 17px)/1.1 var(--f-body); letter-spacing: 0.08em; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .fifa-ovr em { font-style: normal; font-size: 0.72em; opacity: 0.7; }
 .fifa-ovr em.fifa-pf { font-size: 0.62em; opacity: 0.6; letter-spacing: 0.1em; }
-.fifa-ph { aspect-ratio: 1; width: 100%; max-width: 190px; justify-self: end; border-radius: 50% 50% 12% 12%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 2px var(--line); }
+.fifa-ph { aspect-ratio: 1; width: 100%; max-width: 190px; justify-self: end; border-radius: 50% 50% 12% 12%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 2px var(--line), inset 3px 4px 8px rgba(0, 0, 0, 0.3), inset -1px -1px 0 var(--emb-hi); }
 .fifa-ph img { width: 100%; height: 100%; object-fit: cover; }
 .fifa-ic { font-size: clamp(54px, 20vw, 92px); line-height: 1; font-weight: 800; }
 .fifa-name { position: relative; margin-top: 5%; font: 800 clamp(20px, 7vw, 30px)/1.05 var(--f-display); letter-spacing: 0.04em; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3743,7 +3772,10 @@ const canOrganize = (m, C) => !!(C.canWrite && m && (m.by === C.uid || C.isGroup
 
 function Shirt({ c, s }) {
   const size = s || 20;
-  return html`<svg class="shirt" width=${size} height=${size} viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 3 3.6 5.6 1.8 10.2l3.2 1.6V21h14v-9.2l3.2-1.6-1.8-4.6L15.8 3c-.7 1.7-2.1 2.7-3.8 2.7S8.9 4.7 8.2 3Z" fill=${c ? c.hex : 'var(--surface-2)'} stroke="var(--ink-3)" stroke-width="1.1" stroke-linejoin="round" /></svg>`;
+  return html`<svg class="shirt" width=${size} height=${size} viewBox="0 0 24 24" aria-hidden="true">
+    ${c ? html`<${KitParts} c=${c} />` : html`<path d=${SHIRT_D} fill="var(--surface-2)" />`}
+    <path d=${SHIRT_D} fill="none" stroke="var(--ink-3)" stroke-width="1.1" stroke-linejoin="round" />
+  </svg>`;
 }
 function TeamTag({ m, side, big }) {
   const c = teamColor(m, side);
@@ -3976,7 +4008,39 @@ const PITCH_C = { a: { hex: '#2f6fdb', ink: '#fff' }, b: { hex: '#d9483b', ink: 
 const pitchColor = (m, side) => teamColor(m, side) || PITCH_C[side];
 const SHIRT_SHIFT = -12 * SHIRT_K;
 
-/* un giocatore in maglia, disegnato attorno a (0, 0): al centro la foto o l'icona; senza nessuna delle due il numero, o le iniziali */
+/* la maglia nel dettaglio, nello stesso quadrato 24×24 della sagoma: maniche nel colore del bordino, polsini nel colore
+   della squadra, colletto, righe tono su tono, pieghe e una luce da sinistra in alto */
+const KIT_SLEEVES = 'M5.9 4.3 3.6 5.6 1.8 10.2 5 11.8ZM18.1 4.3 20.4 5.6 22.2 10.2 19 11.8Z';
+const KIT_CUFFS = 'M1.8 10.2 5 11.8 5.14 10.64 2.2 9.17ZM22.2 10.2 19 11.8 18.86 10.64 21.8 9.17Z';
+const KIT_COLLAR = 'M8.2 3C8.9 4.7 10.3 5.7 12 5.7S15.1 4.7 15.8 3L16.9 3.62C16 5.6 14.2 6.9 12 6.9S8 5.6 7.1 3.62Z';
+const KIT_STRIPES = [5.7, 8.5, 11.3, 14.1, 16.9].map((x) => 'M' + x + ' 3h1.4v18h-1.4Z').join('');
+const KIT_FOLDS = 'M7.6 14.4c.5 2 .6 3.9.3 6M16.6 13.8c-.5 2.2-.4 4.3-.1 6.6M11.2 16.8c.4 1.2.5 2.4.4 3.6';
+/* luminosità di un colore (0 nero, 1 bianco): le maglie chiare hanno bordini scuri e righe più scure */
+const lumOf = (hex) => {
+  const n = parseInt(String(hex || '').slice(1, 7), 16);
+  return isFinite(n) ? (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 : 0.5;
+};
+const kitLight = (c) => lumOf(c && c.hex) > 0.62;
+const kitTrim = (c) => (c && c.trim) || (kitLight(c) ? '#262b2f' : '#f4f4f1');
+/* i pezzi della maglia (nel quadrato 24×24); detail: righe e pieghe (servono clip e shade, definiti nell'SVG) */
+function KitParts({ c, detail, clip, shade }) {
+  const trim = kitTrim(c), light = kitLight(c);
+  return html`<g>
+    <path d=${SHIRT_D} fill=${c.hex} />
+    ${detail && clip && html`<path d=${KIT_STRIPES} fill=${light ? 'rgba(0,0,0,0.055)' : 'rgba(255,255,255,0.085)'} clip-path=${'url(#' + clip + ')'} />`}
+    <path d=${KIT_SLEEVES} fill=${trim} />
+    <path d=${KIT_CUFFS} fill=${c.hex} />
+    <path d=${KIT_COLLAR} fill=${trim} />
+    ${detail && html`<path d=${KIT_FOLDS} fill="none" stroke=${light ? 'rgba(0,0,0,0.13)' : 'rgba(0,0,0,0.22)'} stroke-width="0.5" stroke-linecap="round" />`}
+    ${shade && html`<path d=${SHIRT_D} fill=${'url(#' + shade + ')'} />`}
+  </g>`;
+}
+/* righe e luce della maglia: una volta sola per ogni SVG che ha giocatori (anche il fantasma usa queste, per id) */
+const KitDefs = () => html`<clipPath id="kit-clip"><path d=${SHIRT_D} /></clipPath>
+  <linearGradient id="kit-shade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.32" /><stop offset="0.42" stop-color="#fff" stop-opacity="0" /><stop offset="1" stop-color="#000" stop-opacity="0.3" /></linearGradient>`;
+
+/* un giocatore in maglia, disegnato attorno a (0, 0): al centro la foto o l'icona; senza nessuna delle due il numero, o le iniziali.
+   Sotto, l'ombra sul prato (la luce viene da sinistra in alto) */
 function ShirtMark({ x, c, cid }) {
   const photo = photoOf(x.p);
   const icon = !photo && x.p && x.p.icon;
@@ -3984,7 +4048,11 @@ function ShirtMark({ x, c, cid }) {
   const ini = x.guest ? (x.name || '?').slice(0, 1).toUpperCase() : initialsOf(x.p);
   const big = !photo && !icon && no != null;
   return html`<g>
-    <path d=${SHIRT_D} transform=${'translate(' + SHIRT_SHIFT + ' ' + SHIRT_SHIFT + ') scale(' + SHIRT_K + ')'} fill=${c.hex} class="pd-shirt" />
+    <ellipse cx="1.2" cy="5.9" rx="5" ry="1.3" class="pd-sh" />
+    <g transform=${'translate(' + SHIRT_SHIFT + ' ' + SHIRT_SHIFT + ') scale(' + SHIRT_K + ')'}>
+      <${KitParts} c=${c} detail clip="kit-clip" shade="kit-shade" />
+      <path d=${SHIRT_D} fill="none" class="pd-shirt" />
+    </g>
     ${photo ? html`<defs><clipPath id=${cid}><circle cx="0" cy="0.6" r="3.5" /></clipPath></defs>
       <circle cx="0" cy="0.6" r="3.95" fill="#fff" />
       <image href=${photo} x="-3.5" y="-2.9" width="7" height="7" clip-path=${'url(#' + cid + ')'} preserveAspectRatio="xMidYMid slice" />`
@@ -4018,23 +4086,23 @@ const campoFill = (id, k) => 'url(#' + id + '-' + k + ')';
 
 const CAMPI = [
   {
-    v: 'classico', l: 'Erba a strisce',
+    v: 'classico', l: 'Erba a strisce', grain: { k: 'grass', u: 8, o: 0.9 }, wear: 'erba',
     ground: () => html`<rect width="100" height="160" class="pt-bg" />${[0, 2, 4, 6, 8].map((k) => html`<rect key=${k} y=${k * 16} width="100" height="16" class="pt-stripe" />`)}`,
   },
   {
-    v: 'scacchi', l: 'Erba a scacchi',
+    v: 'scacchi', l: 'Erba a scacchi', grain: { k: 'grass', u: 8, o: 0.9 }, wear: 'erba',
     ground: (id) => html`<defs><pattern id=${id + '-chk'} width="20" height="20" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#38a35d" /><rect x="10" y="10" width="10" height="10" fill="#38a35d" /></pattern></defs>
       <rect width="100" height="160" fill="#2b874a" /><rect width="100" height="160" fill=${campoFill(id, 'chk')} />`,
   },
   {
-    v: 'sintetico', l: 'Sintetico',
+    v: 'sintetico', l: 'Sintetico', grain: { k: 'turf', u: 6, o: 1 }, wear: 'sintetico',
     ground: (id) => html`<defs><pattern id=${id + '-gr'} width="2.6" height="2.6" patternUnits="userSpaceOnUse"><circle cx="0.6" cy="0.8" r="0.2" fill="rgba(0,0,0,.3)" /><circle cx="1.9" cy="2" r="0.17" fill="rgba(0,0,0,.24)" /><circle cx="2.1" cy="0.5" r="0.12" fill="rgba(255,255,255,.22)" /></pattern></defs>
       <rect width="100" height="160" fill="#22a04b" />
       <rect x="20" width="20" height="160" fill="rgba(255,255,255,.05)" /><rect x="60" width="20" height="160" fill="rgba(255,255,255,.05)" />
       <rect width="100" height="160" fill=${campoFill(id, 'gr')} />`,
   },
   {
-    v: 'terra', l: 'Campetto in terra',
+    v: 'terra', l: 'Campetto in terra', grain: { k: 'dirt', u: 10, o: 1 },
     ground: (id) => html`<defs><pattern id=${id + '-gh'} width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="1" cy="1.2" r="0.26" fill="rgba(70,40,15,.35)" /><circle cx="3" cy="3.1" r="0.2" fill="rgba(255,235,200,.28)" /></pattern></defs>
       <rect width="100" height="160" fill="#a9733f" />
       <ellipse cx="50" cy="19" rx="24" ry="14" fill="#8c5a2d" opacity="0.55" />
@@ -4048,7 +4116,7 @@ const CAMPI = [
       <g stroke="#5d8b37" stroke-width="0.5" stroke-linecap="round" fill="none">${CAMPO_TUFTS.map(([x, y]) => html`<path key=${x + '-' + y} d=${'M' + x + ' ' + y + 'l-0.8 -1.8M' + x + ' ' + y + 'l0 -2.3M' + x + ' ' + y + 'l0.8 -1.8'} />`)}</g>`,
   },
   {
-    v: 'spiaggia', l: 'Spiaggia',
+    v: 'spiaggia', l: 'Spiaggia', grain: { k: 'sand', u: 7, o: 1 },
     ground: (id) => html`<defs>
         <pattern id=${id + '-rp'} width="14" height="6" patternUnits="userSpaceOnUse"><path d="M0 3q3.5-1.4 7 0t7 0" fill="none" stroke="rgba(150,108,48,.2)" stroke-width="0.6" /></pattern>
         <pattern id=${id + '-sd'} width="3" height="3" patternUnits="userSpaceOnUse"><circle cx="0.8" cy="0.6" r="0.18" fill="rgba(120,85,40,.25)" /><circle cx="2.2" cy="2.1" r="0.15" fill="rgba(255,255,255,.45)" /></pattern>
@@ -4062,7 +4130,7 @@ const CAMPI = [
       <path d="M88 132a1.4 1.4 0 0 1 2.8 0z" fill="#ffe3e8" stroke="#d9a0a8" stroke-width="0.2" />`,
   },
   {
-    v: 'neve', l: 'Neve',
+    v: 'neve', l: 'Neve', grain: { k: 'snow', u: 12, o: 1 },
     ground: (id) => html`<defs><radialGradient id=${id + '-sn'} cx="50%" cy="45%" r="70%"><stop offset="0%" stop-color="#ffffff" /><stop offset="100%" stop-color="#dce8f3" /></radialGradient></defs>
       <rect width="100" height="160" fill=${campoFill(id, 'sn')} />
       ${CAMPO_DRIFTS.map(([x, y, rx, ry, a]) => html`<ellipse key=${x + '-' + y} cx=${x} cy=${y} rx=${rx} ry=${ry} fill="#c9d9e8" opacity="0.45" transform=${'rotate(' + a + ' ' + x + ' ' + y + ')'} />`)}
@@ -4071,14 +4139,14 @@ const CAMPI = [
     top: () => html`<g class="pt-snow" aria-hidden="true">${CAMPO_FLAKES.map((f, k) => [0, 0.5].map((h) => html`<circle key=${k + '-' + h} cx=${f.x} cy=${f.y} r=${f.r} style=${'animation-duration:' + f.t + 's;animation-delay:' + (-(k % 7) - h * f.t).toFixed(2) + 's'} />`))}</g>`,
   },
   {
-    v: 'acqua', l: "Sull'acqua",
+    v: 'acqua', l: "Sull'acqua", grain: { k: 'water', u: 14, o: 0.85 },
     ground: (id) => html`<defs><linearGradient id=${id + '-wt'} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1c7dbf" /><stop offset="55%" stop-color="#238cca" /><stop offset="100%" stop-color="#176aa3" /></linearGradient></defs>
       <rect width="100" height="160" fill=${campoFill(id, 'wt')} />
       <g class="pt-waves" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="0.45">${Array.from({ length: 20 }, (_, k) => html`<path key=${k} d=${waveD(4 + k * 8)} transform=${k % 2 ? 'translate(-10 0)' : undefined} />`)}</g>`,
     top: () => html`<g aria-hidden="true">${CAMPO_BUOYS.map(([x, y]) => html`<g key=${x + '-' + y}><circle cx=${x} cy=${y} r="1.5" fill="#e8463c" /><path d=${'M' + (x - 1.5) + ' ' + y + 'h3'} stroke="#fff" stroke-width="0.7" /></g>`)}</g>`,
   },
   {
-    v: 'marte', l: 'Marte',
+    v: 'marte', l: 'Marte', grain: { k: 'dust', u: 9, o: 1 },
     ground: (id) => html`<defs>
         <radialGradient id=${id + '-mr'} cx="45%" cy="40%" r="80%"><stop offset="0%" stop-color="#cf6a37" /><stop offset="100%" stop-color="#95401d" /></radialGradient>
         <pattern id=${id + '-du'} width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="1.2" cy="1.4" r="0.3" fill="rgba(90,30,10,.3)" /><circle cx="3.6" cy="3.8" r="0.22" fill="rgba(255,200,160,.24)" /><circle cx="4.2" cy="1" r="0.15" fill="rgba(90,30,10,.25)" /></pattern>
@@ -4092,7 +4160,7 @@ const CAMPI = [
       ${CAMPO_ROCKS.map((d, k) => html`<path key=${k} d=${d} fill="#5b2812" />`)}`,
   },
   {
-    v: 'palazzetto', l: 'Palazzetto',
+    v: 'palazzetto', l: 'Palazzetto', grain: { k: 'wood', u: 12, o: 0.9 }, light: false,
     ground: (id) => html`<defs>
         <pattern id=${id + '-pq'} width="12" height="4" patternUnits="userSpaceOnUse"><rect width="12" height="2" fill="#ddae71" /><rect y="2" width="12" height="2" fill="#d29e60" /><path d="M0 0H12M0 2H12M0 0V2M6 2V4" fill="none" stroke="rgba(110,60,20,.3)" stroke-width="0.14" /></pattern>
         <linearGradient id=${id + '-gl'} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity="0.16" /><stop offset="50%" stop-color="#fff" stop-opacity="0" /><stop offset="100%" stop-color="#fff" stop-opacity="0.1" /></linearGradient>
@@ -4104,7 +4172,7 @@ const CAMPI = [
       <rect width="100" height="160" fill=${campoFill(id, 'gl')} />`,
   },
   {
-    v: 'lavagna', l: 'Lavagna',
+    v: 'lavagna', l: 'Lavagna', grain: { k: 'chalk', u: 14, o: 1 },
     ground: (id) => html`<defs><radialGradient id=${id + '-lv'} cx="50%" cy="50%" r="72%"><stop offset="0%" stop-color="#2b4c40" /><stop offset="100%" stop-color="#1a2f28" /></radialGradient></defs>
       <rect width="100" height="160" fill=${campoFill(id, 'lv')} />
       ${CAMPO_SMUDGES.map(([x, y, rx, ry, a, o], k) => html`<ellipse key=${k} cx=${x} cy=${y} rx=${rx} ry=${ry} fill="#fff" opacity=${o} transform=${'rotate(' + a + ' ' + x + ' ' + y + ')'} />`)}
@@ -4118,9 +4186,8 @@ const CAMPI = [
     </g>`,
   },
   {
-    v: 'balilla', l: 'Calcio balilla',
+    v: 'balilla', l: 'Calcio balilla', grain: { k: 'felt', u: 6, o: 1 },
     ground: (id) => html`<defs>
-        <linearGradient id=${id + '-rod'} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f6f8fa" /><stop offset="45%" stop-color="#a9b1b9" /><stop offset="100%" stop-color="#58616a" /></linearGradient>
         <pattern id=${id + '-fl'} width="2" height="2" patternUnits="userSpaceOnUse"><circle cx="0.5" cy="0.5" r="0.12" fill="rgba(255,255,255,.08)" /><circle cx="1.5" cy="1.5" r="0.12" fill="rgba(0,0,0,.1)" /></pattern>
       </defs>
       <rect width="100" height="160" fill="#2f8b3f" />
@@ -4128,14 +4195,15 @@ const CAMPI = [
       <path d="M0 0H100V160H0ZM2.4 2.4V157.6H97.6V2.4Z" fill-rule="evenodd" fill="#8b5a2b" />
       <path d="M0 1.2H100M0 158.8H100M1.2 0V160M98.8 0V160" stroke="rgba(60,30,10,.35)" stroke-width="0.3" />`,
     /* le stecche passano per le righe dei giocatori, che ci restano infilzati come gli omini */
-    top: (id) => html`<g aria-hidden="true">${[...PITCH_Y.b, ...PITCH_Y.a].map((y) => html`<g key=${y}>
+    top: (id) => html`<defs><linearGradient id=${id + '-rod'} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f6f8fa" /><stop offset="45%" stop-color="#a9b1b9" /><stop offset="100%" stop-color="#58616a" /></linearGradient></defs>
+      <g aria-hidden="true">${[...PITCH_Y.b, ...PITCH_Y.a].map((y) => html`<g key=${y}>
         <rect x="-1" y=${y + 0.1} width="102" height="1.1" fill=${campoFill(id, 'rod')} />
         <rect x="3.3" y=${y - 0.6} width="1.3" height="2.5" rx="0.4" fill="#1d1d1d" />
         <rect x="95.4" y=${y - 0.6} width="1.3" height="2.5" rx="0.4" fill="#1d1d1d" />
       </g>`)}</g>`,
   },
   {
-    v: 'notturno', l: 'Sotto i riflettori',
+    v: 'notturno', l: 'Sotto i riflettori', grain: { k: 'grass', u: 8, o: 0.55 }, wear: 'notte', light: false,
     ground: (id) => html`<defs><radialGradient id=${id + '-fo'} cx="0.5" cy="0.5" r="0.5"><stop offset="0%" stop-color="#fffbe0" stop-opacity="0.6" /><stop offset="40%" stop-color="#fff6c8" stop-opacity="0.24" /><stop offset="100%" stop-color="#fff6c8" stop-opacity="0" /></radialGradient></defs>
       <rect width="100" height="160" fill="#0f3a20" />
       ${[0, 2, 4, 6, 8].map((k) => html`<rect key=${k} y=${k * 16} width="100" height="16" fill="#15472a" />`)}
@@ -4146,14 +4214,222 @@ const CAMPI = [
 const CAMPO_BY = Object.fromEntries(CAMPI.map((c) => [c.v, c]));
 const campoOf = (v) => CAMPO_BY[v] || CAMPI[0];
 
+/* ---------- la grana del terreno: fili d'erba, granuli di gomma, sabbia, neve che luccica, venature del parquet…
+   Ogni grana è una piastrella di 128×128 disegnata dal codice la prima volta che serve (sempre uguale: i numeri "a caso"
+   partono da un seme fisso) e poi ripetuta su tutto il campo. Nessuna immagine da scaricare. */
+const GRAIN_PX = 128;
+const GRAIN = {};
+const rgba = (r, g, b, a) => 'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(3) + ')';
+const GRAIN_DRAW = {
+  grass(g, S, rnd, at) {
+    g.lineCap = 'round';
+    for (let i = 0; i < 760; i++) {
+      const x = rnd() * S, y = rnd() * S, len = 5 + rnd() * 8, a = (rnd() - 0.5) * 0.7;
+      g.strokeStyle = rnd() < 0.58 ? rgba(8, 48, 18, 0.12 + rnd() * 0.16) : rgba(205, 255, 180, 0.07 + rnd() * 0.12);
+      g.lineWidth = 1 + rnd() * 1.2;
+      at(x, y, len, () => { g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.sin(a) * len, y - Math.cos(a) * len); g.stroke(); });
+    }
+  },
+  turf(g, S, rnd, at) {
+    g.lineCap = 'round';
+    for (let i = 0; i < 560; i++) {
+      const x = rnd() * S, y = rnd() * S, len = 4 + rnd() * 4, a = (rnd() - 0.5) * 0.5;
+      g.strokeStyle = rnd() < 0.55 ? rgba(0, 60, 20, 0.14 + rnd() * 0.12) : rgba(220, 255, 210, 0.1 + rnd() * 0.1);
+      g.lineWidth = 1.2;
+      at(x, y, len, () => { g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.sin(a) * len, y - Math.cos(a) * len); g.stroke(); });
+    }
+    for (let i = 0; i < 150; i++) {
+      const x = rnd() * S, y = rnd() * S, r = 0.9 + rnd() * 1.1;
+      g.fillStyle = rgba(18, 18, 18, 0.35 + rnd() * 0.2);
+      at(x, y, r, () => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); });
+    }
+  },
+  dirt(g, S, rnd, at) {
+    for (let i = 0; i < 1300; i++) {
+      const x = rnd() * S, y = rnd() * S, r = 0.5 + rnd() * 1.2;
+      g.fillStyle = rnd() < 0.6 ? rgba(70, 38, 14, 0.14 + rnd() * 0.2) : rgba(255, 232, 196, 0.1 + rnd() * 0.14);
+      at(x, y, r, () => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); });
+    }
+    for (let i = 0; i < 26; i++) {
+      const x = rnd() * S, y = rnd() * S, rx = 1.6 + rnd() * 1.8, ry = rx * (0.55 + rnd() * 0.3), a = rnd() * Math.PI;
+      at(x, y, rx + 1, () => {
+        g.fillStyle = 'rgba(105,72,44,0.5)'; g.beginPath(); g.ellipse(x, y, rx, ry, a, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgba(255,240,215,0.45)'; g.beginPath(); g.ellipse(x - rx * 0.3, y - ry * 0.35, rx * 0.4, ry * 0.35, a, 0, Math.PI * 2); g.fill();
+      });
+    }
+  },
+  sand(g, S, rnd, at) {
+    for (let i = 0; i < 2300; i++) {
+      const x = rnd() * S, y = rnd() * S, r = 0.4 + rnd() * 0.7;
+      g.fillStyle = rnd() < 0.55 ? rgba(150, 105, 50, 0.12 + rnd() * 0.18) : rgba(255, 255, 240, 0.25 + rnd() * 0.25);
+      at(x, y, r, () => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); });
+    }
+  },
+  snow(g, S, rnd, at) {
+    for (let i = 0; i < 520; i++) {
+      const x = rnd() * S, y = rnd() * S, r = 0.6 + rnd() * 1;
+      g.fillStyle = rgba(120, 150, 190, 0.06 + rnd() * 0.1);
+      at(x, y, r, () => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); });
+    }
+    for (let i = 0; i < 70; i++) {
+      const x = rnd() * S, y = rnd() * S, r = 0.5 + rnd() * 0.6;
+      g.fillStyle = rgba(255, 255, 255, 0.7 + rnd() * 0.3);
+      at(x, y, r, () => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); });
+    }
+    g.strokeStyle = 'rgba(255,255,255,0.9)'; g.lineWidth = 0.8; g.lineCap = 'round';
+    for (let i = 0; i < 10; i++) {
+      const x = rnd() * S, y = rnd() * S, l = 1.5 + rnd() * 1.2;
+      at(x, y, l, () => { g.beginPath(); g.moveTo(x - l, y); g.lineTo(x + l, y); g.moveTo(x, y - l); g.lineTo(x, y + l); g.stroke(); });
+    }
+  },
+  water(g, S, rnd, at) {
+    g.lineCap = 'round';
+    for (let i = 0; i < 50; i++) {
+      const x = rnd() * S, y = rnd() * S, l = 2 + rnd() * 4;
+      g.strokeStyle = rgba(255, 255, 255, 0.18 + rnd() * 0.22); g.lineWidth = 1;
+      at(x, y, l, () => { g.beginPath(); g.moveTo(x - l, y); g.lineTo(x + l, y); g.stroke(); });
+    }
+    for (let i = 0; i < 40; i++) {
+      const x = rnd() * S, y = rnd() * S, r = 3 + rnd() * 4;
+      g.strokeStyle = 'rgba(0,40,80,0.12)'; g.lineWidth = 1.2;
+      at(x, y, r, () => { g.beginPath(); g.arc(x, y, r, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); });
+    }
+  },
+  dust(g, S, rnd, at) {
+    for (let i = 0; i < 1500; i++) {
+      const x = rnd() * S, y = rnd() * S, r = 0.5 + rnd() * 1.1;
+      g.fillStyle = rnd() < 0.6 ? rgba(90, 28, 8, 0.12 + rnd() * 0.2) : rgba(255, 205, 170, 0.1 + rnd() * 0.12);
+      at(x, y, r, () => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); });
+    }
+    for (let i = 0; i < 18; i++) {
+      const x = rnd() * S, y = rnd() * S, rx = 1.2 + rnd() * 1.4, a = rnd() * Math.PI;
+      g.fillStyle = 'rgba(80,25,8,0.45)';
+      at(x, y, rx + 1, () => { g.beginPath(); g.ellipse(x, y, rx, rx * 0.7, a, 0, Math.PI * 2); g.fill(); });
+    }
+  },
+  wood(g, S, rnd, at) {
+    g.lineCap = 'round';
+    for (let i = 0; i < 90; i++) {
+      const x = rnd() * S, y = rnd() * S, l = 30 + rnd() * 60, b = (rnd() - 0.5) * 3;
+      g.strokeStyle = rnd() < 0.65 ? rgba(110, 60, 20, 0.06 + rnd() * 0.1) : rgba(255, 235, 205, 0.06 + rnd() * 0.06);
+      g.lineWidth = 0.6 + rnd();
+      at(x, y, l, () => { g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + l / 2, y + b, x + l, y); g.stroke(); });
+    }
+    for (let i = 0; i < 3; i++) {
+      const x = rnd() * S, y = rnd() * S;
+      g.strokeStyle = 'rgba(110,60,20,0.16)'; g.lineWidth = 0.8;
+      at(x, y, 6, () => { g.beginPath(); g.ellipse(x, y, 5, 1.6, 0, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.ellipse(x, y, 2.4, 0.8, 0, 0, Math.PI * 2); g.stroke(); });
+    }
+  },
+  chalk(g, S, rnd, at) {
+    g.lineCap = 'round';
+    for (let i = 0; i < 10; i++) {
+      const x = rnd() * S, y = rnd() * S, l = 20 + rnd() * 30, b = (rnd() - 0.5) * 20;
+      g.strokeStyle = 'rgba(255,255,255,0.03)'; g.lineWidth = 10 + rnd() * 8;
+      at(x, y, l + 10, () => { g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + l / 2, y + b, x + l, y + b / 3); g.stroke(); });
+    }
+    for (let i = 0; i < 900; i++) {
+      const x = rnd() * S, y = rnd() * S, r = 0.5 + rnd() * 0.9;
+      g.fillStyle = rgba(240, 240, 230, 0.04 + rnd() * 0.12);
+      at(x, y, r, () => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); });
+    }
+  },
+  felt(g, S, rnd, at) {
+    g.lineCap = 'round'; g.lineWidth = 0.7;
+    for (let i = 0; i < 1500; i++) {
+      const x = rnd() * S, y = rnd() * S, l = 1 + rnd() * 1.5, a = rnd() * Math.PI;
+      g.strokeStyle = rnd() < 0.5 ? rgba(255, 255, 255, 0.05 + rnd() * 0.07) : rgba(0, 0, 0, 0.06 + rnd() * 0.08);
+      at(x, y, l, () => { g.beginPath(); g.moveTo(x - Math.cos(a) * l, y - Math.sin(a) * l); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); });
+    }
+  },
+};
+/* la piastrella di una grana: { cv, url }, o null se il telefono non sa disegnarla */
+function grainOf(kind) {
+  if (GRAIN[kind] !== undefined) return GRAIN[kind];
+  let out = null;
+  try {
+    const draw = GRAIN_DRAW[kind];
+    const cv = draw && document.createElement('canvas');
+    const g = cv && cv.getContext('2d');
+    if (g) {
+      const S = GRAIN_PX;
+      cv.width = cv.height = S;
+      let seed = 0;
+      for (const ch of kind) seed = (Math.imul(seed, 31) + ch.charCodeAt(0)) | 0;
+      const rnd = () => {
+        seed = (seed + 0x6d2b79f5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+      /* chi tocca un bordo si disegna anche dall'altra parte: le piastrelle si attaccano senza giunte */
+      const at = (x, y, r, fn) => {
+        const xs = [0], ys = [0];
+        if (x < r) xs.push(S); if (x > S - r) xs.push(-S);
+        if (y < r) ys.push(S); if (y > S - r) ys.push(-S);
+        xs.forEach((dx) => ys.forEach((dy) => { g.save(); g.translate(dx, dy); fn(); g.restore(); }));
+      };
+      draw(g, S, rnd, at);
+      out = { cv, url: cv.toDataURL('image/png') };
+    }
+  } catch (e) { out = null; }
+  GRAIN[kind] = out;
+  return out;
+}
+
+/* zone consumate (davanti alle porte, sul dischetto, a centrocampo e lungo le fasce): [x, y, rx, ry, opacità] */
+const PITCH_WEAR = [[50, 7.4, 10.5, 5.6, 1], [50, 152.6, 10.5, 5.6, 1], [50, 4.6, 7, 2.2, 1], [50, 155.4, 7, 2.2, 1],
+  [50, 16.2, 3.4, 2.4, 0.75], [50, 143.8, 3.4, 2.4, 0.75], [50, 80, 8, 4.6, 0.6], [26, 54, 7, 3.2, 0.4], [74, 106, 7, 3.2, 0.4]];
+const WEAR_C = { erba: { c: '#6b5634', o: 0.85 }, notte: { c: '#3a301c', o: 0.8 }, sintetico: { c: '#d9eed2', o: 0.5 } };
+/* le porte viste dall'alto: la rete si stringe verso il fondo, dentro c'è ombra; pali e traversa stanno sopra le linee */
+const goalNet = (y0, y1) => {
+  let d = '';
+  for (let i = 0; i <= 10; i++) d += 'M' + (42 + 1.6 * i).toFixed(2) + ' ' + y0 + 'L' + (43.3 + 1.34 * i).toFixed(2) + ' ' + y1;
+  for (let k = 1; k <= 3; k++) {
+    const t = k / 4, y = y0 + (y1 - y0) * t;
+    d += 'M' + (42 + 1.3 * t).toFixed(2) + ' ' + y.toFixed(2) + 'H' + (58 - 1.3 * t).toFixed(2);
+  }
+  return d;
+};
+const GOALS = [
+  { y: 3, inside: 'M42 3 43.3 0.6H56.7L58 3Z', net: goalNet(3, 0.6), frame: 'M42 3 43.3 0.6H56.7L58 3', bar: 'M42 3H58', shadow: 'M42.6 3.6H58.6' },
+  { y: 157, inside: 'M42 157 43.3 159.4H56.7L58 157Z', net: goalNet(157, 159.4), frame: 'M42 157 43.3 159.4H56.7L58 157', bar: 'M42 157H58', shadow: 'M42.6 157.6H58.6' },
+];
+
+/* il campo senza giocatori, a strati: terreno, grana, zone consumate e reti (sotto); linee, pali, dettagli dello stile e
+   luce da sinistra in alto (sopra). Uguale sullo schermo, nelle anteprime e nella locandina.
+   part: 'all', oppure 'under' / 'over' (la locandina disegna la grana a parte, tra i due); grain: grana come piastrella */
+function PitchLayers({ cs, id, part, grain }) {
+  const under = part !== 'over', over = part !== 'under';
+  const gr = grain && cs.grain ? grainOf(cs.grain.k) : null;
+  const wear = cs.wear && WEAR_C[cs.wear];
+  return html`<g>
+    ${under && html`<g>
+      ${(gr || wear) && html`<defs>
+        ${gr && html`<pattern id=${id + '-grain'} width=${cs.grain.u} height=${cs.grain.u} patternUnits="userSpaceOnUse"><image href=${gr.url} width=${cs.grain.u} height=${cs.grain.u} preserveAspectRatio="none" /></pattern>`}
+        ${wear && html`<radialGradient id=${id + '-wear'}><stop offset="0" stop-color=${wear.c} stop-opacity="0.55" /><stop offset="0.55" stop-color=${wear.c} stop-opacity="0.24" /><stop offset="1" stop-color=${wear.c} stop-opacity="0" /></radialGradient>`}
+      </defs>`}
+      ${cs.ground(id)}
+      ${wear && html`<g aria-hidden="true">${PITCH_WEAR.map(([x, y, rx, ry, o]) => html`<ellipse key=${x + '-' + y} cx=${x} cy=${y} rx=${rx} ry=${ry} fill=${campoFill(id, 'wear')} opacity=${o * wear.o} />`)}</g>`}
+      ${gr && html`<rect width="100" height="160" fill=${campoFill(id, 'grain')} opacity=${cs.grain.o} />`}
+      ${GOALS.map((g) => html`<g key=${'n' + g.y} aria-hidden="true"><path d=${g.inside} class="pt-gin" /><path d=${g.net} class="pt-net" /><path d=${g.frame} class="pt-nf" /></g>`)}
+    </g>`}
+    ${over && html`<g>
+      <g class="pt-l">${PITCH_LINES.map((d) => html`<path key=${d} d=${d} />`)}<circle cx="50" cy="80" r="11" /></g>
+      <circle cx="50" cy="80" r="0.8" class="pt-dot" /><circle cx="50" cy="16" r="0.6" class="pt-dot" /><circle cx="50" cy="144" r="0.6" class="pt-dot" />
+      ${GOALS.map((g) => html`<g key=${'p' + g.y} aria-hidden="true"><path d=${g.shadow} class="pt-bsh" /><path d=${g.bar} class="pt-bar" /><circle cx="42" cy=${g.y} r="0.62" class="pt-post" /><circle cx="58" cy=${g.y} r="0.62" class="pt-post" /></g>`)}
+      ${cs.top && cs.top(id)}
+      ${cs.light !== false && html`<defs><linearGradient id=${id + '-sun'} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6dc" stop-opacity="0.15" /><stop offset="0.5" stop-color="#fff" stop-opacity="0" /><stop offset="1" stop-color="#000" stop-opacity="0.14" /></linearGradient></defs>
+        <rect width="100" height="160" fill=${campoFill(id, 'sun')} pointer-events="none" />`}
+    </g>`}
+  </g>`;
+}
+
 /* un campo in miniatura per la scelta dello stile */
 function CampoThumb({ v }) {
   const cs = campoOf(v);
-  const id = 'th-' + cs.v;
   return html`<svg class=${'pitch pt-static st-' + cs.v} viewBox="0 0 100 160" aria-hidden="true">
-    ${cs.ground(id)}
-    <g class="pt-l">${PITCH_LINES.map((d) => html`<path key=${d} d=${d} />`)}<circle cx="50" cy="80" r="11" /></g>
-    ${cs.top && cs.top(id)}
+    <${PitchLayers} cs=${cs} id=${'th-' + cs.v} part="all" grain />
   </svg>`;
 }
 function CampoSheet({ onClose }) {
@@ -4185,19 +4461,9 @@ function PitchField({ m, items, info, ed, svgRef, label }) {
   return html`<svg ref=${svgRef} class=${'pitch st-' + cs.v} viewBox="0 0 100 160" role=${ed ? 'group' : 'img'} aria-label=${label} onClick=${ed ? ed.grass : undefined}>
     <defs>
       <radialGradient id="pt-vig" cx="50%" cy="50%" r="75%"><stop offset="55%" stop-color="#000" stop-opacity="0" /><stop offset="100%" stop-color="#000" stop-opacity="0.28" /></radialGradient>
-      <pattern id="pt-net" width="1.2" height="1.2" patternUnits="userSpaceOnUse"><path d="M0 0H1.2M0 0V1.2" stroke="rgba(255,255,255,.55)" stroke-width="0.18" fill="none" /></pattern>
+      ${KitDefs()}
     </defs>
-    ${cs.ground('pt')}
-    <rect x="42" y="0.4" width="16" height="2.6" fill="url(#pt-net)" class="pt-goal" />
-    <rect x="42" y="157" width="16" height="2.6" fill="url(#pt-net)" class="pt-goal" />
-    <g class="pt-l">
-      ${PITCH_LINES.map((d) => html`<path key=${d} d=${d} />`)}
-      <circle cx="50" cy="80" r="11" />
-    </g>
-    <circle cx="50" cy="80" r="0.8" class="pt-dot" />
-    <circle cx="50" cy="16" r="0.6" class="pt-dot" />
-    <circle cx="50" cy="144" r="0.6" class="pt-dot" />
-    ${cs.top && cs.top('pt')}
+    <${PitchLayers} cs=${cs} id="pt" part="all" grain />
     <rect x="0" y="0" width="100" height="160" fill="url(#pt-vig)" pointer-events="none" />
     ${C.festa && html`<${PitchFesta} f=${C.festa} />`}
     ${slots.map((s) => {
@@ -5191,10 +5457,21 @@ const CARD_TIERS = {
   mvpc: { c1: '#3d6d50', c2: '#1c3326', c3: '#0c1711', ink: '#f0dca0', line: 'rgba(240,220,160,0.35)', hi: 'rgba(240,220,160,0.75)', lo: 'rgba(0,0,0,0.6)', glow: 'rgba(241,194,47,0.24)', shape: 'gold' },
 };
 
+/* rilievo da moneta coniata: ogni linea e ogni fregio si disegna tre volte, con la luce che viene da sinistra in alto:
+   ombra spostata in basso a destra, luce spostata in alto a sinistra, poi il segno vero (uguale nella card da condividere) */
+const CARD_RELIEF = [{ dx: 0.7, dy: 0.8, c: 'lo', o: 0.5 }, { dx: -0.55, dy: -0.6, c: 'hi', o: 0.8 }];
+const CARD_INK = 0.75;
 function CardFrame({ tier, uid, noShine }) {
   const T = CARD_TIERS[tier] || CARD_TIERS.bronze;
   const S = CARD_SHAPES[T.shape];
   const id = 'cf-' + uid;
+  const mark = (d, w, fill, o, k) => html`<g key=${k}>
+    ${CARD_RELIEF.map((r, j) => html`<path key=${j} d=${d} transform=${'translate(' + r.dx + ' ' + r.dy + ')'}
+      fill=${fill ? T[r.c] : 'none'} fill-opacity=${fill ? r.o : undefined} stroke=${fill ? 'none' : T[r.c]} stroke-opacity=${fill ? undefined : r.o}
+      stroke-width=${fill ? undefined : w} stroke-linejoin="round" stroke-linecap="round" />`)}
+    <path d=${d} fill=${fill ? T.ink : 'none'} fill-opacity=${fill ? o * CARD_INK : undefined} stroke=${fill ? 'none' : T.ink} stroke-opacity=${fill ? undefined : o * CARD_INK}
+      stroke-width=${fill ? undefined : w} stroke-linejoin="round" stroke-linecap="round" />
+  </g>`;
   const tex = S.tex === 'lattice'
     ? html`<pattern id=${id + 'p'} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H10M0 0V10" stroke="#fff" stroke-opacity="0.1" stroke-width="0.8" fill="none" /></pattern>`
     : S.tex === 'brush'
@@ -5205,6 +5482,7 @@ function CardFrame({ tier, uid, noShine }) {
       <radialGradient id=${id + 'g'} cx="0.3" cy="0.1" r="1.1" fx="0.3" fy="0.1"><stop offset="0" stop-color=${T.c1} /><stop offset="0.55" stop-color=${T.c2} /><stop offset="1" stop-color=${T.c3} /></radialGradient>
       <linearGradient id=${id + 'e'} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color=${T.hi} /><stop offset="0.45" stop-color=${T.hi} stop-opacity="0.15" /><stop offset="1" stop-color=${T.lo} /></linearGradient>
       <linearGradient id=${id + 's'} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset="0.5" stop-color="#fff" stop-opacity="0.42" /><stop offset="1" stop-color="#fff" stop-opacity="0" /></linearGradient>
+      <linearGradient id=${id + 'b'} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color=${T.hi} stop-opacity="0.9" /><stop offset="0.48" stop-color=${T.hi} stop-opacity="0" /><stop offset="0.52" stop-color=${T.lo} stop-opacity="0" /><stop offset="1" stop-color=${T.lo} stop-opacity="0.75" /></linearGradient>
       <clipPath id=${id + 'c'}><path d=${S.outer} /></clipPath>
       ${tex}
     </defs>
@@ -5212,11 +5490,10 @@ function CardFrame({ tier, uid, noShine }) {
     <g clip-path=${'url(#' + id + 'c)'}>
       <rect width="200" height="300" fill=${'url(#' + id + 'p)'} />
       ${!noShine && html`<g transform="skewX(-18)"><rect class="fifa-sh" x="-150" y="-10" width="110" height="320" fill=${'url(#' + id + 's)'} /></g>`}
+      <path d=${S.outer} fill="none" stroke=${'url(#' + id + 'b)'} stroke-width="13" stroke-linejoin="round" />
     </g>
-    ${S.lines.map((l, i) => html`<path key=${'l' + i} d=${l.d} fill="none" stroke=${T.ink} stroke-opacity=${l.o} stroke-width=${l.w} stroke-linejoin="round" />`)}
-    ${S.orn.map((o, i) => (o.fill
-      ? html`<path key=${'o' + i} d=${o.d} fill=${T.ink} fill-opacity=${o.o} />`
-      : html`<path key=${'o' + i} d=${o.d} fill="none" stroke=${T.ink} stroke-opacity=${o.o} stroke-width=${o.w} stroke-linecap="round" />`))}
+    ${S.lines.map((l, i) => mark(l.d, l.w, false, l.o, 'l' + i))}
+    ${S.orn.map((o, i) => mark(o.d, o.w, !!o.fill, o.o, 'o' + i))}
     <path d=${S.outer} fill="none" stroke=${'url(#' + id + 'e)'} stroke-width="2.4" stroke-linejoin="round" />
   </svg>`;
 }
@@ -6403,17 +6680,31 @@ function drawCover(ctx, im, x, y, w, h) {
   const iw = im.width * k, ih = im.height * k;
   ctx.drawImage(im, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih);
 }
-let shirtPath = null;
-function drawShirt(ctx, cx, cy, size, fill, stroke) {
-  if (!shirtPath && typeof Path2D !== 'undefined') shirtPath = new Path2D(SHIRT_D);
+let kitPaths = null;
+/* la maglia sulle immagini da condividere, con gli stessi pezzi del campo (maniche, polsini, colletto, righe, pieghe, luce).
+   c: il colore della squadra ({ hex, trim }); shadow: l'ombra sul prato, verso destra in basso */
+function drawShirt(ctx, cx, cy, size, c, stroke, shadow) {
+  if (!kitPaths && typeof Path2D !== 'undefined') {
+    kitPaths = { body: new Path2D(SHIRT_D), sleeves: new Path2D(KIT_SLEEVES), cuffs: new Path2D(KIT_CUFFS), collar: new Path2D(KIT_COLLAR), stripes: new Path2D(KIT_STRIPES), folds: new Path2D(KIT_FOLDS) };
+  }
+  const P = kitPaths;
+  if (!P) return;
+  const col = typeof c === 'string' ? { hex: c } : c || { hex: '#8a8f8c' };
+  const light = kitLight(col);
   ctx.save();
   ctx.translate(cx - size / 2, cy - size / 2);
   ctx.scale(size / 24, size / 24);
-  ctx.fillStyle = fill;
-  ctx.strokeStyle = stroke || 'rgba(0,0,0,0.42)';
-  ctx.lineWidth = 0.9;
-  ctx.lineJoin = 'round';
-  if (shirtPath) { ctx.fill(shirtPath); ctx.stroke(shirtPath); }
+  if (shadow) { ctx.fillStyle = 'rgba(0,0,0,0.26)'; ctx.beginPath(); ctx.ellipse(13.9, 21.5, 8.06, 2.1, 0, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = col.hex; ctx.fill(P.body);
+  ctx.save(); ctx.clip(P.body); ctx.fillStyle = light ? 'rgba(0,0,0,0.055)' : 'rgba(255,255,255,0.085)'; ctx.fill(P.stripes); ctx.restore();
+  ctx.fillStyle = kitTrim(col); ctx.fill(P.sleeves);
+  ctx.fillStyle = col.hex; ctx.fill(P.cuffs);
+  ctx.fillStyle = kitTrim(col); ctx.fill(P.collar);
+  ctx.strokeStyle = light ? 'rgba(0,0,0,0.13)' : 'rgba(0,0,0,0.22)'; ctx.lineWidth = 0.5; ctx.lineCap = 'round'; ctx.stroke(P.folds);
+  const sg = ctx.createLinearGradient(1.8, 3, 22.2, 21);
+  sg.addColorStop(0, 'rgba(255,255,255,0.32)'); sg.addColorStop(0.42, 'rgba(255,255,255,0)'); sg.addColorStop(1, 'rgba(0,0,0,0.3)');
+  ctx.fillStyle = sg; ctx.fill(P.body);
+  ctx.strokeStyle = stroke || 'rgba(0,0,0,0.42)'; ctx.lineWidth = 0.9; ctx.lineJoin = 'round'; ctx.stroke(P.body);
   ctx.restore();
 }
 function darkBackground(ctx, glow) {
@@ -6469,10 +6760,24 @@ function drawCardFrame(ctx, x0, y0, cw, T, S) {
   const sh = ctx.createLinearGradient(20, 0, 160, 110);
   sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(0.5, 'rgba(255,255,255,0.3)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = sh; ctx.fillRect(0, 0, 200, 300);
+  /* bordo smussato: luce in alto a sinistra, ombra in basso a destra */
+  const bv = ctx.createLinearGradient(0, 0, 200, 300);
+  bv.addColorStop(0, T.hi); bv.addColorStop(0.48, 'rgba(255,255,255,0)'); bv.addColorStop(0.52, 'rgba(0,0,0,0)'); bv.addColorStop(1, T.lo);
+  ctx.globalAlpha = 0.85; ctx.strokeStyle = bv; ctx.lineWidth = 13; ctx.lineJoin = 'round'; ctx.stroke(outer); ctx.globalAlpha = 1;
   ctx.restore();
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  S.lines.forEach((l) => { ctx.globalAlpha = l.o; ctx.strokeStyle = T.ink; ctx.lineWidth = l.w; ctx.stroke(P2(l.d)); });
-  S.orn.forEach((o) => { ctx.globalAlpha = o.o; if (o.fill) { ctx.fillStyle = T.ink; ctx.fill(P2(o.d)); } else { ctx.strokeStyle = T.ink; ctx.lineWidth = o.w; ctx.stroke(P2(o.d)); } });
+  const mark = (d, w, fill, o) => {
+    const pth = P2(d);
+    CARD_RELIEF.forEach((r) => {
+      ctx.save(); ctx.translate(r.dx, r.dy); ctx.globalAlpha = r.o;
+      if (fill) { ctx.fillStyle = T[r.c]; ctx.fill(pth); } else { ctx.strokeStyle = T[r.c]; ctx.lineWidth = w; ctx.stroke(pth); }
+      ctx.restore();
+    });
+    ctx.globalAlpha = o * CARD_INK;
+    if (fill) { ctx.fillStyle = T.ink; ctx.fill(pth); } else { ctx.strokeStyle = T.ink; ctx.lineWidth = w; ctx.stroke(pth); }
+  };
+  S.lines.forEach((l) => mark(l.d, l.w, false, l.o));
+  S.orn.forEach((o) => mark(o.d, o.w, !!o.fill, o.o));
   ctx.globalAlpha = 1;
   const eg = ctx.createLinearGradient(0, 0, 200, 300);
   eg.addColorStop(0, T.hi); eg.addColorStop(0.45, 'rgba(255,255,255,0.12)'); eg.addColorStop(1, T.lo);
@@ -6502,11 +6807,20 @@ async function drawCardImage({ p, r, pal, sub, label }) {
   }
   if (typeof Path2D !== 'undefined') drawCardFrame(ctx, x0, y0, cw, T, S);
   ctx.fillStyle = P.ink; ctx.strokeStyle = P.line;
+  /* testi in rilievo, come coniati: luce in alto a sinistra, ombra in basso a destra, poi il testo */
+  const emb = (d, draw) => {
+    const a = ctx.globalAlpha;
+    ctx.save(); ctx.fillStyle = T.hi; ctx.globalAlpha = a * 0.85; ctx.translate(-d, -d); draw(); ctx.restore();
+    ctx.save(); ctx.fillStyle = T.lo; ctx.globalAlpha = a * 0.5; ctx.translate(d, d * 1.3); draw(); ctx.restore();
+    draw();
+  };
+  /* le righe incise: il solco scuro e, sotto, il filo di luce */
+  const groove = (draw) => { draw(); ctx.save(); ctx.strokeStyle = T.hi; ctx.globalAlpha = 0.6; ctx.lineWidth = 2; ctx.translate(2, 3); draw(); ctx.restore(); };
   /* punteggio, ruoli e numero */
   const lx = x0 + 205;
   ctx.textAlign = 'center';
-  ctx.font = F(800, 176, fonts.disp); ctx.fillText(String(r0(r.ovr)), lx, y0 + 292);
-  ctx.font = F(800, 54, fonts.body); spaced(ctx, p.role || '', lx, y0 + 360, 5, 'center');
+  ctx.font = F(800, 176, fonts.disp); emb(4, () => ctx.fillText(String(r0(r.ovr)), lx, y0 + 292));
+  ctx.font = F(800, 54, fonts.body); emb(2, () => spaced(ctx, p.role || '', lx, y0 + 360, 5, 'center'));
   let ly = y0 + 360;
   if (p.role2) { ctx.globalAlpha = 0.7; ctx.font = F(800, 40, fonts.body); spaced(ctx, p.role2, lx, ly + 56, 4, 'center'); ctx.globalAlpha = 1; ly += 56; }
   if (footOf(p)) { ctx.globalAlpha = 0.6; ctx.font = F(800, 32, fonts.body); spaced(ctx, footOf(p).short, lx, ly + 48, 4, 'center'); ctx.globalAlpha = 1; ly += 48; }
@@ -6514,14 +6828,15 @@ async function drawCardImage({ p, r, pal, sub, label }) {
   if (no != null) {
     ctx.font = F(800, 46, fonts.disp);
     const t = 'N° ' + no, tw = ctx.measureText(t).width + 40;
-    ctx.lineWidth = 4; rrect(ctx, lx - tw / 2, ly + 34, tw, 64, 16); ctx.stroke();
-    ctx.fillText(t, lx, ly + 82);
+    ctx.lineWidth = 4; groove(() => { rrect(ctx, lx - tw / 2, ly + 34, tw, 64, 16); ctx.stroke(); });
+    emb(1.5, () => ctx.fillText(t, lx, ly + 82));
   }
   /* foto, icona o iniziali */
   const pw = 360, px = x0 + cw - 96 - pw, py = y0 + 112;
-  const photoShape = () => {
+  const photoShape = (more) => {
     const R = pw / 2, rb = 48;
-    ctx.beginPath(); ctx.moveTo(px, py + R); ctx.arc(px + R, py + R, R, Math.PI, 0);
+    if (!more) ctx.beginPath();
+    ctx.moveTo(px, py + R); ctx.arc(px + R, py + R, R, Math.PI, 0);
     ctx.lineTo(px + pw, py + pw - rb); ctx.quadraticCurveTo(px + pw, py + pw, px + pw - rb, py + pw);
     ctx.lineTo(px + rb, py + pw); ctx.quadraticCurveTo(px, py + pw, px, py + pw - rb); ctx.closePath();
   };
@@ -6530,15 +6845,18 @@ async function drawCardImage({ p, r, pal, sub, label }) {
   if (im) drawCover(ctx, im, px, py, pw, pw);
   else if (p.icon) { ctx.fillStyle = '#000'; ctx.font = Math.round(pw * 0.58) + 'px ' + EMOJI_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.icon, px + pw / 2, py + pw * 0.54); ctx.textBaseline = 'alphabetic'; }
   else { ctx.fillStyle = P.ink; ctx.font = F(800, pw * 0.42, fonts.disp); ctx.textAlign = 'center'; ctx.fillText(initialsOf(p), px + pw / 2, py + pw * 0.66); }
+  /* la finestra della foto è incassata: il bordo in alto a sinistra fa ombra dentro */
+  ctx.shadowColor = 'rgba(0,0,0,0.42)'; ctx.shadowBlur = 24; ctx.shadowOffsetX = 8; ctx.shadowOffsetY = 12;
+  ctx.beginPath(); ctx.rect(px - 400, py - 400, pw + 800, pw + 800); photoShape(true); ctx.fillStyle = '#000'; ctx.fill('evenodd');
   ctx.restore();
   ctx.save(); photoShape(); ctx.lineWidth = 5; ctx.strokeStyle = P.line; ctx.stroke(); ctx.restore();
   /* nome */
   ctx.fillStyle = P.ink; ctx.textAlign = 'center';
   const nick = upperIt(dispName(p));
   fitFont(ctx, nick, 800, 98, fonts.disp, cw - 150, 40);
-  ctx.fillText(nick, IMG_W / 2, y0 + 640);
+  emb(2.5, () => ctx.fillText(nick, IMG_W / 2, y0 + 640));
   ctx.globalAlpha = 0.75; fitFont(ctx, fullName(p), 500, 40, fonts.body, cw - 160, 22); ctx.fillText(fullName(p), IMG_W / 2, y0 + 694); ctx.globalAlpha = 1;
-  ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0 + 100, y0 + 738); ctx.lineTo(x0 + cw - 100, y0 + 738); ctx.stroke();
+  ctx.lineWidth = 4; groove(() => { ctx.beginPath(); ctx.moveTo(x0 + 100, y0 + 738); ctx.lineTo(x0 + cw - 100, y0 + 738); ctx.stroke(); });
   /* le 5 aree: 3 sopra e 2 sotto */
   const gk = p.role === 'POR';
   const cells = AREAS.map((a) => ({ v: String(r0(r.areas[a.k])), c: a.code, on: gk ? a.k === 'por' : a.k !== 'por' }));
@@ -6550,7 +6868,7 @@ async function drawCardImage({ p, r, pal, sub, label }) {
     ctx.font = F(700, 36, fonts.body); const wc = ctx.measureText(cl.c).width;
     const sx = cx - (wv + 14 + wc) / 2;
     ctx.textAlign = 'left';
-    ctx.font = F(800, 78, fonts.disp); ctx.fillText(cl.v, sx, cy);
+    ctx.font = F(800, 78, fonts.disp); emb(2, () => ctx.fillText(cl.v, sx, cy));
     ctx.globalAlpha = (cl.on ? 1 : 0.5) * 0.8; ctx.font = F(700, 36, fonts.body); ctx.fillText(cl.c, sx + wv + 14, cy);
   });
   ctx.globalAlpha = 0.75; ctx.textAlign = 'center';
@@ -6582,19 +6900,13 @@ function campoCss() {
   campoCssCache = out.join('\n');
   return campoCssCache;
 }
-async function campoCanvas(v, W, H) {
+async function campoCanvas(v, W, H, part) {
   try {
     const cs = campoOf(v);
     const host = document.createElement('div');
     render(html`<svg viewBox="0 0 100 160" width=${Math.round(W)} height=${Math.round(H)} class=${'pitch pt-static st-' + cs.v}>
       <style>${campoCss()}</style>
-      <defs><pattern id="lc-net" width="1.2" height="1.2" patternUnits="userSpaceOnUse"><path d="M0 0H1.2M0 0V1.2" stroke="rgba(255,255,255,.55)" stroke-width="0.18" fill="none" /></pattern></defs>
-      ${cs.ground('lc')}
-      <rect x="42" y="0.4" width="16" height="2.6" fill="url(#lc-net)" class="pt-goal" />
-      <rect x="42" y="157" width="16" height="2.6" fill="url(#lc-net)" class="pt-goal" />
-      <g class="pt-l">${PITCH_LINES.map((d) => html`<path key=${d} d=${d} />`)}<circle cx="50" cy="80" r="11" /></g>
-      <circle cx="50" cy="80" r="0.8" class="pt-dot" /><circle cx="50" cy="16" r="0.6" class="pt-dot" /><circle cx="50" cy="144" r="0.6" class="pt-dot" />
-      ${cs.top && cs.top('lc')}
+      <${PitchLayers} cs=${cs} id="lc" part=${part || 'all'} />
     </svg>`, host);
     const svg = host.querySelector('svg');
     let xml = svg ? new XMLSerializer().serializeToString(svg) : '';
@@ -6612,14 +6924,32 @@ async function campoCanvas(v, W, H) {
   } catch (e) { return null; }
 }
 
-/* ---------- il campo, per la locandina ---------- */
+/* la grana del terreno sulla locandina: la stessa piastrella dello schermo, ripetuta alla stessa scala */
+function drawGrain(ctx, cs, X, Y, s, W, H) {
+  const gr = cs.grain && grainOf(cs.grain.k);
+  if (!gr || typeof DOMMatrix === 'undefined') return;
+  try {
+    const pat = ctx.createPattern(gr.cv, 'repeat');
+    if (!pat || !pat.setTransform) return;
+    const k = (cs.grain.u * s) / GRAIN_PX;
+    pat.setTransform(new DOMMatrix([k, 0, 0, k, X, Y]));
+    ctx.save(); ctx.globalAlpha = cs.grain.o; ctx.fillStyle = pat; ctx.fillRect(X, Y, W, H); ctx.restore();
+  } catch (e) { /* senza grana */ }
+}
+
+/* ---------- il campo, per la locandina: sotto (terreno, zone consumate, reti), la grana, sopra (linee, pali, dettagli, luce) ---------- */
 async function drawPitch(ctx, fonts, X, Y, s, m, D, st) {
   const W = 100 * s, H = 160 * s;
-  const ground = st && st !== 'classico' ? await campoCanvas(st, W, H) : null;
+  const cs = campoOf(st);
+  const under = await campoCanvas(cs.v, W, H, 'under');
+  const over = under ? await campoCanvas(cs.v, W, H, 'over') : null;
   ctx.save();
   rrect(ctx, X, Y, W, H, 34); ctx.clip();
-  if (ground) ctx.drawImage(ground, X, Y, W, H);
-  else {
+  if (under && over) {
+    ctx.drawImage(under, X, Y, W, H);
+    drawGrain(ctx, cs, X, Y, s, W, H);
+    ctx.drawImage(over, X, Y, W, H);
+  } else {
     /* il prato a strisce di sempre */
     ctx.fillStyle = '#2c8a4b'; ctx.fillRect(X, Y, W, H);
     ctx.fillStyle = '#349a57';
@@ -6641,7 +6971,7 @@ async function drawPitch(ctx, fonts, X, Y, s, m, D, st) {
   const put = (pts, c) => pts.forEach((pt) => {
     const x = D.info(pt.id);
     const cx = X + pt.x * s, cy = Y + pt.y * s;
-    drawShirt(ctx, cx, cy, 24 * SHIRT_K * s, c.hex);
+    drawShirt(ctx, cx, cy, 24 * SHIRT_K * s, c, null, true);
     const no = jerseyOf(x.p);
     ctx.textAlign = 'center';
     if (no != null) { ctx.fillStyle = c.ink; ctx.font = F(800, 5.6 * s, fonts.disp); ctx.fillText(String(no), cx, cy + 2.4 * s); }
@@ -6658,7 +6988,7 @@ async function drawPitch(ctx, fonts, X, Y, s, m, D, st) {
 }
 function teamLabel(ctx, fonts, m, side, x, y, right) {
   const c = teamColor(m, side) || { hex: side === 'a' ? '#2f6fdb' : '#d9483b' };
-  drawShirt(ctx, x + 30, y - 16, 64, c.hex, 'rgba(255,255,255,0.5)');
+  drawShirt(ctx, x + 30, y - 16, 64, c, 'rgba(255,255,255,0.5)');
   ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.font = F(800, 48, fonts.disp);
   ctx.fillText(upperIt(teamName(m, side)), x + 76, y);
   if (right) { ctx.fillStyle = 'rgba(255,255,255,0.62)'; ctx.textAlign = 'right'; ctx.font = F(600, 34, fonts.body); ctx.fillText(right, IMG_W - x, y); }
@@ -6719,8 +7049,8 @@ async function drawResultPoster({ m, C, mv }) {
   ctx.fillStyle = 'rgba(255,255,255,0.68)'; fitFont(ctx, sub, 500, 36, fonts.body, 940, 20); ctx.fillText(sub, IMG_W / 2, 360);
   /* maglie e punteggio */
   const ca = teamColor(m, 'a') || { hex: '#2f6fdb' }, cb = teamColor(m, 'b') || { hex: '#d9483b' };
-  drawShirt(ctx, 168, 640, 210, ca.hex, 'rgba(255,255,255,0.55)');
-  drawShirt(ctx, IMG_W - 168, 640, 210, cb.hex, 'rgba(255,255,255,0.55)');
+  drawShirt(ctx, 168, 640, 210, ca, 'rgba(255,255,255,0.55)');
+  drawShirt(ctx, IMG_W - 168, 640, 210, cb, 'rgba(255,255,255,0.55)');
   ctx.fillStyle = '#fff';
   const score = ra + ' – ' + rb;
   fitFont(ctx, score, 800, 200, fonts.disp, 430, 90); ctx.fillText(score, IMG_W / 2, 708);

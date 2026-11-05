@@ -134,6 +134,14 @@ Cosa cambia:
 - **Squadre automatiche**: usano lo stesso calcolo, quindi mettono ognuno dove rende di più. La ricerca rifà con il calcolo vero fino a 480 divisioni (prima 120): fino a 12 giocatori le prova tutte, a 7 e a 8 trova la migliore molto più spesso. Chi rende di più nel secondo ruolo non conta come "fuori ruolo".
 - **Squadre già fatte**: non cambiano da sole; si rifanno quando cambia chi gioca, o con "Crea squadre" e "Mischia" nel Campo. I numeri del Confronto invece si aggiornano subito, anche per le partite già giocate ("Calcolato con le stats di oggi"); la previsione salvata alla chiusura resta quella di allora.
 
+## Disegni più dettagliati (solo `index.html`, nessuno script)
+Carica su GitHub `index.html` (nella cartella principale) e questo file.
+
+- **Maglie**: maniche e colletto nel colore del bordino (scuro sulle maglie chiare, bianco sulle altre; si può fissare per un colore con `trim` in `TEAM_COLORS`), polsini nel colore della squadra, righe tono su tono, pieghe, luce da sinistra in alto e ombra sul prato. Uguali sul campo, nel giocatore che si trascina, nelle etichette delle squadre, nella scelta dei colori, nella locandina e nel risultato da condividere.
+- **Campo**: una grana per ogni stile (fili d'erba, granuli di gomma, terra e sassolini, sabbia, neve che luccica, riflessi sull'acqua, polvere di Marte, venature del parquet, polvere di gesso, panno del calcio balilla); zone consumate davanti alle porte, sul dischetto e a centrocampo sull'erba; porte con la rete in profondità, pali e ombra della traversa; luce da sinistra in alto (non sotto i riflettori e nel palazzetto, che hanno le loro luci). Le grane sono piastrelle di 128×128 disegnate dal telefono la prima volta che servono (pochi millesimi di secondo l'una): niente immagini da scaricare.
+- **Card**: bordo smussato, linee e fregi in rilievo, punteggio, nome e numeri coniati, finestra della foto incassata; uguale nella card da condividere.
+- La locandina usa lo stesso campo dello schermo anche con l'erba a strisce (prima solo con gli altri stili); se il telefono non ci riesce, resta il prato a strisce semplice.
+
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
 - I progetti gratuiti di Supabase vengono messi in pausa dopo qualche giorno senza uso: se succede, dal sito di Supabase si riattiva con un clic. Verifica le condizioni attuali del piano gratuito.
