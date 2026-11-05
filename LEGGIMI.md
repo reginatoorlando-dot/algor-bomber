@@ -124,6 +124,16 @@ Finché lo script non è eseguito: tutto funziona, ma chi va in panchina non ric
 
 Stili del campo (solo app, nessuno script): il tastino in alto a sinistra sul Campo (e Impostazioni → Aspetto) apre la scelta tra erba a strisce, erba a scacchi, sintetico, campetto in terra, spiaggia, neve, sull'acqua, Marte, palazzetto, lavagna, calcio balilla e sotto i riflettori. Vale per quel telefono (`sc-campo`); con "Riduci movimento" neve e onde stanno ferme. Anche la locandina da condividere usa lo stile scelto (lo stesso disegno dello schermo; se il telefono non riesce a disegnarlo, usa il prato a strisce). Il risultato da condividere non ha il campo.
 
+## Valore in campo: conta il ruolo (solo `index.html`, nessuno script)
+Carica su GitHub `index.html` (nella cartella principale) e questo file.
+
+Cosa cambia:
+- **Valore di un giocatore in campo**: l'area del reparto in cui gioca conta il doppio. Un attaccante vale (2 × Attacco + Centrocampo + Difesa + Generale) / 5, un difensore raddoppia la Difesa, un centrocampista il Centrocampo; in porta conta la Porta. Restano il malus fuori ruolo (3 punti in un ruolo vicino, 6 in uno lontano, rispetto al ruolo e al secondo ruolo) e quello degli infortuni. Il peso del reparto è `CFG.REPARTO` nel motore (2).
+- **Confronto**: le righe Attacco, Centrocampo e Difesa sono la media di chi gioca fuori dai pali, con chi gioca in quel reparto che conta il doppio; il Generale resta una media semplice. Spostare un attaccante in difesa ora cambia le righe, il valore medio e l'equilibrio.
+- **Il punteggio della card non cambia** (media delle quattro aree, o la Porta per i portieri): colori, classifiche e storico restano uguali.
+- **Squadre automatiche**: usano lo stesso calcolo, quindi mettono ognuno dove rende di più. La ricerca rifà con il calcolo vero fino a 480 divisioni (prima 120): fino a 12 giocatori le prova tutte, a 7 e a 8 trova la migliore molto più spesso. Chi rende di più nel secondo ruolo non conta come "fuori ruolo".
+- **Squadre già fatte**: non cambiano da sole; si rifanno quando cambia chi gioca, o con "Crea squadre" e "Mischia" nel Campo. I numeri del Confronto invece si aggiornano subito, anche per le partite già giocate ("Calcolato con le stats di oggi"); la previsione salvata alla chiusura resta quella di allora.
+
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
 - I progetti gratuiti di Supabase vengono messi in pausa dopo qualche giorno senza uso: se succede, dal sito di Supabase si riattiva con un clic. Verifica le condizioni attuali del piano gratuito.
