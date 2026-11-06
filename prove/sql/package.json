@@ -1,0 +1,9 @@
+{
+  "name": "algor-bomber-prove-sql",
+  "private": true,
+  "description": "Prove degli script del database su un Postgres in memoria (PGlite): node prove/sql/prova_*.mjs",
+  "type": "module",
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.15"
+  }
+}

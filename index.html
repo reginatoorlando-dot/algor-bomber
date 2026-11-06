@@ -12,7 +12,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Algor Bomber">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400..700&display=swap">
+<!-- i caratteri arrivano dopo, senza fermare l'apertura: intanto si usano quelli del telefono -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400..700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400..700&display=swap"></noscript>
 <style>
 #splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .35s ease}
 #splash.out{opacity:0;pointer-events:none}
@@ -158,6 +162,17 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .note.ok { background: var(--accent-soft); color: var(--accent); }
 .banner { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-top: 10px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: 13px; }
 .banner .grow { line-height: 1.35; }
+/* barra «Aggiorna»: in alto, sopra la pagina ma sotto i fogli */
+.upd {
+  position: fixed; z-index: 45; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 8px);
+  width: min(calc(100vw - 24px), 460px); display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px;
+  border-radius: 14px; background: var(--ink); color: var(--bg); box-shadow: var(--shadow); font-size: 13.5px; font-weight: 500;
+  animation: down 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.upd .grow { line-height: 1.3; }
+.upd .icon-btn { background: transparent; border-color: transparent; color: inherit; opacity: 0.8; }
+@keyframes down { from { transform: translate(-50%, -16px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+.nov-l { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-size: 14px; line-height: 1.45; }
 
 .empty { text-align: center; padding: 28px 16px; color: var(--ink-2); display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .empty .h3 { color: var(--ink); }
@@ -417,6 +432,8 @@ input[type='range'].unset { --fill: var(--ink-3); opacity: 0.85; }
 .brand-mark .ic { width: 24px; height: 24px; }
 .hello { padding-top: 22px; display: flex; flex-direction: column; gap: 14px; }
 .hello .h1 { font-size: 36px; }
+.moved-steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; color: var(--ink-2); font-size: 15px; line-height: 1.45; }
+.moved-steps b { color: var(--ink); }
 .steps { display: flex; flex-direction: column; gap: 8px; color: var(--ink-2); font-size: 14px; }
 .steps div { display: flex; gap: 10px; align-items: flex-start; }
 .steps svg { color: var(--accent); margin-top: 2px; }
@@ -428,6 +445,7 @@ input[type='range'].unset { --fill: var(--ink-3); opacity: 0.85; }
 .fz { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 .fz-t { text-transform: uppercase; letter-spacing: 0.06em; }
 a.btn { text-decoration: none; }
+.nowrap { white-space: nowrap; }
 .hs.wrap { flex-wrap: wrap; }
 
 
@@ -3039,6 +3057,132 @@ const { ROLES, ROLE_NAME, FORMATS, AREAS, OUT_AREAS, VOCI, CFG } = Engine;
 const REP_TXT = { 2: 'il doppio', 3: 'il triplo', 4: 'il quadruplo' }[CFG.REPARTO] || CFG.REPARTO + ' volte';
 const ROLE_SHORT = { POR: 'Portiere', DIF: 'Difensore', CEN: 'Centrocampo', ATT: 'Attaccante' };
 const Ctx = createContext(null);
+
+/* ---------- versione dell'app e novità ----------
+   A ogni modifica dell'app: alza APP_VER (anno.mese.giorno, poi .2, .3… se escono più versioni nello stesso giorno)
+   e scrivi in cima a NOVITA cosa cambia per chi gioca. Il service worker legge APP_VER per l'avviso «Aggiorna»;
+   le prove automatiche controllano che la prima voce di NOVITA abbia la stessa versione. */
+const APP_VER = '2026.11.6';
+const NOVITA = [
+  { v: '2026.11.6', d: '6 novembre 2026', items: [
+    'L\'app si apre subito, anche con poca rete: parte con la versione che hai sul telefono e intanto controlla se ce n\'è una nuova. Quando è pronta compare in alto la barra «Aggiorna».',
+    'Nel menu ci sono queste Novità e, in fondo, la versione dell\'app. In Impostazioni puoi anche cercare gli aggiornamenti a mano.',
+    'Un indirizzo solo: algor-bomber.vercel.app. Chi usa ancora un indirizzo vecchio viene portato qui, con le istruzioni per rimettere l\'app nella schermata Home.',
+    'Toccare di nuovo «Ci sono» su un compagno già iscritto non lo manda più in fondo alla lista.',
+  ] },
+  { v: '2026.11.5', d: '5 novembre 2026', items: [
+    'Il Campo: tieni premuto un giocatore e trascinalo su un altro per scambiarli, con la panchina sul bordo e le formazioni a portata di mano.',
+    'Stili del campo (erba a scacchi, sintetico, spiaggia, neve, Marte e altri): valgono anche per la locandina da condividere.',
+    'Il valore in campo dipende dal reparto: da attaccante conta il doppio l\'Attacco, da difensore la Difesa, da centrocampista il Centrocampo.',
+    'Maglie, campo e card disegnati con più dettagli.',
+  ] },
+];
+/* confronto tra versioni: '2026.11.10' viene dopo '2026.11.6' */
+const verCmp = (a, b) => {
+  const x = String(a || '').split('.').map(Number), y = String(b || '').split('.').map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d > 0 ? 1 : -1; }
+  return 0;
+};
+
+/* ---------- un indirizzo solo: algor-bomber.vercel.app ----------
+   Gli indirizzi vecchi (algor-bomber-4aox, algor-bomber-67f5) portano qui, e con sé le preferenze di questo telefono
+   (tema, colori, home, stile del campo…): viaggiano nell'indirizzo (#sc=…) e qui si usano solo se non ci sono già. */
+const HOME_HOST = 'algor-bomber.vercel.app';
+const OLD_HOST = /^algor-bomber-(4aox|67f5)(-[a-z0-9-]+)?\.vercel\.app$/i;
+const Moved = (() => {
+  /* l'indirizzo com'era all'apertura: poco più avanti i link d'invito (?m=…, ?g=…) vengono tolti dalla barra */
+  const START = { search: location.search, hash: location.hash };
+  const KEYS = ['sc-theme', 'sc-accent', 'sc-home', 'sc-start', 'sc-feste', 'sc-campo', 'sc-campo-hint', 'sc-emoji-recent'];
+  const GROUP_KEY = /^sc-group-[A-Za-z0-9_-]{6,64}$/;
+  const PLAIN = /^[A-Za-z0-9 _.,:#-]{0,40}$/;
+  const ls = () => { try { return window.localStorage; } catch (e) { return null; } };
+  const b64e = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const b64d = (s) => { let t = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '='; return decodeURIComponent(escape(atob(t))); };
+  /* ogni preferenza deve avere la forma giusta: un indirizzo scritto a mano non può rompere l'app */
+  const okVal = (k, v) => {
+    if (typeof v !== 'string' || v.length > 2000) return false;
+    if (k === 'sc-home') { try { const o = JSON.parse(v); return !!o && typeof o === 'object' && !Array.isArray(o); } catch (e) { return false; } }
+    if (k === 'sc-emoji-recent') { try { const a = JSON.parse(v); return Array.isArray(a) && a.length <= 32 && a.every((x) => typeof x === 'string' && x.length <= 16); } catch (e) { return false; } }
+    if (GROUP_KEY.test(k)) return /^[A-Za-z0-9_-]{1,64}$/.test(v);
+    return PLAIN.test(v);
+  };
+  const okKey = (k) => KEYS.includes(k) || GROUP_KEY.test(k);
+  return {
+    old: () => OLD_HOST.test(location.hostname),
+    /* l'indirizzo dell'app per i link e le email: sugli indirizzi vecchi, già quello nuovo */
+    home: () => (OLD_HOST.test(location.hostname) ? 'https://' + HOME_HOST + '/' : location.origin + location.pathname),
+    url() {
+      const base = 'https://' + HOME_HOST + location.pathname + START.search;
+      /* c'è già qualcosa dopo # (per esempio il link per cambiare la password): si lascia com'è */
+      if (START.hash && START.hash.length > 1) return base + START.hash;
+      const s = ls(), o = {};
+      if (s) for (let i = 0; i < s.length; i++) { const k = s.key(i); if (k && okKey(k)) { const v = s.getItem(k); if (okVal(k, v)) o[k] = v; } }
+      o.m = '1';
+      return base + '#sc=' + b64e(JSON.stringify(o));
+    },
+    /* arrivati dall'indirizzo vecchio: si prendono le preferenze e si pulisce l'indirizzo */
+    take() {
+      if (OLD_HOST.test(location.hostname) || !/^#sc=/.test(location.hash || '')) return;
+      let o = null;
+      try { o = JSON.parse(b64d(location.hash.slice(4))); } catch (e) { o = null; }
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* resta nell'indirizzo */ }
+      if (!o || typeof o !== 'object') return;
+      const s = ls();
+      if (s) Object.keys(o).forEach((k) => { if (okKey(k) && okVal(k, o[k]) && s.getItem(k) == null) { try { s.setItem(k, o[k]); } catch (e) { /* archivio pieno */ } } });
+      if (o.m === '1') { try { window.sessionStorage.setItem('sc-moved', '1'); } catch (e) { /* niente */ } }
+    },
+    arrived: () => { try { return window.sessionStorage.getItem('sc-moved') === '1'; } catch (e) { return false; } },
+  };
+})();
+Moved.take();
+
+/* ---------- aggiornamenti: il service worker tiene pronta la versione nuova, la pagina offre «Aggiorna» ---------- */
+const Updates = (() => {
+  let ready = null, asked = 0, regAt = 0;
+  const subs = new Set();
+  const sw = () => ('serviceWorker' in navigator ? navigator.serviceWorker : null);
+  const set = (v) => {
+    if (!v || verCmp(v, APP_VER) <= 0 || v === ready) return;
+    ready = v;
+    subs.forEach((f) => { try { f(v); } catch (e) { /* niente */ } });
+  };
+  const ask = (force) => {
+    const c = sw() && sw().controller;
+    if (!c) return false;
+    const now = Date.now();
+    if (!force && now - asked < 60000) return true;
+    asked = now;
+    try { c.postMessage({ type: 'check', force: !!force }); } catch (e) { return false; }
+    /* ogni tanto si guarda anche se è cambiato il service worker */
+    if (force || now - regAt > 30 * 60000) { regAt = now; sw().getRegistration().then((r) => r && r.update()).catch(() => {}); }
+    return true;
+  };
+  if (sw()) {
+    /* in ascolto da subito: i messaggi arrivati mentre l'app si avvia non vanno persi */
+    sw().addEventListener('message', (e) => { const d = (e && e.data) || {}; if (d.type === 'version' && typeof d.v === 'string') set(d.v); });
+    window.addEventListener('load', () => setTimeout(() => ask(false), 2500));
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ask(false); });
+    sw().addEventListener('controllerchange', () => setTimeout(() => ask(true), 800));
+  }
+  return {
+    get ready() { return ready; },
+    sub(f) { subs.add(f); return () => subs.delete(f); },
+    apply() { location.reload(); },
+    /* «Cerca aggiornamenti»: risponde con la versione pronta sul telefono (null se non si riesce a controllare) */
+    checkNow() {
+      return new Promise((res) => {
+        const c = sw() && sw().controller;
+        if (!c) { res(null); return; }
+        let done = false, t = 0;
+        const on = (e) => { const d = (e && e.data) || {}; if (d.type === 'version') fin(d.v || null); };
+        const fin = (v) => { if (done) return; done = true; clearTimeout(t); sw().removeEventListener('message', on); res(v); };
+        sw().addEventListener('message', on);
+        t = setTimeout(() => fin(null), 10000);
+        if (!ask(true)) fin(null);
+      });
+    },
+  };
+})();
 
 /* ---------- utilità ---------- */
 const uid8 = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
@@ -9059,8 +9203,10 @@ function MenuSheet({ onClose }) {
       ${item('help', 'Help: scrivi agli sviluppatori', () => go({ t: 'help' }), badge(C.badges.helpReplies))}
       ${item('code', 'Sviluppatori', () => go({ t: 'devs' }))}
       ${item('info', 'Come funziona', () => { onClose(); C.openSheet({ k: 'help' }); })}
+      ${item('spark', 'Novità', () => { onClose(); C.openSheet({ k: 'novita' }); })}
       ${C.isAdmin && item('shield', 'Amministrazione', () => go({ t: 'admin' }), badge(C.badges.helpOpen))}
     </div>
+    <div class="tiny faint" style="text-align:center">Algor Bomber · versione ${APP_VER}</div>
   <//>`;
 }
 
@@ -11280,6 +11426,7 @@ function SettingsScreen() {
     <section class="sec"><h2 class="h3">Profilo</h2>
       <button class="btn block" style="justify-content:flex-start" onClick=${() => C.goTab('me')}><${Icon} n="edit" s="16" /> Modifica nome, foto, ruoli e infortunio</button>
     </section>
+    <${AppVersionSettings} />
     <section class="sec"><h2 class="h3">Account</h2>
       ${window.SC_EMAIL && html`<div class="small muted">Accesso con ${window.SC_EMAIL}</div>`}
       ${window.SC_SIGNOUT && !C.demo && html`<button class="btn block" onClick=${window.SC_SIGNOUT}>Esci dall'account</button>`}
@@ -11287,6 +11434,25 @@ function SettingsScreen() {
       ${C.demo && html`<button class="btn danger block" onClick=${C.exitDemo}>Esci dalla demo</button>`}
     </section>
   <//>`;
+}
+
+/* ---------- impostazioni: versione, novità e aggiornamenti ---------- */
+function AppVersionSettings() {
+  const C = useContext(Ctx);
+  const [busy, setBusy] = useState(false);
+  const check = async () => {
+    setBusy(true);
+    const v = await Updates.checkNow();
+    setBusy(false);
+    if (v && verCmp(v, APP_VER) > 0) C.openSheet({ k: 'confirm', title: 'Nuova versione pronta', text: 'È pronta la versione ' + v + ': l\'app si ricarica, ci vuole un attimo.', label: 'Aggiorna', cancelLabel: 'Dopo', onYes: () => Updates.apply() });
+    else if (v) C.flash('Hai già l\'ultima versione');
+    else C.flash('Adesso non riesco a controllare: riprova tra poco', 'err');
+  };
+  return html`<section class="sec"><h2 class="h3">App</h2>
+    <div class="small muted">Versione ${APP_VER} · indirizzo ${HOME_HOST}</div>
+    <button class="btn block" style="justify-content:flex-start" onClick=${() => C.openSheet({ k: 'novita' })}><${Icon} n="spark" s="16" /> Novità</button>
+    <button class="btn block" style="justify-content:flex-start" disabled=${busy} onClick=${check}><${Icon} n="download" s="16" /> ${busy ? 'Controllo…' : 'Cerca aggiornamenti'}</button>
+  </section>`;
 }
 
 /* ---------- amministrazione: solo Orlando e Luca ---------- */
@@ -11622,7 +11788,7 @@ function linkFrom(search) {
   } catch (e) { /* senza memoria della sessione il link vale solo adesso */ }
 })();
 const takeLink = () => { try { const v = JSON.parse(sessionStorage.getItem(LINK_KEY) || 'null'); sessionStorage.removeItem(LINK_KEY); return v; } catch (e) { return null; } };
-const linkUrl = (gid, mid, k) => location.origin + location.pathname + '?' + (mid ? 'm=' + gid + '.' + mid : 'g=' + gid) + (k ? '&k=' + k : '');
+const linkUrl = (gid, mid, k) => Moved.home() + '?' + (mid ? 'm=' + gid + '.' + mid : 'g=' + gid) + (k ? '&k=' + k : '');
 
 /* il QR (disegnato qui, senza servizi esterni) */
 function qrSvg(text) {
@@ -12019,7 +12185,7 @@ function MemberSheet({ mid, id, onClose }) {
     ${m.teamMode === 'pick' && x.s === 'in' && (canOrganize(m, C) || (id === C.uid && C.canWrite)) && html`<div class="field"><span class="label">Squadra</span>
       <${Seg} value=${x.side || null} onChange=${(sd) => (x.guest ? C.act.setGuestSide(mid, id, sd) : C.act.setSide(mid, id, sd))} options=${[{ v: 'a', l: teamName(m, 'a') }, { v: 'b', l: teamName(m, 'b') }]} /></div>`}
     ${!x.guest && canAct && html`<div class="field"><span class="label">Presenza</span>
-      <${Seg} cls="rsvp" value=${x.s} onChange=${(s) => C.act.setRsvp(mid, id, s)} options=${[{ v: 'in', l: 'Ci sono', cls: 'in' }, { v: 'maybe', l: 'Forse', cls: 'maybe' }, { v: 'out', l: 'Non viene', cls: 'out' }]} /></div>`}
+      <${Seg} cls="rsvp" value=${x.s} onChange=${(s) => { if (s !== x.s) C.act.setRsvp(mid, id, s); }} options=${[{ v: 'in', l: 'Ci sono', cls: 'in' }, { v: 'maybe', l: 'Forse', cls: 'maybe' }, { v: 'out', l: 'Non viene', cls: 'out' }]} /></div>`}
     ${!x.guest && html`<button class="btn block" onClick=${() => { onClose(); C.go({ t: 'player', id }); }}>Vedi scheda giocatore</button>`}
     ${x.guest && canAct && html`<button class="btn danger block" onClick=${() => { C.act.removeGuest(mid, id); onClose(); }}>Rimuovi ospite</button>`}
   <//>`;
@@ -12120,8 +12286,41 @@ function HelpSheet({ onClose }) {
       <div><h3 class="h3">Messaggi</h3><p class="muted">Nella scheda Messaggi ci sono la chat di ogni tuo gruppo e le chat private con i compagni di gruppo e gli amici: le private le leggete solo voi due. Puoi mandare foto, GIF e sticker, emoji e vocali (tieni premuto il microfono; scorri a sinistra per annullare, in su per continuare senza tenere). Tieni premuto un messaggio per reagire, rispondere, copiarlo, inoltrarlo in un'altra chat, modificarlo nei primi 15 minuti o eliminarlo; trascinalo verso destra per rispondere al volo. Con @ chiami qualcuno del gruppo. Una spunta: inviato; due grigie: arrivato; due blu: letto da tutti (tenendo premuto un tuo messaggio, Info dice chi l'ha letto). Le notifiche si attivano da Impostazioni; una chat si silenzia toccando il suo nome in alto.</p></div>
       <div><h3 class="h3">Amici</h3><p class="muted">Chiedi l'amicizia dalla scheda di un giocatore: diventate amici quando l'altro accetta. Gli amici compaiono per primi nelle ricerche e puoi invitarli alle partite del tuo gruppo.</p></div>
       <div><h3 class="h3">Voti pubblici</h3><p class="muted">Dentro il gruppo valutazioni e voti MVP non sono anonimi: i membri vedono chi ha votato cosa. I voti MVP si vedono quando la votazione si chiude. Nelle stats generali, invece, non si vede chi ha dato i voti. I confronti sono sempre anonimi: si vede solo di quanto hanno spostato le voci.</p></div>
+      <div><h3 class="h3">Aggiornamenti</h3><p class="muted">L'app si aggiorna da sola. Si apre subito con la versione che hai sul telefono, anche con poca rete, e intanto controlla se ce n'è una nuova: quando è pronta compare in alto la barra «Aggiorna». Se non la tocchi, parte la volta dopo che apri l'app da chiusa. Cosa cambia lo trovi nel menu, alla voce Novità. L'indirizzo dell'app è ${HOME_HOST}: da lì si accede e si mette l'app nella schermata Home.</p></div>
     </div>
+    <div class="tiny faint" style="text-align:center">Algor Bomber · versione ${APP_VER}</div>
   <//>`;
+}
+
+/* ---------- novità: cosa cambia a ogni versione (si aprono da sole una volta dopo un aggiornamento) ---------- */
+function NovitaSheet({ onClose }) {
+  return html`<${Sheet} title="Novità" onClose=${onClose}>
+    <div class="small muted">Hai la versione ${APP_VER}.</div>
+    ${NOVITA.slice(0, 8).map((n, i) => html`<section key=${n.v} class="sec">
+      <div class="hs"><h3 class="h3 grow">${n.d}</h3>${i === 0 && verCmp(n.v, APP_VER) === 0 && html`<span class="chip ok">Questa versione</span>`}</div>
+      <ul class="nov-l">${n.items.map((t, j) => html`<li key=${j}>${t}</li>`)}</ul>
+    </section>`)}
+    <button class="btn primary block" onClick=${onClose}>Ok</button>
+  <//>`;
+}
+
+/* ---------- barra «Aggiorna»: la versione nuova è già sul telefono, basta ricaricare ---------- */
+function useUpdateReady() {
+  const [v, setV] = useState(() => Updates.ready);
+  /* l'avviso può arrivare tra il primo disegno e l'iscrizione: appena iscritti si riprende il valore */
+  useEffect(() => { const off = Updates.sub(setV); setV(Updates.ready); return off; }, []);
+  return v;
+}
+function UpdateBar() {
+  const v = useUpdateReady();
+  const [later, setLater] = useState(null);
+  if (!v || later === v) return null;
+  return html`<div class="upd" role="status">
+    <${Icon} n="spark" s="16" />
+    <span class="grow">Nuova versione pronta</span>
+    <button class="btn sm accent" onClick=${() => Updates.apply()}>Aggiorna</button>
+    <button class="icon-btn sm" aria-label="Più tardi" onClick=${() => setLater(v)}><${Icon} n="x" s="16" /></button>
+  </div>`;
 }
 
 function SheetHost({ sheet, onClose }) {
@@ -12136,6 +12335,7 @@ function SheetHost({ sheet, onClose }) {
     case 'matchMenu': return html`<${MatchMenuSheet} id=${sheet.id} onClose=${onClose} />`;
     case 'ratingDetail': return html`<${RatingDetailSheet} pid=${sheet.pid} voter=${sheet.voter} self=${sheet.self} t=${sheet.t} onClose=${onClose} />`;
     case 'help': return html`<${HelpSheet} onClose=${onClose} />`;
+    case 'novita': return html`<${NovitaSheet} onClose=${onClose} />`;
     case 'photo': return html`<${PhotoSheet} pid=${sheet.pid} onClose=${onClose} />`;
     case 'menu': return html`<${MenuSheet} onClose=${onClose} />`;
     case 'groupSwitch': return html`<${GroupSwitchSheet} onClose=${onClose} />`;
@@ -12608,6 +12808,18 @@ function App() {
     }, 900);
     return () => clearTimeout(t);
   }, [recapSig, stack.length, !!sheet, tab]);
+  /* novità: dopo un aggiornamento si aprono da sole una volta, quando non c'è altro aperto
+     (non a chi si è appena iscritto: per lui è tutto nuovo) */
+  const wasNew = useRef(false);
+  if (needsProfile) wasNew.current = true;
+  useEffect(() => {
+    if (!appReady || !be || be.demo || !canWrite || !me) return undefined;
+    if (verCmp(APP_VER, readLS('sc-ver', '')) <= 0) return undefined;
+    if (wasNew.current) { writeLS('sc-ver', APP_VER); return undefined; }
+    if (stack.length || sheet || pendingLink.current) return undefined;
+    const t = setTimeout(() => { writeLS('sc-ver', APP_VER); setSheet((s) => s || { k: 'novita' }); }, 1500);
+    return () => clearTimeout(t);
+  }, [appReady, stack.length, !!sheet]);
   /* entrati con il link: quando l'iscrizione arriva si passa al gruppo e si apre la partita */
   useEffect(() => {
     const L = pendingLink.current;
@@ -12972,11 +13184,11 @@ function AuthForm({ sb }) {
         const { error } = await sb.auth.signInWithPassword({ email: em, password: pw });
         if (error) throw error;
       } else if (mode === 'up') {
-        const { data, error } = await sb.auth.signUp({ email: em, password: pw });
+        const { data, error } = await sb.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: Moved.home() } });
         if (error) throw error;
         if (!data.session) setMsg({ k: 'ok', t: 'Ti abbiamo scritto una mail: aprila e conferma, poi accedi.' });
       } else {
-        const { error } = await sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + location.pathname });
+        const { error } = await sb.auth.resetPasswordForEmail(em, { redirectTo: Moved.home() });
         if (error) throw error;
         setMsg({ k: 'ok', t: 'Se l\'email è iscritta, ti arriva un link per scegliere una nuova password.' });
       }
@@ -12987,6 +13199,7 @@ function AuthForm({ sb }) {
   return html`<${AuthShell}>
     <form class="stack" onSubmit=${submit}>
       <h2 class="h2">${title}</h2>
+      ${mode === 'in' && Moved.arrived() && html`<div class="note ok"><${Icon} n="info" s="16" /><span>L'app adesso sta qui, su ${HOME_HOST}: accedi con la tua email e la password di sempre. Gruppi, partite e messaggi ci sono già tutti.</span></div>`}
       <div class="field"><label class="label" for="au-email">Email</label><input id="au-email" class="input" type="email" autocomplete="email" inputmode="email" value=${email} onInput=${(e) => setEmail(e.target.value)} /></div>
       ${mode !== 'reset' && html`<div class="field"><label class="label" for="au-pw">Password</label><input id="au-pw" class="input" type="password" autocomplete=${mode === 'in' ? 'current-password' : 'new-password'} value=${pw} onInput=${(e) => setPw(e.target.value)} />${mode === 'up' && html`<div class="tiny faint">Almeno 6 caratteri.</div>`}</div>`}
       ${msg && html`<div class=${'note ' + (msg.k === 'ok' ? 'ok' : 'bad')}><span>${msg.t}</span></div>`}
@@ -13045,21 +13258,80 @@ function Root() {
   return html`<${App} key=${uid} />`;
 }
 
-render(html`<${typeof Root === 'function' ? Root : App} />`, document.getElementById('app'));
+/* ---------- indirizzo vecchio: si passa ad algor-bomber.vercel.app ---------- */
+/* le notifiche dell'indirizzo vecchio si spengono, se no arriverebbero doppie quando le attivi su quello nuovo */
+async function leaveOldHost() {
+  try { window.localStorage.removeItem('sc-push-on'); } catch (e) { /* niente */ }
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    const r = await navigator.serviceWorker.getRegistration();
+    const sub = r && r.pushManager ? await r.pushManager.getSubscription() : null;
+    if (!sub) return;
+    const ep = sub.endpoint;
+    const cfg = window.SC_CONFIG || {};
+    if (cfg.url && cfg.anonKey && window.supabase) {
+      const sb = window.supabase.createClient(cfg.url, cfg.anonKey);
+      const { data } = await sb.auth.getSession();
+      if (data && data.session) await sb.rpc('push_unregister', { p_endpoint: ep });
+    }
+    await sub.unsubscribe();
+  } catch (e) { /* pazienza: al massimo arriva qualche notifica doppia */ }
+}
+const upTo = (p, ms) => Promise.race([p, new Promise((ok) => setTimeout(ok, ms))]);
+
+function MovedScreen() {
+  const to = useMemo(() => Moved.url(), []);
+  const app = Push.standalone();
+  const [here, setHere] = useState(false);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    /* nel browser si va subito all'indirizzo nuovo; nell'app installata si spiega cosa fare */
+    if (!app) upTo(leaveOldHost(), 2500).then(() => location.replace(to));
+  }, []);
+  if (here) return html`<${typeof Root === 'function' ? Root : App} />`;
+  const brand = html`<div class="brand"><span class="brand-mark"><${Icon} n="pitch" /></span><span class="eyebrow">Algor Bomber</span></div>`;
+  if (!app) {
+    return html`<div class="shell"><div class="page"><div class="hello">${brand}
+      <h1 class="h1">L'app ha cambiato indirizzo</h1>
+      <p class="muted">Ti porto su ${HOME_HOST}…</p>
+      <a class="btn primary block" href=${to}>Vai a ${HOME_HOST}</a>
+    </div></div></div>`;
+  }
+  const copy = async () => { try { await navigator.clipboard.writeText('https://' + HOME_HOST); setCopied(true); } catch (e) { setCopied(false); } };
+  return html`<div class="shell"><div class="page">
+    <div class="hello">${brand}
+      <h1 class="h1">L'app ha cambiato indirizzo</h1>
+      <p class="muted">Adesso Algor Bomber sta solo su <b class="nowrap">${HOME_HOST}</b>. Questa icona apre l'indirizzo vecchio, che non si aggiorna più: per sistemarla bastano due minuti.</p>
+    </div>
+    <ol class="moved-steps">
+      <li>Tocca <b>Apri il nuovo indirizzo</b>: si apre nel browser (se si apre in una finestra dentro l'app, scegli di aprirla in ${Push.isIOS() ? 'Safari' : 'Chrome'}).</li>
+      <li>Accedi con la tua email e la password di sempre: gruppi, partite e messaggi ci sono già tutti.</li>
+      <li>Metti l'app nella schermata Home: ${Push.isIOS() ? 'Condividi → Aggiungi alla schermata Home' : 'dal menu ⋮ del browser, Installa app o Aggiungi a schermata Home'}.</li>
+      <li>Apri l'app nuova e attiva le notifiche (Impostazioni → Notifiche).</li>
+      <li>Cancella questa icona vecchia.</li>
+    </ol>
+    <a class="btn primary block" href=${to} target="_blank" rel="noopener" onClick=${() => { leaveOldHost(); }}>Apri il nuovo indirizzo</a>
+    <button class="btn block" onClick=${copy}>${copied ? 'Indirizzo copiato' : 'Copia l\'indirizzo'}</button>
+    <button class="link" style="align-self:center" onClick=${() => setHere(true)}>Per ora continua qui</button>
+  </div></div>`;
+}
+
+/* la barra «Aggiorna» sta sopra tutto, anche sulla schermata di accesso */
+function Top() {
+  return html`<${Moved.old() ? MovedScreen : typeof Root === 'function' ? Root : App} /><${UpdateBar} />`;
+}
+render(html`<${Top} />`, document.getElementById('app'));
 
 </script>
 <script>
-window.addEventListener('load', function () {
-  setTimeout(function () {
-    var s = document.getElementById('splash');
-    if (s) { s.classList.add('out'); setTimeout(function () { s.remove(); }, 450); }
-  }, 900);
-});
-if ('serviceWorker' in navigator) {
-  var had = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.register('sw.js').catch(function () {});
-  navigator.serviceWorker.addEventListener('controllerchange', function () { if (had) location.reload(); });
-}
+/* la copertina sparisce appena l'app è disegnata (questo script parte dopo quello dell'app) */
+setTimeout(function () {
+  var s = document.getElementById('splash');
+  if (s) { s.classList.add('out'); setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 400); }
+}, 200);
+/* service worker: apre l'app dalla copia sul telefono e tiene pronta la versione nuova (vedi Updates).
+   Niente ricarica automatica quando cambia: la versione nuova si prende con «Aggiorna» o alla prossima apertura. */
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
 </script>
 </body>
 </html>

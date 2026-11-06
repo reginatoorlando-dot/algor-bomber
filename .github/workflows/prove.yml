@@ -1,0 +1,50 @@
+name: Prove
+
+# A ogni pull request e a ogni modifica del ramo principale: le prove dell'app (Chrome come su un telefono,
+# con i dati di esempio) e degli script del database (Postgres in memoria). Si possono lanciare anche a mano.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prove-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    name: Prove dell'app e del database
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Strumenti delle prove
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install playwright==1.63.0 pillow==12.3.0
+          npm ci --prefix prove/sql --no-audit --no-fund
+
+      - name: Prove
+        run: python prove/esegui.py
+
+      - name: Foto fatte durante le prove
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: foto-delle-prove
+          path: prove/risultati/
+          if-no-files-found: ignore
+          retention-days: 14

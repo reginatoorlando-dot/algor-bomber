@@ -1,0 +1,4 @@
+# prove automatiche: foto fatte durante le prove e pacchetti di Node
+prove/risultati/
+prove/sql/node_modules/
+__pycache__/

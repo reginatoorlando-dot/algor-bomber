@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><link rel="icon" href="icon.svg"><title>Algor Bomber (versione di prima)</title></head>
+<body>
+<p id="vecchia">Pagina della versione di prima</p>
+<!-- come la versione di prima: il service worker si registra e, se cambia mentre la pagina è aperta, si ricarica -->
+<script>
+if ('serviceWorker' in navigator) {
+  var had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').catch(function () {});
+  navigator.serviceWorker.addEventListener('controllerchange', function () { if (had) location.reload(); });
+}
+</script>
+</body>
+</html>

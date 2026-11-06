@@ -16,8 +16,8 @@ Il sito è la cartella `web` (questa). Il resto dello zip (`sorgenti`) serve sol
 
 ## 3. Il sito (Vercel)
 1. Su vercel.com accedi con GitHub → **Add New → Project** → scegli il repository `algor-bomber` → **Deploy** (nessuna impostazione da cambiare: è un sito statico).
-2. Al termine ottieni un indirizzo tipo `calcetto-xxxx.vercel.app`. È il link da mandare agli amici.
-3. Torna su Supabase → **Authentication → URL Configuration** e incolla quell'indirizzo in **Site URL** (serve al link "password dimenticata").
+2. Al termine ottieni un indirizzo tipo `calcetto-xxxx.vercel.app`. È il link da mandare agli amici. Il nostro è **algor-bomber.vercel.app**: è l'unico indirizzo dell'app (vedi "Versione, aggiornamenti e indirizzo unico").
+3. Torna su Supabase → **Authentication → URL Configuration** e incolla quell'indirizzo in **Site URL** e in **Redirect URLs** (servono ai link "password dimenticata" e di conferma dell'iscrizione).
 
 ## 4. Installarla sul telefono
 - **Android (Chrome):** apri il link → menu ⋮ → **Installa app** (o "Aggiungi a schermata Home").
@@ -25,7 +25,7 @@ Il sito è la cartella `web` (questa). Il resto dello zip (`sorgenti`) serve sol
 Ha la sua icona e si apre a schermo intero.
 
 ## Aggiornare l'app per tutti
-Quando ti mando una versione nuova, sostituisci i file su GitHub (**Add file → Upload files**, stessi nomi, **Commit**). Vercel pubblica da solo in un minuto; gli amici la ricevono alla prossima apertura (a volte serve chiuderla e riaprirla una volta). I dati nel database restano.
+Quando ti mando una versione nuova, sostituisci i file su GitHub (**Add file → Upload files**, stessi nomi, **Commit**). Vercel pubblica da solo in un minuto. L'app sul telefono si apre subito con la versione che ha, intanto vede quella nuova e mostra in alto **«Nuova versione pronta — Aggiorna»**; se nessuno tocca Aggiorna, parte la volta dopo che si apre l'app da chiusa. I dati nel database restano.
 Non sovrascrivere `config.js` con quello vuoto: tieni il tuo.
 
 ## Dove stanno i dati
@@ -141,6 +141,27 @@ Carica su GitHub `index.html` (nella cartella principale) e questo file.
 - **Campo**: una grana per ogni stile (fili d'erba, granuli di gomma, terra e sassolini, sabbia, neve che luccica, riflessi sull'acqua, polvere di Marte, venature del parquet, polvere di gesso, panno del calcio balilla); zone consumate davanti alle porte, sul dischetto e a centrocampo sull'erba; porte con la rete in profondità, pali e ombra della traversa; luce da sinistra in alto (non sotto i riflettori e nel palazzetto, che hanno le loro luci). Le grane sono piastrelle di 128×128 disegnate dal telefono la prima volta che servono (pochi millesimi di secondo l'una): niente immagini da scaricare.
 - **Card**: bordo smussato, linee e fregi in rilievo, punteggio, nome e numeri coniati, finestra della foto incassata; uguale nella card da condividere.
 - La locandina usa lo stesso campo dello schermo anche con l'erba a strisce (prima solo con gli altri stili); se il telefono non ci riesce, resta il prato a strisce semplice.
+
+## Versione, aggiornamenti e indirizzo unico (`index.html` e `sw.js`, nessuno script)
+Carica su GitHub `index.html`, `sw.js`, `.gitignore`, `.vercelignore` (le prove non vanno online), le cartelle `prove` e `.github` e questo file.
+
+- **Apertura veloce**: il service worker (`sw.js`, ora v19) apre l'app dalla copia salvata sul telefono, senza aspettare la rete; intanto chiede a Vercel se `index.html` è cambiato (una richiesta leggera: se non è cambiato risponde «uguale»). Icone, comuni, emoji e `config.js` arrivano anche loro dalla copia e si rinfrescano dietro le quinte. Senza rete l'app si apre lo stesso (i dati però arrivano solo con la rete). I caratteri (Bricolage e Geist) non fermano più l'apertura: finché non arrivano si usano quelli del telefono. La copertina iniziale resta un attimo invece di quasi un secondo e mezzo.
+- **Aggiornamenti**: quando la versione nuova è sul telefono compare in alto **«Nuova versione pronta»** con **Aggiorna**, anche sulla schermata di accesso; con la × sparisce e la versione nuova parte alla prossima apertura. Prima l'app si ricaricava da sola quando cambiava il service worker: ora no, così nessuno perde quello che sta scrivendo.
+- **Versione e Novità**: la versione è `APP_VER` in `index.html` (anno.mese.giorno, poi .2, .3… se escono più versioni nello stesso giorno) e si vede in fondo al menu, in Impostazioni → App e in Come funziona. **A ogni modifica dell'app va alzata e va aggiunta in cima a `NOVITA` una voce con le novità per chi gioca**: le prove controllano che la prima voce abbia la stessa versione. Le Novità sono nel menu; dopo un aggiornamento si aprono da sole una volta (non a chi si è appena iscritto e non nella demo). In Impostazioni → App c'è anche **Cerca aggiornamenti**.
+- **Indirizzo unico**: l'app sta solo su **algor-bomber.vercel.app**. Gli altri due progetti Vercel (`algor-bomber-4aox` e `algor-bomber-67f5`) pubblicano lo stesso codice, che lì fa una cosa sola: nel browser porta subito a algor-bomber.vercel.app (con il link della partita o del gruppo, se c'è, e le preferenze del telefono: tema, colore, home, stile del campo, emoji recenti e gruppo scelto); nell'app installata da un indirizzo vecchio mostra «L'app ha cambiato indirizzo» con i passi (apri il nuovo indirizzo, accedi con la solita email e password, metti l'app nella schermata Home, attiva le notifiche, cancella l'icona vecchia) e un «Per ora continua qui». Toccando «Apri il nuovo indirizzo», e sempre nel browser, le notifiche dell'indirizzo vecchio si spengono, se no arriverebbero doppie. I link d'invito e quelli delle email (password, conferma dell'iscrizione) usano sempre algor-bomber.vercel.app. Sull'indirizzo nuovo bisogna rifare l'accesso: ogni indirizzo tiene il suo.
+- **Dopo la pubblicazione**: su Vercel, nei progetti `algor-bomber-4aox` e `algor-bomber-67f5`, **Settings → Git → Disconnect**, così restano fermi a questa versione (quella che porta al nuovo indirizzo) e non pubblicano più niente. In Supabase → **Authentication → URL Configuration**: **Site URL** `https://algor-bomber.vercel.app` e la stessa in **Redirect URLs**.
+
+## Prove automatiche (cartella `prove` e `.github/workflows/prove.yml`)
+A ogni pull request GitHub prova l'app da solo, in qualche minuto, e mette il risultato (✓ o ✗) nella pull request; le foto fatte durante le prove si scaricano dalla pagina della prova (**Actions** → la prova → **Artifacts**). Cosa prova:
+- `prova_giro.py`: tutte le partite e tutte le schede si aprono senza errori, con i dati di esempio.
+- `prova_campo.py` e `prova_campo_altro.py`: il Campo col dito (trascinare, tenere premuto, panchina, formazioni, scorrimento, tastiera, mouse).
+- `prova_stili.py` e `prova_locandina.py`: gli stili del campo, sullo schermo e nella locandina.
+- `prova_valore.py`: il valore in campo per reparto e la ricerca delle squadre.
+- `prova_presenze.py`: ritoccare «Ci sono» su un compagno già iscritto non lo manda in fondo alla lista (prima succedeva).
+- `prova_versione.py`, `prova_aggiorna.py`, `prova_indirizzo.py`: versione e Novità, apertura dalla copia, «Aggiorna», senza rete, passaggio dal service worker di prima, indirizzi vecchi.
+- `sql/prova_panchina.mjs`: lo script del database della panchina, su un Postgres in memoria.
+
+Per lanciarle sul computer: `pip install playwright pillow`, Chrome installato, `npm ci` dentro `prove/sql`, poi `python3 prove/esegui.py` (o solo alcune: `python3 prove/esegui.py campo`). Una prova che non passa al primo colpo viene ripetuta una volta e lo dice nel riepilogo.
 
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
