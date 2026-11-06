@@ -3068,6 +3068,7 @@ const NOVITA = [
     'L\'app si apre subito, anche con poca rete: parte con la versione che hai sul telefono e intanto controlla se ce n\'è una nuova. Quando è pronta compare in alto la barra «Aggiorna».',
     'Nel menu ci sono queste Novità e, in fondo, la versione dell\'app. In Impostazioni puoi anche cercare gli aggiornamenti a mano.',
     'Un indirizzo solo: algor-bomber.vercel.app. Chi usa ancora un indirizzo vecchio viene portato qui, con le istruzioni per rimettere l\'app nella schermata Home.',
+    'Toccare di nuovo «Ci sono» su un compagno già iscritto non lo manda più in fondo alla lista.',
   ] },
   { v: '2026.11.5', d: '5 novembre 2026', items: [
     'Il Campo: tieni premuto un giocatore e trascinalo su un altro per scambiarli, con la panchina sul bordo e le formazioni a portata di mano.',
@@ -12184,7 +12185,7 @@ function MemberSheet({ mid, id, onClose }) {
     ${m.teamMode === 'pick' && x.s === 'in' && (canOrganize(m, C) || (id === C.uid && C.canWrite)) && html`<div class="field"><span class="label">Squadra</span>
       <${Seg} value=${x.side || null} onChange=${(sd) => (x.guest ? C.act.setGuestSide(mid, id, sd) : C.act.setSide(mid, id, sd))} options=${[{ v: 'a', l: teamName(m, 'a') }, { v: 'b', l: teamName(m, 'b') }]} /></div>`}
     ${!x.guest && canAct && html`<div class="field"><span class="label">Presenza</span>
-      <${Seg} cls="rsvp" value=${x.s} onChange=${(s) => C.act.setRsvp(mid, id, s)} options=${[{ v: 'in', l: 'Ci sono', cls: 'in' }, { v: 'maybe', l: 'Forse', cls: 'maybe' }, { v: 'out', l: 'Non viene', cls: 'out' }]} /></div>`}
+      <${Seg} cls="rsvp" value=${x.s} onChange=${(s) => { if (s !== x.s) C.act.setRsvp(mid, id, s); }} options=${[{ v: 'in', l: 'Ci sono', cls: 'in' }, { v: 'maybe', l: 'Forse', cls: 'maybe' }, { v: 'out', l: 'Non viene', cls: 'out' }]} /></div>`}
     ${!x.guest && html`<button class="btn block" onClick=${() => { onClose(); C.go({ t: 'player', id }); }}>Vedi scheda giocatore</button>`}
     ${x.guest && canAct && html`<button class="btn danger block" onClick=${() => { C.act.removeGuest(mid, id); onClose(); }}>Rimuovi ospite</button>`}
   <//>`;

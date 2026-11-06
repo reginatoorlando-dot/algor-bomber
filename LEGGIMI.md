@@ -157,6 +157,7 @@ A ogni pull request GitHub prova l'app da solo, in qualche minuto, e mette il ri
 - `prova_campo.py` e `prova_campo_altro.py`: il Campo col dito (trascinare, tenere premuto, panchina, formazioni, scorrimento, tastiera, mouse).
 - `prova_stili.py` e `prova_locandina.py`: gli stili del campo, sullo schermo e nella locandina.
 - `prova_valore.py`: il valore in campo per reparto e la ricerca delle squadre.
+- `prova_presenze.py`: ritoccare «Ci sono» su un compagno già iscritto non lo manda in fondo alla lista (prima succedeva).
 - `prova_versione.py`, `prova_aggiorna.py`, `prova_indirizzo.py`: versione e Novità, apertura dalla copia, «Aggiorna», senza rete, passaggio dal service worker di prima, indirizzi vecchi.
 - `sql/prova_panchina.mjs`: lo script del database della panchina, su un Postgres in memoria.
 
