@@ -5,7 +5,7 @@ Il sito è la cartella `web` (questa). Il resto dello zip (`sorgenti`) serve sol
 
 ## 1. Il database (Supabase)
 1. Vai su supabase.com → **New project**. Scegli un nome (es. `algor-bomber`), una password per il database (salvala) e una regione europea.
-2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) con `supabase/aggiornamento-amici.sql` (amicizie) con `supabase/aggiornamento-traguardi.sql` (traguardi di tutti), con `supabase/aggiornamento-chat.sql` (chat come WhatsApp; per le notifiche serve anche la funzione `notify`, vedi più sotto) con `supabase/aggiornamento-notifiche.sql` (notifiche delle partite, link d'invito, pronostici) con `supabase/aggiornamento-valutazioni.sql` (valutazioni che si sommano, Confronto, traguardi di chi valuta) e con `supabase/aggiornamento-panchina.sql` (notifica a chi va in panchina dal Campo).
+2. Quando il progetto è pronto apri **SQL Editor** → **New query**, incolla tutto il contenuto di `supabase/schema.sql` e premi **Run**. Deve comparire "Success". Poi, ognuno in una nuova query e in quest'ordine, fai lo stesso con `supabase/aggiornamento-gruppi.sql` (gruppi, chat, amministrazione) con `supabase/aggiornamento-iscritti.sql` (iscritti visibili a tutti, stats generali, aggiunta ai gruppi) con `supabase/aggiornamento-partite.sql` (comune dei gruppi, modifica del gruppo, sondaggio sul giorno) con `supabase/aggiornamento-amici.sql` (amicizie) con `supabase/aggiornamento-traguardi.sql` (traguardi di tutti), con `supabase/aggiornamento-chat.sql` (chat come WhatsApp; per le notifiche serve anche la funzione `notify`, vedi più sotto) con `supabase/aggiornamento-notifiche.sql` (notifiche delle partite, link d'invito, pronostici) con `supabase/aggiornamento-valutazioni.sql` (valutazioni che si sommano, Confronto, traguardi di chi valuta) con `supabase/aggiornamento-panchina.sql` (notifica a chi va in panchina dal Campo) e con `supabase/aggiornamento-regole.sql` (le regole delle partite controllate anche dal database).
 3. **Authentication → Providers → Email**: lascia attivo l'accesso con email e **disattiva "Confirm email"** (così gli amici entrano subito senza aspettare la mail).
 4. **Project Settings → API**: copia **Project URL** e la chiave **anon public**.
 5. Apri il file `config.js` di questa cartella e incolla i due valori al posto delle scritte `INCOLLA_QUI_…`. (La chiave anon può stare nel sito: la sicurezza la fanno le regole del database.)
@@ -159,9 +159,26 @@ A ogni pull request GitHub prova l'app da solo, in qualche minuto, e mette il ri
 - `prova_valore.py`: il valore in campo per reparto e la ricerca delle squadre.
 - `prova_presenze.py`: ritoccare «Ci sono» su un compagno già iscritto non lo manda in fondo alla lista (prima succedeva).
 - `prova_versione.py`, `prova_aggiorna.py`, `prova_indirizzo.py`: versione e Novità, apertura dalla copia, «Aggiorna», senza rete, passaggio dal service worker di prima, indirizzi vecchi.
-- `sql/prova_panchina.mjs`: lo script del database della panchina, su un Postgres in memoria.
+- `sql/prova_panchina.mjs` e `sql/prova_regole.mjs`: gli script del database della panchina e delle regole, su un Postgres in memoria.
 
 Per lanciarle sul computer: `pip install playwright pillow`, Chrome installato, `npm ci` dentro `prove/sql`, poi `python3 prove/esegui.py` (o solo alcune: `python3 prove/esegui.py campo`). Una prova che non passa al primo colpo viene ripetuta una volta e lo dice nel riepilogo.
+
+## Regole delle partite nel database (supabase/aggiornamento-regole.sql)
+Finora i permessi sulle partite li controllava solo l'app: chi avesse scritto nel database "a mano", con il proprio accesso, poteva fare anche quello che l'app non lascia fare (segnarsi «pagato», passare davanti in lista d'attesa, cambiare il risultato di una partita vecchia…). Con questo script le stesse regole le controlla anche il database. Per chi usa l'app non cambia niente: le regole sono quelle che l'app già rispetta.
+
+- **Una volta sola**: Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-regole.sql` e premi **Run**. Deve comparire "Aggiornamento regole completato" con `regole_attive` = 1. Non sposta e non cancella dati; si può rieseguire. Sul database del gruppo è già stato eseguito il 6 novembre 2026 (da Claude, su richiesta, come migrazione `aggiornamento_regole`): non va rifatto.
+- **Cosa controlla** (chi organizza = chi ha creato la partita, gli amministratori del gruppo e dell'app):
+  - chi ha creato la partita non si cambia; una partita nuova si crea a nome proprio, aperta o come sondaggio, con dentro al massimo sé stessi;
+  - colori delle squadre e sondaggio (annullarlo, giorni, voti): chi organizza; i voti passano sempre dalla funzione del sondaggio;
+  - iscritti e ospiti: chiunque nel gruppo li segna, come nell'app; spostare gli altri da una squadra all'altra lo fa chi organizza; un ospite si aggiunge a nome proprio e resta di chi l'ha portato;
+  - orari d'iscrizione veri: uno "nel passato" (per passare davanti in lista) diventa l'ora di adesso;
+  - campo prenotato: a nome proprio; lo toglie chi l'ha segnato o chi organizza;
+  - cassa: prezzo e quota li scrive chi organizza, chi ha prenotato o chi raccoglie; «pagato» lo segna chi raccoglie o un amministratore del gruppo;
+  - risultato, marcatori e chiusura: dopo l'inizio della partita successiva solo gli amministratori del gruppo e dell'app (come nell'app);
+  - inviti: a nome proprio.
+- **Chi non è toccato**: gli amministratori dell'app e le funzioni del database (sondaggio, notifiche, promemoria), che scrivono per conto di chi le usa.
+- Se qualcuno prova a fare altro riceve un messaggio in italiano (per esempio «I colori delle squadre li cambia chi organizza la partita.»), che l'app mostra così com'è.
+- Da sapere: oggi nell'app **chiunque nel gruppo** cambia giorno, ora e campo, annulla una partita e segna la presenza degli altri. Il database fa lo stesso. Se un giorno queste cose devono farle solo gli organizzatori, vanno cambiate insieme l'app e questo script.
 
 ## Cose da sapere
 - Chiunque abbia il link può iscriversi. Se vuoi limitare l'accesso, in Supabase puoi disattivare le nuove iscrizioni (Authentication → Sign In / Providers → "Allow new users to sign up") dopo che sono entrati tutti.
