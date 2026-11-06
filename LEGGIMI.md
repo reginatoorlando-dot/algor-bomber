@@ -166,7 +166,7 @@ Per lanciarle sul computer: `pip install playwright pillow`, Chrome installato, 
 ## Regole delle partite nel database (supabase/aggiornamento-regole.sql)
 Finora i permessi sulle partite li controllava solo l'app: chi avesse scritto nel database "a mano", con il proprio accesso, poteva fare anche quello che l'app non lascia fare (segnarsi «pagato», passare davanti in lista d'attesa, cambiare il risultato di una partita vecchia…). Con questo script le stesse regole le controlla anche il database. Per chi usa l'app non cambia niente: le regole sono quelle che l'app già rispetta.
 
-- **Una volta sola**: Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-regole.sql` e premi **Run**. Deve comparire "Aggiornamento regole completato" con `regole_attive` = 1. Non sposta e non cancella dati; si può rieseguire.
+- **Una volta sola**: Supabase → **SQL Editor** → **New query**, incolla tutto `supabase/aggiornamento-regole.sql` e premi **Run**. Deve comparire "Aggiornamento regole completato" con `regole_attive` = 1. Non sposta e non cancella dati; si può rieseguire. Sul database del gruppo è già stato eseguito il 6 novembre 2026 (da Claude, su richiesta, come migrazione `aggiornamento_regole`): non va rifatto.
 - **Cosa controlla** (chi organizza = chi ha creato la partita, gli amministratori del gruppo e dell'app):
   - chi ha creato la partita non si cambia; una partita nuova si crea a nome proprio, aperta o come sondaggio, con dentro al massimo sé stessi;
   - colori delle squadre e sondaggio (annullarlo, giorni, voti): chi organizza; i voti passano sempre dalla funzione del sondaggio;
